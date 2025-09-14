@@ -5,8 +5,8 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 import re
 from werkzeug.security import generate_password_hash
 
-from app.models.user import User
-from app.repositories.user_repository import UserRepository
+from app.core.models.user import User
+from app.core.repositories.user_repository import UserRepository
 
 class AuthService:
     def __init__(self):

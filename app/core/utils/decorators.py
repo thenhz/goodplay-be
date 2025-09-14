@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.repositories.user_repository import UserRepository
+from app.core.repositories.user_repository import UserRepository
 
 def auth_required(f):
     @wraps(f)

@@ -1,7 +1,7 @@
 from typing import Optional
 from pymongo import ASCENDING
-from app.models.user import User
-from app.repositories.base_repository import BaseRepository
+from app.core.models.user import User
+from app.core.repositories.base_repository import BaseRepository
 
 class UserRepository(BaseRepository):
     def __init__(self):

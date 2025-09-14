@@ -25,7 +25,7 @@ def create_app(config_name=None):
     init_db(app)
     init_logging(app)
     
-    from app.controllers.auth_controller import auth_bp
+    from app.core.controllers.auth_controller import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     
     @app.route('/api/health', methods=['GET'])
@@ -40,7 +40,7 @@ def init_db(app):
     mongo_db = mongo_client[app.config['MONGO_DB_NAME']]
     
     with app.app_context():
-        from app.repositories.user_repository import UserRepository
+        from app.core.repositories.user_repository import UserRepository
         user_repo = UserRepository()
         user_repo.create_indexes()
 

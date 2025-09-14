@@ -1,9 +1,9 @@
 from flask import Blueprint, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from app.services.auth_service import AuthService
-from app.utils.decorators import auth_required
-from app.utils.responses import success_response, error_response
+from app.core.services.auth_service import AuthService
+from app.core.utils.decorators import auth_required
+from app.core.utils.responses import success_response, error_response
 
 auth_bp = Blueprint('auth', __name__)
 auth_service = AuthService()
@@ -106,7 +106,7 @@ def update_profile(current_user):
         if not updated:
             return error_response("No fields to update")
         
-        from app.repositories.user_repository import UserRepository
+        from app.core.repositories.user_repository import UserRepository
         user_repository = UserRepository()
         
         if user_repository.update_user(current_user.get_id(), current_user):

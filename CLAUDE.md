@@ -5,21 +5,55 @@ This is a Flask-based REST API backend using MongoDB, JWT authentication, and fo
 
 ## Current Architecture
 
-### Structure
+### Structure (Modular Architecture)
 ```
 app/
-├── models/          # Data models (User)
-├── repositories/    # Data access layer (MongoDB operations)  
-├── services/        # Business logic layer
-├── controllers/     # HTTP route handlers
-└── utils/          # Decorators, responses, logging utilities
+├── core/            # Core platform functionality
+│   ├── models/      # Core data models (User, Config)
+│   ├── repositories/ # Core data access layer
+│   ├── services/    # Core business logic
+│   └── controllers/ # Core route handlers (auth, health)
+├── preferences/     # User preferences and settings
+├── social/          # Social features and gamification
+│   ├── models/      # Achievement, Leaderboard models
+│   ├── repositories/ # Social data access
+│   ├── services/    # Social business logic
+│   └── controllers/ # Social route handlers
+├── games/           # Game engine and management
+│   ├── models/      # Game, Session models
+│   ├── repositories/ # Game data access
+│   ├── services/    # Game business logic
+│   └── controllers/ # Game route handlers
+├── donations/       # Donation and wallet system
+│   ├── models/      # Wallet, Transaction models
+│   ├── repositories/ # Financial data access
+│   ├── services/    # Payment business logic
+│   └── controllers/ # Donation route handlers
+├── onlus/          # ONLUS management
+│   ├── models/      # ONLUS, Campaign models
+│   ├── repositories/ # ONLUS data access
+│   ├── services/    # ONLUS business logic
+│   └── controllers/ # ONLUS route handlers
+└── admin/          # Administrative interface
+    ├── models/      # Admin-specific models
+    ├── repositories/ # Admin data access
+    ├── services/    # Admin business logic
+    └── controllers/ # Admin route handlers
 ```
 
+### Migration from Monolithic to Modular
+The application has been restructured from a monolithic architecture to a modular one:
+- **Previous**: Single `models/`, `repositories/`, `services/`, `controllers/` directories
+- **Current**: Feature-based modules with their own MVC structure
+- **Benefits**: Better separation of concerns, easier maintenance, scalable development
+
 ### Key Design Patterns
-- **Repository Pattern**: Data access abstraction in `repositories/`
-- **Service Layer**: Business logic in `services/` 
-- **Dependency Injection**: Services use repositories
+- **Modular Architecture**: Feature-based modules (core, social, games, donations, onlus, admin)
+- **Repository Pattern**: Data access abstraction in each module's `repositories/`
+- **Service Layer**: Business logic in each module's `services/`
+- **Dependency Injection**: Services use repositories, modules can depend on core
 - **Decorator Pattern**: `@auth_required`, `@admin_required` for route protection
+- **Blueprint Pattern**: Each module registers its own Flask blueprints
 
 ## Current Features
 - ✅ User registration with validation
@@ -41,13 +75,15 @@ app/
 
 ## Database Schema
 
-### Users Collection
+### Core Collections
+
+#### Users Collection (app/core/models/)
 ```javascript
 {
   _id: ObjectId,
   email: String (unique, lowercase),
   first_name: String (optional),
-  last_name: String (optional), 
+  last_name: String (optional),
   password_hash: String,
   is_active: Boolean (default: true),
   role: String (default: 'user'),
@@ -56,28 +92,99 @@ app/
 }
 ```
 
+### Planned Collections (Future Implementation)
+
+#### Games Collection (app/games/models/)
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  description: String,
+  category: String,
+  version: String,
+  is_active: Boolean,
+  credit_rate: Number, // Credits per minute
+  created_at: DateTime
+}
+```
+
+#### Wallets Collection (app/donations/models/)
+```javascript
+{
+  _id: ObjectId,
+  user_id: ObjectId,
+  balance: Number,
+  total_earned: Number,
+  total_donated: Number,
+  updated_at: DateTime
+}
+```
+
+#### ONLUS Collection (app/onlus/models/)
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  description: String,
+  verification_status: String, // pending, verified, rejected
+  created_at: DateTime
+}
+```
+
 ## API Endpoints
 
-### Authentication Routes (`/api/auth/`)
-- `POST /register` - User registration
-- `POST /login` - User login
-- `POST /refresh` - Token refresh  
-- `GET /profile` - Get user profile (auth required)
-- `PUT /profile` - Update user profile (auth required)
-- `POST /logout` - User logout (auth required)
+### Current Endpoints
 
-### Health Check
-- `GET /api/health` - API health status
+#### Core Routes (`/api/core/`)
+- `POST /auth/register` - User registration
+- `POST /auth/login` - User login
+- `POST /auth/refresh` - Token refresh
+- `GET /auth/profile` - Get user profile (auth required)
+- `PUT /auth/profile` - Update user profile (auth required)
+- `POST /auth/logout` - User logout (auth required)
+- `GET /health` - API health status
+
+### Planned Endpoints (Future Implementation)
+
+#### Games Routes (`/api/games/`)
+- `GET /` - List available games
+- `GET /{game_id}` - Get game details
+- `POST /{game_id}/sessions` - Start game session
+- `PUT /sessions/{session_id}` - Update session progress
+
+#### Social Routes (`/api/social/`)
+- `GET /leaderboards` - Get leaderboards
+- `GET /achievements` - Get user achievements
+- `GET /friends` - Get user's friends list
+
+#### Donations Routes (`/api/donations/`)
+- `GET /wallet` - Get user wallet balance
+- `POST /donate` - Make donation to ONLUS
+- `GET /transactions` - Get donation history
+
+#### ONLUS Routes (`/api/onlus/`)
+- `GET /` - List verified ONLUS organizations
+- `GET /{onlus_id}` - Get ONLUS details
+- `POST /` - Register new ONLUS (admin)
 
 ## Development Guidelines
 
-### Adding New Endpoints
-1. **Create Model** (if needed) in `app/models/`
-2. **Create Repository** in `app/repositories/` extending `BaseRepository`
-3. **Create Service** in `app/services/` with business logic
-4. **Create Controller** in `app/controllers/` with route handlers
-5. **Register Blueprint** in `app/__init__.py`
-6. **Update OpenAPI spec** in `openapi.yaml`
+### Adding New Endpoints (Modular Approach)
+1. **Choose Module** - Determine which module the feature belongs to (core, games, social, donations, onlus, admin)
+2. **Create Model** (if needed) in `app/{module}/models/`
+3. **Create Repository** in `app/{module}/repositories/` extending `BaseRepository`
+4. **Create Service** in `app/{module}/services/` with business logic
+5. **Create Controller** in `app/{module}/controllers/` with route handlers
+6. **Register Blueprint** in module's `__init__.py` and main `app/__init__.py`
+7. **Update OpenAPI spec** in `openapi.yaml`
+
+### Module Development Order
+1. **Core** - Foundation (auth, users, health) ✅ Completed
+2. **Games** - Game engine and session management
+3. **Social** - Achievements, leaderboards, social features
+4. **Donations** - Wallet system and donation processing
+5. **ONLUS** - Organization management and verification
+6. **Admin** - Administrative interface and controls
 
 ### Code Standards
 - All user-facing messages in English
@@ -177,19 +284,34 @@ git push heroku main
 - Never log sensitive information
 
 ## Future Enhancements
+
+### Platform Features
+- Plugin-based game installation system
+- Real-time session synchronization across devices
+- Advanced social features (chat, tournaments)
+- Impact score calculation and community rankings
+- Multi-language support (currently English-only)
+- Push notifications for achievements and donations
+
+### Technical Improvements
 - API rate limiting
-- Email verification system  
+- Email verification system
 - Password reset functionality
-- User roles and permissions system
+- Enhanced user roles and permissions system
 - API versioning
 - Database migrations
 - Automated testing pipeline
 - Monitoring and metrics
+- Caching layer (Redis)
+- WebSocket support for real-time features
 
 ## Notes for AI Assistant
-- Always follow the Repository → Service → Controller pattern
+- Always follow the modular Repository → Service → Controller pattern within each module
+- Respect module boundaries - core functionality should not depend on other modules
+- Cross-module dependencies should flow towards core (e.g., games can use core auth, but core shouldn't use games)
 - Update OpenAPI spec when adding endpoints
 - Maintain English language consistency
 - Test authentication flows when making auth changes
 - Consider database indexing for new queries
+- Follow the development order: Core → Games → Social → Donations → ONLUS → Admin
 - Update this file when making architectural changes
