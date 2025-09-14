@@ -65,14 +65,19 @@ class UserRepository(BaseRepository):
     def update_wallet_credits(self, user_id: str, amount: float, transaction_type: str = 'earned') -> bool:
         """Update user wallet credits"""
         update_data = {
-            "$inc": {"wallet_credits.current_balance": amount},
             "$set": {"updated_at": self._get_current_time()}
         }
 
-        if transaction_type == 'earned':
-            update_data["$inc"]["wallet_credits.total_earned"] = amount
-        elif transaction_type == 'donated':
-            update_data["$inc"]["wallet_credits.total_donated"] = amount
+        if transaction_type == 'balance_only':
+            # Only update current balance, not totals
+            update_data["$inc"] = {"wallet_credits.current_balance": amount}
+        else:
+            # Update current balance and appropriate total
+            update_data["$inc"] = {"wallet_credits.current_balance": amount}
+            if transaction_type == 'earned':
+                update_data["$inc"]["wallet_credits.total_earned"] = amount
+            elif transaction_type == 'donated':
+                update_data["$inc"]["wallet_credits.total_donated"] = amount
 
         return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
 

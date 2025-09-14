@@ -168,13 +168,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/auth/profile",
+							"raw": "{{base_url}}/api/user/profile",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"auth",
+								"user",
 								"profile"
 							]
 						}
@@ -200,13 +200,13 @@
 							"raw": "{\n    \"first_name\": \"Updated First\",\n    \"last_name\": \"Updated Last\"\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/auth/profile",
+							"raw": "{{base_url}}/api/user/profile",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"auth",
+								"user",
 								"profile"
 							]
 						}
@@ -232,6 +232,251 @@
 								"api",
 								"auth",
 								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Extensions (GOO-5)",
+			"item": [
+				{
+					"name": "Update User Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notification_enabled\": true,\n    \"preferred_game_categories\": [\"puzzle\", \"strategy\"],\n    \"donation_frequency\": \"weekly\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user/preferences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Social Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"display_name\": \"SuperGamer2025\",\n    \"privacy_level\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user/social-profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"social-profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Gaming Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user/gaming-stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"gaming-stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user/wallet",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"wallet"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Complete Profile with Extensions",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"Gaming\",\n    \"last_name\": \"Master\",\n    \"preferences\": {\n        \"notification_enabled\": false,\n        \"preferred_game_categories\": [\"action\", \"adventure\"],\n        \"donation_frequency\": \"monthly\"\n    },\n    \"social_profile\": {\n        \"display_name\": \"GamingMaster\",\n        \"privacy_level\": \"friends\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Gaming Stats",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"play_time\": 45,\n    \"game_category\": \"puzzle\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user/gaming-stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"gaming-stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Credits",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 25.5,\n    \"transaction_type\": \"earned\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user/credits",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"credits"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Donate Credits",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 10.0,\n    \"onlus_id\": \"example_onlus_id\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user/donate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"donate"
 							]
 						}
 					},
@@ -332,13 +577,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/auth/profile",
+							"raw": "{{base_url}}/api/user/profile",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"auth",
+								"user",
 								"profile"
 							]
 						}
@@ -356,13 +601,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/auth/profile",
+							"raw": "{{base_url}}/api/user/profile",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"auth",
+								"user",
 								"profile"
 							]
 						}

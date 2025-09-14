@@ -30,9 +30,20 @@
 - **POST** `/api/auth/register` - User registration
 - **POST** `/api/auth/login` - User login
 - **POST** `/api/auth/refresh` - Refresh access token
-- **GET** `/api/auth/profile` - Get user profile (auth required)
-- **PUT** `/api/auth/profile` - Update user profile (auth required)
 - **POST** `/api/auth/logout` - User logout (auth required)
+
+### User Management Endpoints
+- **GET** `/api/user/profile` - Get user profile (auth required)
+- **PUT** `/api/user/profile` - Update user profile (auth required)
+
+### User Extensions Endpoints (GOO-5)
+- **PUT** `/api/user/preferences` - Update user preferences (auth required)
+- **PUT** `/api/user/social-profile` - Update social profile (auth required)
+- **GET** `/api/user/gaming-stats` - Get gaming statistics (auth required)
+- **GET** `/api/user/wallet` - Get wallet information (auth required)
+- **PUT** `/api/user/gaming-stats` - Update gaming statistics (auth required)
+- **POST** `/api/user/credits` - Add credits to wallet (auth required)
+- **POST** `/api/user/donate` - Donate credits to ONLUS (auth required)
 
 ### Test Cases Included
 - Register with missing data
@@ -114,6 +125,44 @@ Test all the "Test Cases" folder requests to verify proper error handling.
     "message": "Error description"
 }
 ```
+
+## New Features in GOO-5
+
+### User Model Extensions
+The User model now includes these extended fields that will appear in API responses:
+
+**Gaming Stats:**
+- `total_play_time`: Minutes played across all games
+- `games_played`: Number of different games played
+- `favorite_category`: Most played game category
+- `last_activity`: Timestamp of last gaming activity
+
+**Preferences:**
+- `notification_enabled`: Boolean for push notifications
+- `preferred_game_categories`: Array of preferred game types
+- `donation_frequency`: Frequency setting (daily/weekly/monthly/never)
+
+**Social Profile:**
+- `display_name`: Public display name for social features
+- `privacy_level`: Privacy setting (public/friends/private)
+- `friends_count`: Number of friends in social network
+
+**Wallet Credits:**
+- `current_balance`: Current virtual credits balance
+- `total_earned`: Total credits earned through gaming
+- `total_donated`: Total credits donated to ONLUS
+
+**Impact Score:**
+- `impact_score`: Calculated social impact score for leaderboards
+
+### Testing the Extensions
+
+1. **Register a new user** - Response will include all new fields with defaults
+2. **Update preferences** - Test notification and category preferences
+3. **Update social profile** - Test display name and privacy settings
+4. **Check gaming stats** - View gaming statistics (will be empty initially)
+5. **Check wallet** - View wallet balance and transaction totals
+6. **Complete profile update** - Test updating both basic and extended fields together
 
 ## Tips
 

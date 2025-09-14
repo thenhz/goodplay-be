@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from bson import ObjectId
+from datetime import datetime, timezone
 from app import get_db
 
 class BaseRepository(ABC):
@@ -64,6 +65,14 @@ class BaseRepository(ABC):
         filter_dict = filter_dict or {}
         return self.collection.count_documents(filter_dict)
     
+    def _get_object_id(self, id_str: str) -> ObjectId:
+        """Convert string ID to ObjectId"""
+        return ObjectId(id_str)
+
+    def _get_current_time(self) -> datetime:
+        """Get current UTC time"""
+        return datetime.now(timezone.utc)
+
     @abstractmethod
     def create_indexes(self):
         pass

@@ -26,7 +26,9 @@ def create_app(config_name=None):
     init_logging(app)
     
     from app.core.controllers.auth_controller import auth_bp
+    from app.core.controllers.user_controller import user_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(user_bp, url_prefix='/api/user')
     
     @app.route('/api/health', methods=['GET'])
     def health_check():

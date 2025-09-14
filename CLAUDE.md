@@ -306,10 +306,13 @@ git push heroku main
 - WebSocket support for real-time features
 
 ## Notes for AI Assistant
+- **🚨 CRITICAL**: NEVER commit changes without explicit user instruction. Always wait for user to say "commit" or "committa"
+- **🚨 CRITICAL**: When adding/modifying/moving endpoints, ALWAYS update BOTH:
+  - OpenAPI spec in `openapi.yaml`
+  - Postman collection in `GoodPlay_API.postman_collection.json`
 - Always follow the modular Repository → Service → Controller pattern within each module
 - Respect module boundaries - core functionality should not depend on other modules
 - Cross-module dependencies should flow towards core (e.g., games can use core auth, but core shouldn't use games)
-- Update OpenAPI spec when adding endpoints
 - Maintain English language consistency
 - Test authentication flows when making auth changes
 - Consider database indexing for new queries

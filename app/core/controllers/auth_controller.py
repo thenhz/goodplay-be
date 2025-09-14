@@ -73,60 +73,14 @@ def refresh():
         current_app.logger.error(f"Token refresh endpoint error: {str(e)}")
         return error_response("Internal server error", status_code=500)
 
-@auth_bp.route('/profile', methods=['GET'])
-@auth_required
-def get_profile(current_user):
-    try:
-        return success_response(
-            "User profile retrieved", 
-            {"user": current_user.to_dict()}
-        )
-        
-    except Exception as e:
-        current_app.logger.error(f"Get profile endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
-
-@auth_bp.route('/profile', methods=['PUT'])
-@auth_required
-def update_profile(current_user):
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return error_response("Data required")
-        
-        updateable_fields = ['first_name', 'last_name']
-        updated = False
-        
-        for field in updateable_fields:
-            if field in data and data[field] is not None:
-                setattr(current_user, field, data[field].strip())
-                updated = True
-        
-        if not updated:
-            return error_response("No fields to update")
-        
-        from app.core.repositories.user_repository import UserRepository
-        user_repository = UserRepository()
-        
-        if user_repository.update_user(current_user.get_id(), current_user):
-            return success_response(
-                "Profile updated successfully", 
-                {"user": current_user.to_dict()}
-            )
-        else:
-            return error_response("Error updating profile", status_code=500)
-            
-    except Exception as e:
-        current_app.logger.error(f"Update profile endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
 
 @auth_bp.route('/logout', methods=['POST'])
 @auth_required
 def logout(current_user):
     try:
         return success_response("Logout successful")
-        
+
     except Exception as e:
         current_app.logger.error(f"Logout endpoint error: {str(e)}")
         return error_response("Internal server error", status_code=500)
+

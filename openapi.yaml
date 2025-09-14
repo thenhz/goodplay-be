@@ -30,7 +30,9 @@ servers:
 
 tags:
   - name: Authentication
-    description: User authentication and profile management
+    description: User authentication (login, register, logout)
+  - name: User Management
+    description: User profile and account management
   - name: Health
     description: API health checks
   - name: User Preferences
@@ -214,99 +216,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /auth/profile:
-    get:
-      tags:
-        - Authentication
-      summary: Get user profile
-      description: Retrieve the authenticated user's profile information
-      security:
-        - JWTAuth: []
-      responses:
-        '200':
-          description: Profile retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "User profile retrieved"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-        '401':
-          description: Authentication required or invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    
-    put:
-      tags:
-        - Authentication
-      summary: Update user profile
-      description: Update the authenticated user's profile information
-      security:
-        - JWTAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateProfileRequest'
-            example:
-              first_name: "John"
-              last_name: "Smith"
-      responses:
-        '200':
-          description: Profile updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Profile updated successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-        '400':
-          description: No fields to update or validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /auth/logout:
     post:
@@ -330,6 +239,466 @@ paths:
                   message:
                     type: string
                     example: "Logout successful"
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management Endpoints
+  /user/profile:
+    get:
+      tags:
+        - User Management
+      summary: Get user profile
+      description: Retrieve the authenticated user's profile information including extended fields
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User profile retrieved"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '401':
+          description: Authentication required or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User Management
+      summary: Update user profile
+      description: Update the authenticated user's profile information including extended fields
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedUpdateProfileRequest'
+            example:
+              first_name: "Gaming"
+              last_name: "Master"
+              preferences:
+                notification_enabled: false
+                preferred_game_categories: ["action", "adventure"]
+                donation_frequency: "monthly"
+              social_profile:
+                display_name: "GamingMaster"
+                privacy_level: "friends"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Profile updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '400':
+          description: No fields to update or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/preferences:
+    put:
+      tags:
+        - User Management
+      summary: Update user preferences
+      description: Update user preferences only
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesUpdate'
+            example:
+              notification_enabled: true
+              preferred_game_categories: ["puzzle", "strategy"]
+              donation_frequency: "weekly"
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Preferences updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/social-profile:
+    put:
+      tags:
+        - User Management
+      summary: Update social profile
+      description: Update user social profile settings
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialProfileUpdate'
+            example:
+              display_name: "SuperGamer2025"
+              privacy_level: "public"
+      responses:
+        '200':
+          description: Social profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Social profile updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/gaming-stats:
+    get:
+      tags:
+        - User Management
+      summary: Get gaming statistics
+      description: Retrieve user's gaming statistics and impact score
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Gaming stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Gaming stats retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      gaming_stats:
+                        $ref: '#/components/schemas/GamingStats'
+                      impact_score:
+                        type: number
+                        example: 85
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User Management
+      summary: Update gaming statistics
+      description: Update user's gaming statistics
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GamingStatsUpdate'
+            example:
+              play_time: 45
+              game_category: "puzzle"
+      responses:
+        '200':
+          description: Gaming stats updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Gaming stats updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/wallet:
+    get:
+      tags:
+        - User Management
+      summary: Get wallet information
+      description: Retrieve user's wallet credits and transaction history
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Wallet information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Wallet information retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      wallet_credits:
+                        $ref: '#/components/schemas/WalletCredits'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/credits:
+    post:
+      tags:
+        - User Management
+      summary: Add credits to wallet
+      description: Add credits to user's wallet (earned through gaming or other activities)
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCreditsRequest'
+            example:
+              amount: 25.5
+              transaction_type: "earned"
+      responses:
+        '200':
+          description: Credits added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Credits added successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '400':
+          description: Invalid amount or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /user/donate:
+    post:
+      tags:
+        - User Management
+      summary: Donate credits
+      description: Donate user credits to ONLUS organizations
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DonateCreditsRequest'
+            example:
+              amount: 10.0
+              onlus_id: "example_onlus_id"
+      responses:
+        '200':
+          description: Donation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Donation successful"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/ExtendedUser'
+        '400':
+          description: Insufficient credits or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Authentication required
           content:
@@ -1648,3 +2017,198 @@ components:
                 type: string
                 format: date-time
                 example: "2024-01-15T10:30:00Z"
+
+    # Extended User Schemas for GOO-5
+    ExtendedUser:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            gaming_stats:
+              $ref: '#/components/schemas/GamingStats'
+            impact_score:
+              type: number
+              description: User's social impact score
+              example: 85
+            preferences:
+              $ref: '#/components/schemas/UserPreferences'
+            social_profile:
+              $ref: '#/components/schemas/SocialProfile'
+            wallet_credits:
+              $ref: '#/components/schemas/WalletCredits'
+
+    GamingStats:
+      type: object
+      properties:
+        total_play_time:
+          type: number
+          description: Total minutes played across all games
+          example: 1250
+        games_played:
+          type: number
+          description: Number of different games played
+          example: 5
+        favorite_category:
+          type: string
+          description: Most played game category
+          nullable: true
+          example: "puzzle"
+        last_activity:
+          type: string
+          format: date-time
+          description: Last gaming activity timestamp
+          nullable: true
+          example: "2024-01-15T10:30:00Z"
+
+    UserPreferences:
+      type: object
+      properties:
+        notification_enabled:
+          type: boolean
+          description: Enable push notifications
+          example: true
+        preferred_game_categories:
+          type: array
+          items:
+            type: string
+          description: List of preferred game categories
+          example: ["puzzle", "strategy"]
+        donation_frequency:
+          type: string
+          enum: ["daily", "weekly", "monthly", "never"]
+          description: Preferred donation frequency
+          example: "weekly"
+
+    SocialProfile:
+      type: object
+      properties:
+        display_name:
+          type: string
+          description: Public display name
+          example: "SuperGamer2025"
+        privacy_level:
+          type: string
+          enum: ["public", "friends", "private"]
+          description: Profile privacy level
+          example: "public"
+        friends_count:
+          type: number
+          description: Number of friends
+          example: 15
+
+    WalletCredits:
+      type: object
+      properties:
+        current_balance:
+          type: number
+          format: float
+          description: Current available credits
+          example: 45.75
+        total_earned:
+          type: number
+          format: float
+          description: Total credits earned through gaming
+          example: 120.50
+        total_donated:
+          type: number
+          format: float
+          description: Total credits donated to ONLUS
+          example: 74.75
+
+    # Request Schemas for User Management
+    ExtendedUpdateProfileRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          description: User first name
+          example: "Gaming"
+        last_name:
+          type: string
+          description: User last name
+          example: "Master"
+        preferences:
+          $ref: '#/components/schemas/PreferencesUpdate'
+        social_profile:
+          $ref: '#/components/schemas/SocialProfileUpdate'
+
+    PreferencesUpdate:
+      type: object
+      properties:
+        notification_enabled:
+          type: boolean
+          description: Enable push notifications
+          example: true
+        preferred_game_categories:
+          type: array
+          items:
+            type: string
+          description: List of preferred game categories
+          example: ["puzzle", "strategy"]
+        donation_frequency:
+          type: string
+          enum: ["daily", "weekly", "monthly", "never"]
+          description: Preferred donation frequency
+          example: "weekly"
+
+    SocialProfileUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: Public display name
+          example: "SuperGamer2025"
+        privacy_level:
+          type: string
+          enum: ["public", "friends", "private"]
+          description: Profile privacy level
+          example: "public"
+
+    GamingStatsUpdate:
+      type: object
+      properties:
+        play_time:
+          type: number
+          minimum: 0
+          description: Minutes played in this session
+          example: 45
+        game_category:
+          type: string
+          description: Category of the game played
+          example: "puzzle"
+
+    AddCreditsRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          description: Amount of credits to add
+          example: 25.5
+        transaction_type:
+          type: string
+          enum: ["earned", "bonus", "refund"]
+          description: Type of credit transaction
+          example: "earned"
+
+    DonateCreditsRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          description: Amount of credits to donate
+          example: 10.0
+        onlus_id:
+          type: string
+          description: ID of the ONLUS organization to donate to
+          example: "example_onlus_id"
