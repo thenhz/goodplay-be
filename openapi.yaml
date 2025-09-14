@@ -33,6 +33,30 @@ tags:
     description: User authentication and profile management
   - name: Health
     description: API health checks
+  - name: User Preferences
+    description: User preferences and settings management
+  - name: Social
+    description: Social features, friends, and relationships
+  - name: Games
+    description: Game engine, plugins, and sessions
+  - name: Tournaments
+    description: Tournament and competition management
+  - name: Achievements
+    description: Achievement system and badges
+  - name: Leaderboards
+    description: Scoring and ranking systems
+  - name: Challenges
+    description: Social challenges and competitions
+  - name: Wallet
+    description: Virtual wallet and credit management
+  - name: Donations
+    description: Donation processing and management
+  - name: Impact
+    description: Impact tracking and reporting
+  - name: ONLUS
+    description: ONLUS management and verification
+  - name: Admin
+    description: Administrative dashboard and management
 
 paths:
   /health:
@@ -319,6 +343,651 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # User Preferences Endpoints
+  /preferences:
+    get:
+      tags:
+        - User Preferences
+      summary: Get user preferences
+      description: Retrieve all preferences for the authenticated user
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Preferences retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update user preferences
+      description: Update preferences for the authenticated user
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Preferences updated successfully"
+                  data:
+                    $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /preferences/reset:
+    post:
+      tags:
+        - User Preferences
+      summary: Reset preferences to defaults
+      description: Reset user preferences to default values
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Preferences reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Preferences reset to defaults"
+                  data:
+                    $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Social Endpoints
+  /social/friend-request:
+    post:
+      tags:
+        - Social
+      summary: Send friend request
+      description: Send a friend request to another user
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target_user_id:
+                  type: string
+                  description: ID of user to send friend request to
+                  example: "507f1f77bcf86cd799439012"
+      responses:
+        '201':
+          description: Friend request sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/friend-request/{id}/accept:
+    put:
+      tags:
+        - Social
+      summary: Accept friend request
+      description: Accept a pending friend request
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Friend request ID
+      responses:
+        '200':
+          description: Friend request accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/friends:
+    get:
+      tags:
+        - Social
+      summary: Get friends list
+      description: Get list of user's friends
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of results to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: Friends list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Friends retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      friends:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Friend'
+                      total:
+                        type: integer
+                        example: 25
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Games Endpoints
+  /games:
+    get:
+      tags:
+        - Games
+      summary: Get available games
+      description: Get list of available games
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by game category
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of results to return
+      responses:
+        '200':
+          description: Games retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Games retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      games:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Game'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /games/{game_id}/sessions:
+    post:
+      tags:
+        - Games
+      summary: Start game session
+      description: Start a new game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Game ID
+      responses:
+        '201':
+          description: Game session started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Game session started"
+                  data:
+                    $ref: '#/components/schemas/GameSession'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /games/sessions/{id}/end:
+    post:
+      tags:
+        - Games
+      summary: End game session
+      description: End an active game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                final_score:
+                  type: integer
+                  example: 1500
+                game_state:
+                  type: object
+                  description: Final game state
+      responses:
+        '200':
+          description: Game session ended successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Game session ended"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/GameSession'
+                      credits_earned:
+                        type: number
+                        format: float
+                        example: 0.25
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Wallet Endpoints
+  /wallet:
+    get:
+      tags:
+        - Wallet
+      summary: Get wallet balance
+      description: Get current wallet balance and statistics
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Wallet information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Wallet retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /wallet/transactions:
+    get:
+      tags:
+        - Wallet
+      summary: Get transaction history
+      description: Get wallet transaction history
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of results to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [credit_earned, donation, bonus]
+          description: Filter by transaction type
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Transactions retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      transactions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WalletTransaction'
+                      total:
+                        type: integer
+                        example: 150
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Donations Endpoints
+  /donations:
+    post:
+      tags:
+        - Donations
+      summary: Process donation
+      description: Process a donation to an ONLUS
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DonationRequest'
+      responses:
+        '201':
+          description: Donation processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Donation processed successfully"
+                  data:
+                    $ref: '#/components/schemas/Donation'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Donations
+      summary: Get user donations
+      description: Get donation history for the authenticated user
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of results to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: Donations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Donations retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      donations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Donation'
+                      total:
+                        type: integer
+                        example: 25
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ONLUS Endpoints
+  /onlus:
+    get:
+      tags:
+        - ONLUS
+      summary: Search ONLUS organizations
+      description: Search and filter verified ONLUS organizations
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in name and description
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of results to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: ONLUS organizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ONLUS organizations retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      organizations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ONLUS'
+                      total:
+                        type: integer
+                        example: 75
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /onlus/{id}:
+    get:
+      tags:
+        - ONLUS
+      summary: Get ONLUS details
+      description: Get detailed information about a specific ONLUS
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ONLUS ID
+      responses:
+        '200':
+          description: ONLUS details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ONLUS details retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/ONLUSDetail'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Impact Tracking Endpoints
+  /impact/user:
+    get:
+      tags:
+        - Impact
+      summary: Get user impact summary
+      description: Get personal impact summary for authenticated user
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Impact summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Impact summary retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/UserImpactSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     JWTAuth:
@@ -331,6 +1000,49 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT Refresh Token
+
+  responses:
+    SuccessResponse:
+      description: Operation successful
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: "Operation completed successfully"
+
+    BadRequestError:
+      description: Bad request - validation error or invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    UnauthorizedError:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
     User:
@@ -483,3 +1195,456 @@ components:
         status:
           type: string
           example: "healthy"
+
+    # New schemas for extended functionality
+    UserPreferences:
+      type: object
+      properties:
+        gaming:
+          type: object
+          properties:
+            preferred_categories:
+              type: array
+              items:
+                type: string
+              example: ["puzzle", "arcade"]
+            difficulty_level:
+              type: string
+              enum: [easy, medium, hard]
+              example: "medium"
+            tutorial_enabled:
+              type: boolean
+              example: true
+        notifications:
+          type: object
+          properties:
+            push_enabled:
+              type: boolean
+              example: true
+            email_enabled:
+              type: boolean
+              example: false
+            frequency:
+              type: string
+              enum: [never, daily, weekly]
+              example: "weekly"
+        privacy:
+          type: object
+          properties:
+            profile_visibility:
+              type: string
+              enum: [public, friends, private]
+              example: "friends"
+            stats_sharing:
+              type: boolean
+              example: true
+            friends_discovery:
+              type: boolean
+              example: true
+        donations:
+          type: object
+          properties:
+            auto_donate_enabled:
+              type: boolean
+              example: false
+            preferred_causes:
+              type: array
+              items:
+                type: string
+              example: ["education", "environment"]
+            notification_threshold:
+              type: number
+              format: float
+              example: 5.0
+
+    UpdatePreferencesRequest:
+      type: object
+      properties:
+        gaming:
+          type: object
+          properties:
+            preferred_categories:
+              type: array
+              items:
+                type: string
+            difficulty_level:
+              type: string
+              enum: [easy, medium, hard]
+            tutorial_enabled:
+              type: boolean
+        notifications:
+          type: object
+          properties:
+            push_enabled:
+              type: boolean
+            email_enabled:
+              type: boolean
+            frequency:
+              type: string
+              enum: [never, daily, weekly]
+        privacy:
+          type: object
+          properties:
+            profile_visibility:
+              type: string
+              enum: [public, friends, private]
+            stats_sharing:
+              type: boolean
+            friends_discovery:
+              type: boolean
+
+    Friend:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        display_name:
+          type: string
+          example: "JohnDoe123"
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        impact_score:
+          type: integer
+          example: 1250
+        friendship_date:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Game:
+      type: object
+      properties:
+        game_id:
+          type: string
+          example: "puzzle-master-v1"
+        name:
+          type: string
+          example: "Puzzle Master"
+        description:
+          type: string
+          example: "Classic puzzle game with multiple difficulty levels"
+        category:
+          type: string
+          example: "puzzle"
+        version:
+          type: string
+          example: "1.2.3"
+        rating:
+          type: number
+          format: float
+          example: 4.5
+        install_count:
+          type: integer
+          example: 25000
+        is_active:
+          type: boolean
+          example: true
+
+    GameSession:
+      type: object
+      properties:
+        session_id:
+          type: string
+          example: "sess_123abc456def"
+        game_id:
+          type: string
+          example: "puzzle-master-v1"
+        user_id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        status:
+          type: string
+          enum: [active, paused, completed, abandoned]
+          example: "active"
+        start_time:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        play_duration:
+          type: integer
+          description: Duration in milliseconds
+          example: 1800000
+        current_score:
+          type: integer
+          example: 1200
+
+    Wallet:
+      type: object
+      properties:
+        current_balance:
+          type: number
+          format: float
+          description: Current balance in euros
+          example: 12.50
+        total_earned:
+          type: number
+          format: float
+          description: Total credits earned all time
+          example: 45.75
+        total_donated:
+          type: number
+          format: float
+          description: Total amount donated
+          example: 33.25
+        pending_credits:
+          type: number
+          format: float
+          description: Credits being processed
+          example: 2.50
+        last_transaction:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    WalletTransaction:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          example: "txn_123abc456def"
+        transaction_type:
+          type: string
+          enum: [credit_earned, donation, bonus, refund]
+          example: "credit_earned"
+        amount:
+          type: number
+          format: float
+          description: Amount in euros
+          example: 0.25
+        description:
+          type: string
+          example: "Credits earned from 15-minute gaming session"
+        game_session_id:
+          type: string
+          nullable: true
+          example: "sess_123abc456def"
+        status:
+          type: string
+          enum: [pending, completed, failed]
+          example: "completed"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    DonationRequest:
+      type: object
+      required:
+        - onlus_id
+        - amount
+      properties:
+        onlus_id:
+          type: string
+          example: "507f1f77bcf86cd799439013"
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          description: Donation amount in euros
+          example: 5.00
+        donation_type:
+          type: string
+          enum: [instant, scheduled, challenge]
+          default: instant
+          example: "instant"
+        message:
+          type: string
+          description: Optional message to ONLUS
+          example: "Keep up the great work!"
+
+    Donation:
+      type: object
+      properties:
+        donation_id:
+          type: string
+          example: "don_123abc456def"
+        user_id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        onlus_id:
+          type: string
+          example: "507f1f77bcf86cd799439013"
+        onlus_name:
+          type: string
+          example: "Education for All Foundation"
+        amount:
+          type: number
+          format: float
+          example: 5.00
+        processing_fee:
+          type: number
+          format: float
+          example: 0.15
+        net_donation:
+          type: number
+          format: float
+          example: 4.85
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          example: "completed"
+        donation_type:
+          type: string
+          example: "instant"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        processed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-15T10:31:00Z"
+
+    ONLUS:
+      type: object
+      properties:
+        onlus_id:
+          type: string
+          example: "507f1f77bcf86cd799439013"
+        display_name:
+          type: string
+          example: "Education for All Foundation"
+        description:
+          type: string
+          example: "Providing quality education to underserved communities worldwide"
+        category:
+          type: string
+          enum: [health, education, environment, social, humanitarian, arts, animal_welfare]
+          example: "education"
+        logo_url:
+          type: string
+          nullable: true
+          example: "https://cdn.goodplay.com/onlus/logos/edu-foundation.png"
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          example: 4.7
+        total_received:
+          type: number
+          format: float
+          description: Total donations received through platform
+          example: 12450.75
+        donor_count:
+          type: integer
+          description: Number of unique donors
+          example: 342
+        verification_status:
+          type: string
+          enum: [verified, pending, rejected]
+          example: "verified"
+
+    ONLUSDetail:
+      allOf:
+        - $ref: '#/components/schemas/ONLUS'
+        - type: object
+          properties:
+            legal_name:
+              type: string
+              example: "Education for All Foundation Inc."
+            mission_statement:
+              type: string
+              example: "Our mission is to provide quality education access to underserved communities through innovative programs and sustainable partnerships."
+            website:
+              type: string
+              nullable: true
+              example: "https://educationforall.org"
+            contact_info:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "contact@educationforall.org"
+                phone:
+                  type: string
+                  example: "+1-555-0123"
+            active_projects:
+              type: array
+              items:
+                type: object
+                properties:
+                  project_id:
+                    type: string
+                    example: "proj_123abc"
+                  title:
+                    type: string
+                    example: "Digital Learning Initiative"
+                  target_amount:
+                    type: number
+                    format: float
+                    example: 25000.00
+                  current_amount:
+                    type: number
+                    format: float
+                    example: 18750.50
+                  progress_percentage:
+                    type: number
+                    format: float
+                    example: 75.0
+
+    UserImpactSummary:
+      type: object
+      properties:
+        impact_score:
+          type: integer
+          description: Overall impact score
+          example: 1250
+        total_donated:
+          type: number
+          format: float
+          description: Total amount donated in euros
+          example: 125.50
+        donations_count:
+          type: integer
+          description: Total number of donations made
+          example: 25
+        onlus_supported:
+          type: integer
+          description: Number of different ONLUS supported
+          example: 8
+        lives_impacted:
+          type: integer
+          description: Estimated number of lives impacted
+          example: 42
+        impact_categories:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+                example: "education"
+              amount_donated:
+                type: number
+                format: float
+                example: 75.50
+              percentage:
+                type: number
+                format: float
+                example: 60.0
+        recent_impact:
+          type: array
+          items:
+            type: object
+            properties:
+              onlus_name:
+                type: string
+                example: "Education for All Foundation"
+              donation_amount:
+                type: number
+                format: float
+                example: 10.00
+              impact_description:
+                type: string
+                example: "Provided school supplies for 2 students"
+              date:
+                type: string
+                format: date-time
+                example: "2024-01-15T10:30:00Z"
