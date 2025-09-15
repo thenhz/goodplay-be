@@ -59,6 +59,7 @@ The application has been restructured from a monolithic architecture to a modula
 - ✅ User registration with validation
 - ✅ JWT-based authentication (access + refresh tokens)
 - ✅ User profile management
+- ✅ User preferences management system (GOO-6)
 - ✅ CORS configuration
 - ✅ Structured logging
 - ✅ Environment-based configuration
@@ -87,6 +88,51 @@ The application has been restructured from a monolithic architecture to a modula
   password_hash: String,
   is_active: Boolean (default: true),
   role: String (default: 'user'),
+  created_at: DateTime,
+  updated_at: DateTime
+}
+```
+
+#### User Preferences Collection (app/preferences/models/) - ✅ GOO-6
+```javascript
+{
+  _id: ObjectId,
+  user_id: ObjectId (unique, references Users),
+  gaming: {
+    preferred_categories: Array,
+    difficulty_level: String, // easy, medium, hard
+    tutorial_enabled: Boolean,
+    auto_save: Boolean,
+    sound_enabled: Boolean,
+    music_enabled: Boolean,
+    vibration_enabled: Boolean
+  },
+  notifications: {
+    push_enabled: Boolean,
+    email_enabled: Boolean,
+    frequency: String, // none, daily, weekly, monthly
+    achievement_alerts: Boolean,
+    donation_confirmations: Boolean,
+    friend_activity: Boolean,
+    tournament_reminders: Boolean,
+    maintenance_alerts: Boolean
+  },
+  privacy: {
+    profile_visibility: String, // public, friends, private
+    stats_sharing: Boolean,
+    friends_discovery: Boolean,
+    leaderboard_participation: Boolean,
+    activity_visibility: String, // public, friends, private
+    contact_permissions: String // everyone, friends, none
+  },
+  donations: {
+    auto_donate_enabled: Boolean,
+    auto_donate_percentage: Number,
+    preferred_causes: Array,
+    notification_threshold: Number,
+    monthly_goal: Number (optional),
+    impact_sharing: Boolean
+  },
   created_at: DateTime,
   updated_at: DateTime
 }
@@ -144,6 +190,14 @@ The application has been restructured from a monolithic architecture to a modula
 - `POST /auth/logout` - User logout (auth required)
 - `GET /health` - API health status
 
+#### Preferences Routes (`/api/preferences/`) - ✅ GOO-6 Completed
+- `GET /` - Get user preferences (auth required)
+- `PUT /` - Update user preferences (auth required)
+- `GET /{category}` - Get preferences for specific category (auth required)
+- `PUT /{category}` - Update specific category preferences (auth required)
+- `POST /reset` - Reset preferences to defaults (auth required)
+- `GET /defaults` - Get default preferences template (public)
+
 ### Planned Endpoints (Future Implementation)
 
 #### Games Routes (`/api/games/`)
@@ -193,6 +247,39 @@ The application has been restructured from a monolithic architecture to a modula
 - Implement proper error handling with try/catch
 - Use structured logging via `current_app.logger`
 - Validate input data in services layer
+
+### API Response Standards (🚨 CRITICAL FOR UI LOCALIZATION)
+- **ALL API responses MUST use constant message keys**: Never return dynamic text messages
+- **Message constants**: Use predefined constant keys (e.g., `"USER_CREATED_SUCCESS"`, `"INVALID_CREDENTIALS"`, `"VALIDATION_ERROR"`)
+- **UI Localization**: Frontend will localize these constant keys to user's language
+- **Swagger Documentation**: Document ALL possible return message constants for each endpoint
+- **Examples**:
+  ```python
+  # ❌ WRONG - Dynamic message
+  return success_response("User John created successfully")
+
+  # ✅ CORRECT - Constant key
+  return success_response("USER_CREATED_SUCCESS", {"user_id": user_id})
+  ```
+
+### Preferences Module Message Constants (GOO-6):
+- `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
+- `PREFERENCES_UPDATED_SUCCESS` - Preferences updated successfully
+- `PREFERENCES_CATEGORY_RETRIEVED_SUCCESS` - Category preferences retrieved
+- `PREFERENCES_CATEGORY_UPDATED_SUCCESS` - Category preferences updated
+- `PREFERENCES_RESET_SUCCESS` - Preferences reset to defaults
+- `DEFAULT_PREFERENCES_RETRIEVED_SUCCESS` - Default preferences template retrieved
+- `PREFERENCES_CATEGORY_INVALID` - Invalid preference category specified
+- `PREFERENCES_DATA_REQUIRED` - Preferences data is required
+- `PREFERENCES_CREATION_FAILED` - Failed to create preferences
+- `PREFERENCES_UPDATE_FAILED` - Failed to update preferences
+- `PREFERENCES_RETRIEVAL_FAILED` - Failed to retrieve preferences
+- `PREFERENCES_RESET_FAILED` - Failed to reset preferences
+- `GAMING_DIFFICULTY_INVALID` - Invalid gaming difficulty level
+- `GAMING_CATEGORIES_INVALID` - Invalid gaming categories format
+- `NOTIFICATION_FREQUENCY_INVALID` - Invalid notification frequency
+- `PRIVACY_VISIBILITY_INVALID` - Invalid privacy visibility setting
+- `DONATION_PERCENTAGE_INVALID` - Invalid donation percentage value
 
 ### Security Best Practices
 - Never log sensitive data (passwords, tokens)

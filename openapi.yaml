@@ -3,21 +3,39 @@ info:
   title: GoodPlay Backend API
   description: |
     REST API backend for GoodPlay application with JWT authentication and MongoDB.
-    
+
     ## Authentication
     - Uses JWT Bearer tokens for authentication
     - Access tokens expire in 1 hour (configurable)
     - Refresh tokens expire in 30 days (configurable)
-    
+
     ## Response Format
     All responses follow this structure:
     ```json
     {
       "success": boolean,
-      "message": "string",
+      "message": "CONSTANT_KEY",
       "data": {} // optional
     }
     ```
+
+    ## Message Constants for UI Localization
+    All API responses use constant message keys instead of dynamic text.
+    The UI localizes these constants to the user's language.
+
+    ### Common Message Constants:
+    - `API_HEALTHY` - API health check success
+    - `USER_CREATED_SUCCESS` - User registration success
+    - `LOGIN_SUCCESS` - User login success
+    - `INVALID_CREDENTIALS` - Invalid login credentials
+    - `EMAIL_ALREADY_EXISTS` - Email already registered
+    - `VALIDATION_ERROR` - Input validation failed
+    - `TOKEN_REFRESHED_SUCCESS` - Token refresh success
+    - `LOGOUT_SUCCESS` - User logout success
+    - `PROFILE_RETRIEVED_SUCCESS` - Profile retrieved success
+    - `PROFILE_UPDATED_SUCCESS` - Profile updated success
+    - `UNAUTHORIZED` - Authentication required
+    - `INTERNAL_SERVER_ERROR` - Server error occurred
   version: 1.0.0
   contact:
     name: GoodPlay API Support
@@ -76,7 +94,7 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
               example:
                 success: true
-                message: "API is running"
+                message: "API_HEALTHY"
                 status: "healthy"
 
   /auth/register:
@@ -113,11 +131,11 @@ paths:
                 validation_error:
                   value:
                     success: false
-                    message: "Invalid email format"
+                    message: "VALIDATION_ERROR"
                 email_exists:
                   value:
                     success: false
-                    message: "Email already registered"
+                    message: "EMAIL_ALREADY_EXISTS"
         '500':
           description: Internal server error
           content:
@@ -157,11 +175,11 @@ paths:
                 invalid_credentials:
                   value:
                     success: false
-                    message: "Invalid credentials"
+                    message: "INVALID_CREDENTIALS"
                 account_disabled:
                   value:
                     success: false
-                    message: "Account disabled"
+                    message: "ACCOUNT_DISABLED"
         '400':
           description: Missing required fields
           content:
@@ -196,7 +214,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Token refreshed successfully"
+                    example: "TOKEN_REFRESHED_SUCCESS"
                   data:
                     type: object
                     properties:
@@ -238,7 +256,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Logout successful"
+                    example: "LOGOUT_SUCCESS"
         '401':
           description: Authentication required
           content:
@@ -274,7 +292,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "User profile retrieved"
+                    example: "PROFILE_RETRIEVED_SUCCESS"
                   data:
                     type: object
                     properties:
@@ -1357,6 +1375,273 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # User Preferences Endpoints
+  /preferences:
+    get:
+      tags:
+        - User Preferences
+      summary: Get user preferences
+      description: Get all user preferences with automatic defaults if not exist
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PREFERENCES_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update user preferences
+      description: Update user preferences with validation
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesUpdateRequest'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PREFERENCES_UPDATED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_error:
+                  value:
+                    success: false
+                    message: "VALIDATION_ERROR"
+                gaming_difficulty_invalid:
+                  value:
+                    success: false
+                    message: "GAMING_DIFFICULTY_INVALID"
+                notification_frequency_invalid:
+                  value:
+                    success: false
+                    message: "NOTIFICATION_FREQUENCY_INVALID"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /preferences/{category}:
+    get:
+      tags:
+        - User Preferences
+      summary: Get preferences for specific category
+      description: Get preferences for a specific category (gaming, notifications, privacy, donations)
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [gaming, notifications, privacy, donations]
+          description: Preference category
+      responses:
+        '200':
+          description: Category preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PREFERENCES_CATEGORY_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      category:
+                        type: string
+                        example: "gaming"
+                      preferences:
+                        type: object
+        '400':
+          description: Invalid category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "PREFERENCES_CATEGORY_INVALID"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update specific category preferences
+      description: Update preferences for a specific category
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [gaming, notifications, privacy, donations]
+          description: Preference category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Category-specific preferences
+            examples:
+              gaming:
+                value:
+                  difficulty_level: "hard"
+                  tutorial_enabled: false
+                  preferred_categories: ["puzzle", "strategy"]
+              notifications:
+                value:
+                  push_enabled: true
+                  frequency: "weekly"
+                  achievement_alerts: false
+      responses:
+        '200':
+          description: Category preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PREFERENCES_CATEGORY_UPDATED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+                      updated_category:
+                        type: string
+                        example: "gaming"
+        '400':
+          description: Validation error or invalid category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /preferences/reset:
+    post:
+      tags:
+        - User Preferences
+      summary: Reset preferences to defaults
+      description: Reset all user preferences to default values
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Preferences reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "PREFERENCES_RESET_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /preferences/defaults:
+    get:
+      tags:
+        - User Preferences
+      summary: Get default preferences template
+      description: Get default preferences template for new users (public endpoint)
+      responses:
+        '200':
+          description: Default preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "DEFAULT_PREFERENCES_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      default_preferences:
+                        $ref: '#/components/schemas/DefaultPreferences'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     JWTAuth:
@@ -2212,3 +2497,195 @@ components:
           type: string
           description: ID of the ONLUS organization to donate to
           example: "example_onlus_id"
+
+    # User Preferences Schemas
+    UserPreferences:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Preferences unique identifier
+          example: "507f1f77bcf86cd799439011"
+        user_id:
+          type: string
+          description: Associated user ID
+          example: "507f1f77bcf86cd799439011"
+        gaming:
+          $ref: '#/components/schemas/GamingPreferences'
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+        privacy:
+          $ref: '#/components/schemas/PrivacyPreferences'
+        donations:
+          $ref: '#/components/schemas/DonationPreferences'
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    GamingPreferences:
+      type: object
+      properties:
+        preferred_categories:
+          type: array
+          items:
+            type: string
+          description: Preferred game categories
+          example: ["puzzle", "strategy", "action"]
+        difficulty_level:
+          type: string
+          enum: ["easy", "medium", "hard"]
+          description: Preferred difficulty level
+          example: "medium"
+        tutorial_enabled:
+          type: boolean
+          description: Show tutorials for new games
+          example: true
+        auto_save:
+          type: boolean
+          description: Auto-save game progress
+          example: true
+        sound_enabled:
+          type: boolean
+          description: Enable game sounds
+          example: true
+        music_enabled:
+          type: boolean
+          description: Enable background music
+          example: true
+        vibration_enabled:
+          type: boolean
+          description: Enable device vibration
+          example: true
+
+    NotificationPreferences:
+      type: object
+      properties:
+        push_enabled:
+          type: boolean
+          description: Enable push notifications
+          example: true
+        email_enabled:
+          type: boolean
+          description: Enable email notifications
+          example: true
+        frequency:
+          type: string
+          enum: ["none", "daily", "weekly", "monthly"]
+          description: Notification frequency
+          example: "daily"
+        achievement_alerts:
+          type: boolean
+          description: Alert on achievement unlocks
+          example: true
+        donation_confirmations:
+          type: boolean
+          description: Confirm successful donations
+          example: true
+        friend_activity:
+          type: boolean
+          description: Notify about friend activity
+          example: true
+        tournament_reminders:
+          type: boolean
+          description: Remind about tournaments
+          example: true
+        maintenance_alerts:
+          type: boolean
+          description: Notify about maintenance
+          example: true
+
+    PrivacyPreferences:
+      type: object
+      properties:
+        profile_visibility:
+          type: string
+          enum: ["public", "friends", "private"]
+          description: Profile visibility level
+          example: "public"
+        stats_sharing:
+          type: boolean
+          description: Share gaming statistics
+          example: true
+        friends_discovery:
+          type: boolean
+          description: Allow discovery by friends
+          example: true
+        leaderboard_participation:
+          type: boolean
+          description: Participate in leaderboards
+          example: true
+        activity_visibility:
+          type: string
+          enum: ["public", "friends", "private"]
+          description: Activity visibility level
+          example: "friends"
+        contact_permissions:
+          type: string
+          enum: ["everyone", "friends", "none"]
+          description: Who can contact you
+          example: "friends"
+
+    DonationPreferences:
+      type: object
+      properties:
+        auto_donate_enabled:
+          type: boolean
+          description: Enable automatic donations
+          example: false
+        auto_donate_percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Percentage of earned credits to auto-donate
+          example: 10
+        preferred_causes:
+          type: array
+          items:
+            type: string
+          description: Preferred donation causes
+          example: ["education", "health", "environment"]
+        notification_threshold:
+          type: number
+          minimum: 0
+          description: Notify when credits reach this amount
+          example: 50
+        monthly_goal:
+          type: number
+          minimum: 0
+          nullable: true
+          description: Optional monthly donation goal
+          example: 100
+        impact_sharing:
+          type: boolean
+          description: Share impact statistics
+          example: true
+
+    DefaultPreferences:
+      type: object
+      properties:
+        gaming:
+          $ref: '#/components/schemas/GamingPreferences'
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+        privacy:
+          $ref: '#/components/schemas/PrivacyPreferences'
+        donations:
+          $ref: '#/components/schemas/DonationPreferences'
+
+    PreferencesUpdateRequest:
+      type: object
+      properties:
+        gaming:
+          $ref: '#/components/schemas/GamingPreferences'
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+        privacy:
+          $ref: '#/components/schemas/PrivacyPreferences'
+        donations:
+          $ref: '#/components/schemas/DonationPreferences'
+      description: Update request can contain any combination of preference categories

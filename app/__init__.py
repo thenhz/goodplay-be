@@ -27,8 +27,11 @@ def create_app(config_name=None):
     
     from app.core.controllers.auth_controller import auth_bp
     from app.core.controllers.user_controller import user_bp
+    from app.preferences.controllers.preferences_controller import preferences_blueprint
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
+    app.register_blueprint(preferences_blueprint)
     
     @app.route('/api/health', methods=['GET'])
     def health_check():
@@ -49,8 +52,14 @@ def init_db(app):
 
         with app.app_context():
             from app.core.repositories.user_repository import UserRepository
+            from app.preferences.repositories.preferences_repository import PreferencesRepository
+
             user_repo = UserRepository()
             user_repo.create_indexes()
+
+            prefs_repo = PreferencesRepository()
+            prefs_repo.create_indexes()
+
             app.logger.info('Database initialized successfully')
     except Exception as e:
         app.logger.warning(f'Database initialization failed: {str(e)}')

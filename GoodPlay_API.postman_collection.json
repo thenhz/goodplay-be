@@ -485,6 +485,332 @@
 			]
 		},
 		{
+			"name": "User Preferences (GOO-6)",
+			"item": [
+				{
+					"name": "Get User Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/preferences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"gaming\": {\n        \"difficulty_level\": \"hard\",\n        \"tutorial_enabled\": false,\n        \"preferred_categories\": [\"puzzle\", \"strategy\"]\n    },\n    \"notifications\": {\n        \"push_enabled\": true,\n        \"frequency\": \"weekly\",\n        \"achievement_alerts\": false\n    },\n    \"privacy\": {\n        \"profile_visibility\": \"friends\",\n        \"stats_sharing\": true\n    },\n    \"donations\": {\n        \"auto_donate_enabled\": true,\n        \"auto_donate_percentage\": 15\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/preferences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Gaming Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/preferences/gaming",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"gaming"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Gaming Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"difficulty_level\": \"hard\",\n    \"tutorial_enabled\": false,\n    \"preferred_categories\": [\"puzzle\", \"strategy\", \"action\"],\n    \"sound_enabled\": true,\n    \"music_enabled\": false,\n    \"vibration_enabled\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/preferences/gaming",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"gaming"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notification Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/preferences/notifications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"notifications"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Notification Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"push_enabled\": true,\n    \"email_enabled\": false,\n    \"frequency\": \"daily\",\n    \"achievement_alerts\": true,\n    \"donation_confirmations\": true,\n    \"friend_activity\": false,\n    \"tournament_reminders\": true,\n    \"maintenance_alerts\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/preferences/notifications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"notifications"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Privacy Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/preferences/privacy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"privacy"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Privacy Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"profile_visibility\": \"friends\",\n    \"stats_sharing\": false,\n    \"friends_discovery\": true,\n    \"leaderboard_participation\": true,\n    \"activity_visibility\": \"private\",\n    \"contact_permissions\": \"friends\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/preferences/privacy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"privacy"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Donation Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/preferences/donations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"donations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Donation Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"auto_donate_enabled\": true,\n    \"auto_donate_percentage\": 20,\n    \"preferred_causes\": [\"education\", \"health\", \"environment\"],\n    \"notification_threshold\": 100,\n    \"monthly_goal\": 50,\n    \"impact_sharing\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/preferences/donations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"donations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Preferences to Defaults",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/preferences/reset",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"reset"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Default Preferences Template",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/preferences/defaults",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"preferences",
+								"defaults"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Test Cases",
 			"item": [
 				{
