@@ -36,6 +36,38 @@ info:
     - `PROFILE_UPDATED_SUCCESS` - Profile updated success
     - `UNAUTHORIZED` - Authentication required
     - `INTERNAL_SERVER_ERROR` - Server error occurred
+
+    ### Social Module Message Constants (GOO-7):
+    - `FRIEND_REQUEST_SENT_SUCCESS` - Friend request sent successfully
+    - `FRIEND_REQUEST_ALREADY_FRIENDS` - Users are already friends
+    - `FRIEND_REQUEST_ALREADY_SENT` - Friend request already sent
+    - `FRIEND_REQUEST_USER_BLOCKED` - Cannot send request to blocked user
+    - `FRIEND_REQUEST_NOT_ALLOWED` - User privacy settings don't allow requests
+    - `FRIEND_REQUEST_ACCEPTED_SUCCESS` - Friend request accepted successfully
+    - `FRIEND_REQUEST_DECLINED_SUCCESS` - Friend request declined successfully
+    - `FRIEND_REQUEST_NOT_FOUND` - Friend request not found
+    - `FRIEND_REQUEST_NOT_PENDING` - Friend request is not in pending state
+    - `FRIEND_REQUEST_NOT_AUTHORIZED` - User not authorized for this request
+    - `FRIEND_REMOVED_SUCCESS` - Friend removed successfully
+    - `FRIEND_RELATIONSHIP_NOT_FOUND` - Friend relationship not found
+    - `FRIENDS_LIST_SUCCESS` - Friends list retrieved successfully
+    - `FRIEND_REQUESTS_SUCCESS` - Friend requests retrieved successfully
+    - `USER_BLOCKED_SUCCESS` - User blocked successfully
+    - `USER_ALREADY_BLOCKED` - User is already blocked
+    - `USER_UNBLOCKED_SUCCESS` - User unblocked successfully
+    - `USER_NOT_BLOCKED` - User is not blocked
+    - `BLOCKED_USERS_SUCCESS` - Blocked users list retrieved successfully
+    - `SEARCH_USERS_SUCCESS` - User search completed successfully
+    - `SEARCH_NO_RESULTS` - No users found matching search criteria
+    - `SEARCH_QUERY_TOO_SHORT` - Search query must be at least 2 characters
+    - `SEARCH_USERS_FAILED` - User search failed
+    - `FRIEND_SUGGESTIONS_SUCCESS` - Friend suggestions retrieved successfully
+    - `FRIEND_SUGGESTIONS_FAILED` - Failed to retrieve friend suggestions
+    - `RELATIONSHIP_STATUS_SUCCESS` - Relationship status retrieved successfully
+    - `SOCIAL_STATS_SUCCESS` - Social statistics retrieved successfully
+    - `USER_NOT_FOUND` - User not found
+    - `TARGET_USER_NOT_FOUND` - Target user not found
+    - `CANNOT_INTERACT_WITH_SELF` - Cannot perform this action on yourself
   version: 1.0.0
   contact:
     name: GoodPlay API Support
@@ -825,7 +857,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # Social Endpoints
+  # Social Endpoints - GOO-7 Social Graph Foundation
   /social/friend-request:
     post:
       tags:
@@ -845,21 +877,59 @@ paths:
                   type: string
                   description: ID of user to send friend request to
                   example: "507f1f77bcf86cd799439012"
+              required:
+                - target_user_id
       responses:
         '201':
           description: Friend request sent successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FRIEND_REQUEST_SENT_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      relationship_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439013"
+                      target_user_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439012"
+                      status:
+                        type: string
+                        example: "pending"
         '400':
-          $ref: '#/components/responses/BadRequestError'
+          description: Bad request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                already_friends:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_ALREADY_FRIENDS"
+                already_sent:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_ALREADY_SENT"
+                user_blocked:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_USER_BLOCKED"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /social/friend-request/{id}/accept:
+  /social/friend-request/{relationship_id}/accept:
     put:
       tags:
         - Social
@@ -868,21 +938,101 @@ paths:
       security:
         - JWTAuth: []
       parameters:
-        - name: id
+        - name: relationship_id
           in: path
           required: true
           schema:
             type: string
-          description: Friend request ID
+          description: Relationship ID of the friend request
+          example: "507f1f77bcf86cd799439013"
       responses:
         '200':
           description: Friend request accepted successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FRIEND_REQUEST_ACCEPTED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      relationship_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439013"
+                      friend_user_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439012"
+                      status:
+                        type: string
+                        example: "accepted"
+        '400':
+          description: Request not pending or not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_NOT_FOUND"
+                not_pending:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_NOT_PENDING"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/friend-request/{relationship_id}/decline:
+    put:
+      tags:
+        - Social
+      summary: Decline friend request
+      description: Decline a pending friend request
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: relationship_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Relationship ID of the friend request
+          example: "507f1f77bcf86cd799439013"
+      responses:
+        '200':
+          description: Friend request declined successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FRIEND_REQUEST_DECLINED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      relationship_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439013"
+        '400':
+          description: Request not found or not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
@@ -893,7 +1043,7 @@ paths:
       tags:
         - Social
       summary: Get friends list
-      description: Get list of user's friends
+      description: Get list of user's friends with pagination
       security:
         - JWTAuth: []
       parameters:
@@ -902,13 +1052,14 @@ paths:
           schema:
             type: integer
             default: 50
-          description: Number of results to return
-        - name: offset
+            maximum: 100
+          description: Maximum number of friends to return
+        - name: skip
           in: query
           schema:
             type: integer
             default: 0
-          description: Offset for pagination
+          description: Number of friends to skip for pagination
       responses:
         '200':
           description: Friends list retrieved successfully
@@ -922,7 +1073,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Friends retrieved successfully"
+                    example: "FRIENDS_LIST_SUCCESS"
                   data:
                     type: object
                     properties:
@@ -933,6 +1084,510 @@ paths:
                       total:
                         type: integer
                         example: 25
+                      pagination:
+                        type: object
+                        properties:
+                          limit:
+                            type: integer
+                            example: 50
+                          skip:
+                            type: integer
+                            example: 0
+                          has_more:
+                            type: boolean
+                            example: false
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/friends/{friend_user_id}:
+    delete:
+      tags:
+        - Social
+      summary: Remove friend
+      description: Remove a friend from your friends list
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: friend_user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the friend to remove
+          example: "507f1f77bcf86cd799439012"
+      responses:
+        '200':
+          description: Friend removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FRIEND_REMOVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      removed_user_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439012"
+        '400':
+          description: Friend relationship not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "FRIEND_RELATIONSHIP_NOT_FOUND"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/friend-requests:
+    get:
+      tags:
+        - Social
+      summary: Get friend requests
+      description: Get received or sent friend requests
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [received, sent]
+            default: received
+          description: Type of friend requests to retrieve
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Maximum number of requests to return
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of requests to skip for pagination
+      responses:
+        '200':
+          description: Friend requests retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FRIEND_REQUESTS_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      requests:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FriendRequest'
+                      total:
+                        type: integer
+                        example: 5
+                      type:
+                        type: string
+                        example: "received"
+                      pagination:
+                        type: object
+                        properties:
+                          limit:
+                            type: integer
+                            example: 20
+                          skip:
+                            type: integer
+                            example: 0
+                          has_more:
+                            type: boolean
+                            example: false
+        '400':
+          description: Invalid request type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/users/search:
+    post:
+      tags:
+        - Social
+      summary: Search users
+      description: Search for users by name or email with privacy controls
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Search query (minimum 2 characters)
+                  example: "john doe"
+                limit:
+                  type: integer
+                  default: 20
+                  maximum: 50
+                  description: Maximum number of results to return
+                skip:
+                  type: integer
+                  default: 0
+                  description: Number of results to skip for pagination
+              required:
+                - query
+      responses:
+        '200':
+          description: User search completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SEARCH_USERS_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SearchUser'
+                      total:
+                        type: integer
+                        example: 10
+                      query:
+                        type: string
+                        example: "john doe"
+                      pagination:
+                        type: object
+                        properties:
+                          limit:
+                            type: integer
+                            example: 20
+                          skip:
+                            type: integer
+                            example: 0
+                          has_more:
+                            type: boolean
+                            example: false
+        '400':
+          description: Search query too short or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "SEARCH_QUERY_TOO_SHORT"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/users/suggestions:
+    get:
+      tags:
+        - Social
+      summary: Get friend suggestions
+      description: Get AI-powered friend suggestions based on mutual connections and interests
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+          description: Maximum number of suggestions to return
+      responses:
+        '200':
+          description: Friend suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FRIEND_SUGGESTIONS_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      suggestions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSuggestion'
+                      total:
+                        type: integer
+                        example: 5
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/users/{target_user_id}/block:
+    post:
+      tags:
+        - Social
+      summary: Block user
+      description: Block another user and remove existing friendship
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: target_user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of user to block
+          example: "507f1f77bcf86cd799439012"
+      responses:
+        '201':
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_BLOCKED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      blocked_user_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439012"
+                      relationship_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439014"
+        '400':
+          description: User already blocked or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "USER_ALREADY_BLOCKED"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/users/{target_user_id}/unblock:
+    delete:
+      tags:
+        - Social
+      summary: Unblock user
+      description: Remove block relationship with another user
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: target_user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of user to unblock
+          example: "507f1f77bcf86cd799439012"
+      responses:
+        '200':
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_UNBLOCKED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      unblocked_user_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439012"
+        '400':
+          description: User not blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "USER_NOT_BLOCKED"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/blocked-users:
+    get:
+      tags:
+        - Social
+      summary: Get blocked users
+      description: Get list of users blocked by current user
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Maximum number of blocked users to return
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of results to skip for pagination
+      responses:
+        '200':
+          description: Blocked users list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "BLOCKED_USERS_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      blocked_users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BlockedUser'
+                      total:
+                        type: integer
+                        example: 3
+                      pagination:
+                        type: object
+                        properties:
+                          limit:
+                            type: integer
+                            example: 50
+                          skip:
+                            type: integer
+                            example: 0
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/relationship-status/{target_user_id}:
+    get:
+      tags:
+        - Social
+      summary: Get relationship status
+      description: Get current relationship status with another user
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: target_user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of user to check relationship with
+          example: "507f1f77bcf86cd799439012"
+      responses:
+        '200':
+          description: Relationship status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "RELATIONSHIP_STATUS_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      target_user_id:
+                        type: string
+                        example: "507f1f77bcf86cd799439012"
+                      relationship:
+                        $ref: '#/components/schemas/RelationshipStatus'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /social/stats:
+    get:
+      tags:
+        - Social
+      summary: Get social statistics
+      description: Get current user's social statistics (friends count, pending requests, etc.)
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Social statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SOCIAL_STATS_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/SocialStats'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
@@ -1950,7 +2605,7 @@ components:
     Friend:
       type: object
       properties:
-        user_id:
+        id:
           type: string
           example: "507f1f77bcf86cd799439012"
         display_name:
@@ -1965,10 +2620,195 @@ components:
         impact_score:
           type: integer
           example: 1250
+        gaming_stats:
+          type: object
+          properties:
+            total_play_time:
+              type: integer
+              example: 3600
+            favorite_category:
+              type: string
+              example: "puzzle"
         friendship_date:
           type: string
           format: date-time
           example: "2024-01-15T10:30:00Z"
+        is_active:
+          type: boolean
+          example: true
+
+    FriendRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439013"
+        user_id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        display_name:
+          type: string
+          example: "JaneDoe456"
+        first_name:
+          type: string
+          example: "Jane"
+        last_name:
+          type: string
+          example: "Doe"
+        impact_score:
+          type: integer
+          example: 950
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-20T08:15:00Z"
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+          example: "pending"
+        type:
+          type: string
+          enum: [received, sent]
+          example: "received"
+
+    SearchUser:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        display_name:
+          type: string
+          example: "AliceWonder789"
+        first_name:
+          type: string
+          example: "Alice"
+        last_name:
+          type: string
+          example: "Wonder"
+        email:
+          type: string
+          example: "alice.wonder@example.com"
+        impact_score:
+          type: integer
+          example: 2100
+        gaming_stats:
+          type: object
+          properties:
+            total_play_time:
+              type: integer
+              example: 7200
+            favorite_category:
+              type: string
+              example: "strategy"
+        friends_count:
+          type: integer
+          example: 15
+        relationship:
+          $ref: '#/components/schemas/RelationshipStatus'
+        privacy_level:
+          type: string
+          enum: [public, friends, private]
+          example: "public"
+
+    UserSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        display_name:
+          type: string
+          example: "BobBuilder321"
+        first_name:
+          type: string
+          example: "Bob"
+        last_name:
+          type: string
+          example: "Builder"
+        impact_score:
+          type: integer
+          example: 1800
+        gaming_stats:
+          type: object
+          properties:
+            total_play_time:
+              type: integer
+              example: 5400
+            favorite_category:
+              type: string
+              example: "puzzle"
+        friends_count:
+          type: integer
+          example: 22
+        relationship:
+          $ref: '#/components/schemas/RelationshipStatus'
+        privacy_level:
+          type: string
+          enum: [public, friends, private]
+          example: "public"
+
+    BlockedUser:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439015"
+        display_name:
+          type: string
+          example: "SpamUser123"
+        first_name:
+          type: string
+          example: "Spam"
+        last_name:
+          type: string
+          example: "User"
+        blocked_at:
+          type: string
+          format: date-time
+          example: "2024-01-18T14:20:00Z"
+
+    RelationshipStatus:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [friend, following, blocked, null]
+          example: "friend"
+          nullable: true
+        status:
+          type: string
+          enum: [pending, accepted, declined, null]
+          example: "accepted"
+          nullable: true
+        is_friend:
+          type: boolean
+          example: true
+        is_pending:
+          type: boolean
+          example: false
+        is_blocked:
+          type: boolean
+          example: false
+        initiated_by_me:
+          type: boolean
+          example: false
+
+    SocialStats:
+      type: object
+      properties:
+        friends_count:
+          type: integer
+          example: 45
+        pending_requests_count:
+          type: integer
+          example: 3
+        sent_requests_count:
+          type: integer
+          example: 1
+        blocked_users_count:
+          type: integer
+          example: 2
 
     Game:
       type: object

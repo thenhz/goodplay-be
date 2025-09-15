@@ -941,6 +941,477 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Social (GOO-7)",
+			"item": [
+				{
+					"name": "Send Friend Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.relationship_id) {",
+									"        pm.environment.set('friend_request_id', response.data.relationship_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"target_user_id\": \"REPLACE_WITH_ACTUAL_USER_ID\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/social/friend-request",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/friend-request/{{friend_request_id}}/accept",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request",
+								"{{friend_request_id}}",
+								"accept"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Decline Friend Request",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/friend-request/{{friend_request_id}}/decline",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request",
+								"{{friend_request_id}}",
+								"decline"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friends List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/friends?limit=50&skip=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friends"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Friend",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/friends/REPLACE_WITH_USER_ID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friends",
+								"REPLACE_WITH_USER_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friend Requests (Received)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/friend-requests?type=received&limit=20&skip=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-requests"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "received"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friend Requests (Sent)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/friend-requests?type=sent&limit=20&skip=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-requests"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "sent"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.users && response.data.users.length > 0) {",
+									"        pm.environment.set('search_user_id', response.data.users[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"john\",\n    \"limit\": 20,\n    \"skip\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/social/users/search",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"users",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friend Suggestions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/users/suggestions?limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"users",
+								"suggestions"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/users/REPLACE_WITH_USER_ID/block",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"users",
+								"REPLACE_WITH_USER_ID",
+								"block"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/users/REPLACE_WITH_USER_ID/unblock",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"users",
+								"REPLACE_WITH_USER_ID",
+								"unblock"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Blocked Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/blocked-users?limit=50&skip=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"blocked-users"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Relationship Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/relationship-status/REPLACE_WITH_USER_ID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"relationship-status",
+								"REPLACE_WITH_USER_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Social Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/social/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [

@@ -28,10 +28,14 @@ def create_app(config_name=None):
     from app.core.controllers.auth_controller import auth_bp
     from app.core.controllers.user_controller import user_bp
     from app.preferences.controllers.preferences_controller import preferences_blueprint
+    from app.social import register_social_module
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(preferences_blueprint)
+
+    # Register social module
+    register_social_module(app)
     
     @app.route('/api/health', methods=['GET'])
     def health_check():
