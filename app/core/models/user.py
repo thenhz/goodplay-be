@@ -27,9 +27,41 @@ class User:
         self.impact_score = impact_score
 
         self.preferences = preferences or {
-            'notification_enabled': True,
-            'preferred_game_categories': [],
-            'donation_frequency': 'weekly'
+            'gaming': {
+                'preferred_categories': [],
+                'difficulty_level': 'medium',
+                'tutorial_enabled': True,
+                'auto_save': True,
+                'sound_enabled': True,
+                'music_enabled': True,
+                'vibration_enabled': True
+            },
+            'notifications': {
+                'push_enabled': True,
+                'email_enabled': True,
+                'frequency': 'daily',
+                'achievement_alerts': True,
+                'donation_confirmations': True,
+                'friend_activity': True,
+                'tournament_reminders': True,
+                'maintenance_alerts': True
+            },
+            'privacy': {
+                'profile_visibility': 'public',
+                'stats_sharing': True,
+                'friends_discovery': True,
+                'leaderboard_participation': True,
+                'activity_visibility': 'friends',
+                'contact_permissions': 'friends'
+            },
+            'donations': {
+                'auto_donate_enabled': False,
+                'auto_donate_percentage': 10,
+                'preferred_causes': [],
+                'notification_threshold': 50,
+                'monthly_goal': None,
+                'impact_sharing': True
+            }
         }
 
         self.social_profile = social_profile or {
@@ -124,11 +156,124 @@ class User:
         return False
 
     def update_preferences(self, **kwargs):
-        """Update user preferences"""
+        """Update user preferences (legacy method for backwards compatibility)"""
         for key, value in kwargs.items():
             if key in self.preferences:
                 self.preferences[key] = value
         self.updated_at = datetime.now(timezone.utc)
+
+    def update_preferences_category(self, category: str, preferences: dict):
+        """Update a specific category of preferences"""
+        if category in self.preferences and isinstance(preferences, dict):
+            for key, value in preferences.items():
+                if key in self.preferences[category]:
+                    self.preferences[category][key] = value
+            self.updated_at = datetime.now(timezone.utc)
+            return True
+        return False
+
+    def get_preferences_category(self, category: str):
+        """Get preferences for a specific category"""
+        return self.preferences.get(category, {})
+
+    def reset_preferences_to_defaults(self):
+        """Reset all preferences to default values"""
+        self.preferences = {
+            'gaming': {
+                'preferred_categories': [],
+                'difficulty_level': 'medium',
+                'tutorial_enabled': True,
+                'auto_save': True,
+                'sound_enabled': True,
+                'music_enabled': True,
+                'vibration_enabled': True
+            },
+            'notifications': {
+                'push_enabled': True,
+                'email_enabled': True,
+                'frequency': 'daily',
+                'achievement_alerts': True,
+                'donation_confirmations': True,
+                'friend_activity': True,
+                'tournament_reminders': True,
+                'maintenance_alerts': True
+            },
+            'privacy': {
+                'profile_visibility': 'public',
+                'stats_sharing': True,
+                'friends_discovery': True,
+                'leaderboard_participation': True,
+                'activity_visibility': 'friends',
+                'contact_permissions': 'friends'
+            },
+            'donations': {
+                'auto_donate_enabled': False,
+                'auto_donate_percentage': 10,
+                'preferred_causes': [],
+                'notification_threshold': 50,
+                'monthly_goal': None,
+                'impact_sharing': True
+            }
+        }
+        self.updated_at = datetime.now(timezone.utc)
+
+    @staticmethod
+    def validate_preferences_data(data: dict) -> str:
+        """Validate preferences data structure and values"""
+        if not isinstance(data, dict):
+            return "PREFERENCES_INVALID_FORMAT"
+
+        # Validate gaming preferences
+        if 'gaming' in data:
+            gaming = data['gaming']
+            if not isinstance(gaming, dict):
+                return "GAMING_PREFERENCES_INVALID"
+
+            if 'difficulty_level' in gaming and gaming['difficulty_level'] not in ['easy', 'medium', 'hard']:
+                return "GAMING_DIFFICULTY_INVALID"
+
+            if 'preferred_categories' in gaming and not isinstance(gaming['preferred_categories'], list):
+                return "GAMING_CATEGORIES_INVALID"
+
+        # Validate notification preferences
+        if 'notifications' in data:
+            notifications = data['notifications']
+            if not isinstance(notifications, dict):
+                return "NOTIFICATION_PREFERENCES_INVALID"
+
+            if 'frequency' in notifications and notifications['frequency'] not in ['none', 'daily', 'weekly', 'monthly']:
+                return "NOTIFICATION_FREQUENCY_INVALID"
+
+        # Validate privacy preferences
+        if 'privacy' in data:
+            privacy = data['privacy']
+            if not isinstance(privacy, dict):
+                return "PRIVACY_PREFERENCES_INVALID"
+
+            if 'profile_visibility' in privacy and privacy['profile_visibility'] not in ['public', 'friends', 'private']:
+                return "PRIVACY_VISIBILITY_INVALID"
+
+            if 'activity_visibility' in privacy and privacy['activity_visibility'] not in ['public', 'friends', 'private']:
+                return "PRIVACY_ACTIVITY_INVALID"
+
+            if 'contact_permissions' in privacy and privacy['contact_permissions'] not in ['everyone', 'friends', 'none']:
+                return "PRIVACY_CONTACT_INVALID"
+
+        # Validate donation preferences
+        if 'donations' in data:
+            donations = data['donations']
+            if not isinstance(donations, dict):
+                return "DONATION_PREFERENCES_INVALID"
+
+            if 'auto_donate_percentage' in donations:
+                percentage = donations['auto_donate_percentage']
+                if not isinstance(percentage, (int, float)) or percentage < 0 or percentage > 100:
+                    return "DONATION_PERCENTAGE_INVALID"
+
+            if 'preferred_causes' in donations and not isinstance(donations['preferred_causes'], list):
+                return "DONATION_CAUSES_INVALID"
+
+        return None  # No validation errors
 
     def update_social_profile(self, **kwargs):
         """Update social profile settings"""

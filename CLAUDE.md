@@ -9,11 +9,11 @@ This is a Flask-based REST API backend using MongoDB, JWT authentication, and fo
 ```
 app/
 ├── core/            # Core platform functionality
-│   ├── models/      # Core data models (User, Config)
+│   ├── models/      # Core data models (User with preferences, Config)
 │   ├── repositories/ # Core data access layer
 │   ├── services/    # Core business logic
 │   └── controllers/ # Core route handlers (auth, health)
-├── preferences/     # User preferences and settings
+├── preferences/     # User preferences API layer (works with User model)
 ├── social/          # Social features and gamification
 │   ├── models/      # Achievement, Leaderboard models
 │   ├── repositories/ # Social data access
@@ -78,7 +78,7 @@ The application has been restructured from a monolithic architecture to a modula
 
 ### Core Collections
 
-#### Users Collection (app/core/models/)
+#### Users Collection (app/core/models/) - ✅ Includes GOO-6 Preferences
 ```javascript
 {
   _id: ObjectId,
@@ -88,55 +88,48 @@ The application has been restructured from a monolithic architecture to a modula
   password_hash: String,
   is_active: Boolean (default: true),
   role: String (default: 'user'),
+  preferences: {
+    gaming: {
+      preferred_categories: Array,
+      difficulty_level: String, // easy, medium, hard
+      tutorial_enabled: Boolean,
+      auto_save: Boolean,
+      sound_enabled: Boolean,
+      music_enabled: Boolean,
+      vibration_enabled: Boolean
+    },
+    notifications: {
+      push_enabled: Boolean,
+      email_enabled: Boolean,
+      frequency: String, // none, daily, weekly, monthly
+      achievement_alerts: Boolean,
+      donation_confirmations: Boolean,
+      friend_activity: Boolean,
+      tournament_reminders: Boolean,
+      maintenance_alerts: Boolean
+    },
+    privacy: {
+      profile_visibility: String, // public, friends, private
+      stats_sharing: Boolean,
+      friends_discovery: Boolean,
+      leaderboard_participation: Boolean,
+      activity_visibility: String, // public, friends, private
+      contact_permissions: String // everyone, friends, none
+    },
+    donations: {
+      auto_donate_enabled: Boolean,
+      auto_donate_percentage: Number,
+      preferred_causes: Array,
+      notification_threshold: Number,
+      monthly_goal: Number (optional),
+      impact_sharing: Boolean
+    }
+  },
   created_at: DateTime,
   updated_at: DateTime
 }
 ```
 
-#### User Preferences Collection (app/preferences/models/) - ✅ GOO-6
-```javascript
-{
-  _id: ObjectId,
-  user_id: ObjectId (unique, references Users),
-  gaming: {
-    preferred_categories: Array,
-    difficulty_level: String, // easy, medium, hard
-    tutorial_enabled: Boolean,
-    auto_save: Boolean,
-    sound_enabled: Boolean,
-    music_enabled: Boolean,
-    vibration_enabled: Boolean
-  },
-  notifications: {
-    push_enabled: Boolean,
-    email_enabled: Boolean,
-    frequency: String, // none, daily, weekly, monthly
-    achievement_alerts: Boolean,
-    donation_confirmations: Boolean,
-    friend_activity: Boolean,
-    tournament_reminders: Boolean,
-    maintenance_alerts: Boolean
-  },
-  privacy: {
-    profile_visibility: String, // public, friends, private
-    stats_sharing: Boolean,
-    friends_discovery: Boolean,
-    leaderboard_participation: Boolean,
-    activity_visibility: String, // public, friends, private
-    contact_permissions: String // everyone, friends, none
-  },
-  donations: {
-    auto_donate_enabled: Boolean,
-    auto_donate_percentage: Number,
-    preferred_causes: Array,
-    notification_threshold: Number,
-    monthly_goal: Number (optional),
-    impact_sharing: Boolean
-  },
-  created_at: DateTime,
-  updated_at: DateTime
-}
-```
 
 ### Planned Collections (Future Implementation)
 
@@ -197,6 +190,8 @@ The application has been restructured from a monolithic architecture to a modula
 - `PUT /{category}` - Update specific category preferences (auth required)
 - `POST /reset` - Reset preferences to defaults (auth required)
 - `GET /defaults` - Get default preferences template (public)
+
+**Note**: Preferences are stored directly in the User document for optimal performance. The preferences module provides a dedicated API layer for managing the 4 comprehensive preference categories: gaming, notifications, privacy, and donations.
 
 ### Planned Endpoints (Future Implementation)
 

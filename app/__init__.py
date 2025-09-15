@@ -52,13 +52,9 @@ def init_db(app):
 
         with app.app_context():
             from app.core.repositories.user_repository import UserRepository
-            from app.preferences.repositories.preferences_repository import PreferencesRepository
 
             user_repo = UserRepository()
             user_repo.create_indexes()
-
-            prefs_repo = PreferencesRepository()
-            prefs_repo.create_indexes()
 
             app.logger.info('Database initialized successfully')
     except Exception as e:

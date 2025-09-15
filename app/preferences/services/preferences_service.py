@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Tuple, Any
 from flask import current_app
-from app.preferences.models.user_preferences import UserPreferences
+from app.core.models.user import User
 from app.preferences.repositories.preferences_repository import PreferencesRepository
 
 class PreferencesService:
@@ -8,61 +8,68 @@ class PreferencesService:
         self.preferences_repository = PreferencesRepository()
 
     def get_user_preferences(self, user_id: str) -> Tuple[bool, str, Optional[Dict]]:
-        """Get user preferences, creating defaults if they don't exist"""
+        """Get user preferences, ensuring defaults exist"""
         try:
-            preferences = self.preferences_repository.find_by_user_id(user_id)
+            user = self.preferences_repository.get_user_preferences(user_id)
 
-            if not preferences:
-                # Create default preferences for the user
-                current_app.logger.info(f"Creating default preferences for user: {user_id}")
-                prefs_id = self.preferences_repository.create_default_preferences(user_id)
-                if prefs_id:
-                    preferences = self.preferences_repository.find_by_user_id(user_id)
+            if not user:
+                current_app.logger.error(f"User not found: {user_id}")
+                return False, "USER_NOT_FOUND", None
 
-            if preferences:
+            # Ensure user has comprehensive preferences
+            if not self._has_comprehensive_preferences(user.preferences):
+                current_app.logger.info(f"Upgrading preferences to comprehensive structure for user: {user_id}")
+                self.preferences_repository.create_default_preferences(user_id)
+                # Re-fetch user with updated preferences
+                user = self.preferences_repository.get_user_preferences(user_id)
+
+            if user:
                 current_app.logger.info(f"Preferences retrieved for user: {user_id}")
                 return True, "PREFERENCES_RETRIEVED_SUCCESS", {
-                    "preferences": preferences.to_dict()
+                    "preferences": user.preferences
                 }
             else:
-                current_app.logger.error(f"Failed to create or retrieve preferences for user: {user_id}")
+                current_app.logger.error(f"Failed to retrieve preferences for user: {user_id}")
                 return False, "PREFERENCES_RETRIEVAL_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Error retrieving preferences: {str(e)}")
             return False, "INTERNAL_SERVER_ERROR", None
 
+    def _has_comprehensive_preferences(self, preferences: dict) -> bool:
+        """Check if user has comprehensive preferences structure"""
+        required_categories = ['gaming', 'notifications', 'privacy', 'donations']
+        return all(category in preferences for category in required_categories)
+
     def update_user_preferences(self, user_id: str, preferences_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict]]:
         """Update user preferences with validation"""
-        # Validate preferences data
-        validation_error = UserPreferences.validate_preferences_data(preferences_data)
+        # Validate preferences data using User model validation
+        validation_error = User.validate_preferences_data(preferences_data)
         if validation_error:
             current_app.logger.warning(f"Preferences validation failed for user {user_id}: {validation_error}")
             return False, validation_error, None
 
         try:
-            # Get current preferences or create defaults
-            current_preferences = self.preferences_repository.find_by_user_id(user_id)
-            if not current_preferences:
+            # Get current user
+            user = self.preferences_repository.get_user_preferences(user_id)
+            if not user:
+                current_app.logger.error(f"User not found: {user_id}")
+                return False, "USER_NOT_FOUND", None
+
+            # Ensure user has comprehensive preferences structure
+            if not self._has_comprehensive_preferences(user.preferences):
                 self.preferences_repository.create_default_preferences(user_id)
-                current_preferences = self.preferences_repository.find_by_user_id(user_id)
-
-            if not current_preferences:
-                current_app.logger.error(f"Could not create preferences for user: {user_id}")
-                return False, "PREFERENCES_CREATION_FAILED", None
-
-            # Update preferences with new data
-            for category, category_data in preferences_data.items():
-                if hasattr(current_preferences, category) and isinstance(category_data, dict):
-                    current_preferences.update_category(category, category_data)
+                user = self.preferences_repository.get_user_preferences(user_id)
 
             # Save updated preferences
-            success = self.preferences_repository.update_preferences(user_id, current_preferences)
+            success = self.preferences_repository.update_preferences(user_id, preferences_data)
 
             if success:
+                # Re-fetch user to get updated preferences
+                updated_user = self.preferences_repository.get_user_preferences(user_id)
                 current_app.logger.info(f"Preferences updated for user: {user_id}")
                 return True, "PREFERENCES_UPDATED_SUCCESS", {
-                    "preferences": current_preferences.to_dict()
+                    "preferences": updated_user.preferences
                 }
             else:
                 current_app.logger.error(f"Failed to update preferences for user: {user_id}")
@@ -79,28 +86,32 @@ class PreferencesService:
         if category not in valid_categories:
             return False, "PREFERENCES_CATEGORY_INVALID", None
 
-        # Validate category data
+        # Validate category data using User model validation
         validation_data = {category: category_preferences}
-        validation_error = UserPreferences.validate_preferences_data(validation_data)
+        validation_error = User.validate_preferences_data(validation_data)
         if validation_error:
             current_app.logger.warning(f"Category {category} validation failed for user {user_id}: {validation_error}")
             return False, validation_error, None
 
         try:
-            # Ensure user has preferences
-            current_preferences = self.preferences_repository.find_by_user_id(user_id)
-            if not current_preferences:
+            # Ensure user exists and has comprehensive preferences
+            user = self.preferences_repository.get_user_preferences(user_id)
+            if not user:
+                current_app.logger.error(f"User not found: {user_id}")
+                return False, "USER_NOT_FOUND", None
+
+            if not self._has_comprehensive_preferences(user.preferences):
                 self.preferences_repository.create_default_preferences(user_id)
 
             # Update specific category
             success = self.preferences_repository.update_category(user_id, category, category_preferences)
 
             if success:
-                # Get updated preferences
-                updated_preferences = self.preferences_repository.find_by_user_id(user_id)
+                # Get updated user
+                updated_user = self.preferences_repository.get_user_preferences(user_id)
                 current_app.logger.info(f"Category {category} updated for user: {user_id}")
                 return True, "PREFERENCES_CATEGORY_UPDATED_SUCCESS", {
-                    "preferences": updated_preferences.to_dict(),
+                    "preferences": updated_user.preferences,
                     "updated_category": category
                 }
             else:
@@ -118,23 +129,15 @@ class PreferencesService:
 
             if success:
                 # Get the reset preferences
-                preferences = self.preferences_repository.find_by_user_id(user_id)
-                current_app.logger.info(f"Preferences reset to defaults for user: {user_id}")
-                return True, "PREFERENCES_RESET_SUCCESS", {
-                    "preferences": preferences.to_dict()
-                }
-            else:
-                # Try to create default preferences if reset failed (user might not have preferences yet)
-                prefs_id = self.preferences_repository.create_default_preferences(user_id)
-                if prefs_id:
-                    preferences = self.preferences_repository.find_by_user_id(user_id)
-                    current_app.logger.info(f"Default preferences created for user: {user_id}")
+                user = self.preferences_repository.get_user_preferences(user_id)
+                if user:
+                    current_app.logger.info(f"Preferences reset to defaults for user: {user_id}")
                     return True, "PREFERENCES_RESET_SUCCESS", {
-                        "preferences": preferences.to_dict()
+                        "preferences": user.preferences
                     }
 
-                current_app.logger.error(f"Failed to reset preferences for user: {user_id}")
-                return False, "PREFERENCES_RESET_FAILED", None
+            current_app.logger.error(f"Failed to reset preferences for user: {user_id}")
+            return False, "PREFERENCES_RESET_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Error resetting preferences: {str(e)}")
@@ -148,15 +151,9 @@ class PreferencesService:
             return False, "PREFERENCES_CATEGORY_INVALID", None
 
         try:
-            preferences = self.preferences_repository.find_by_user_id(user_id)
+            category_data = self.preferences_repository.get_category_preferences(user_id, category)
 
-            if not preferences:
-                # Create default preferences
-                self.preferences_repository.create_default_preferences(user_id)
-                preferences = self.preferences_repository.find_by_user_id(user_id)
-
-            if preferences:
-                category_data = preferences.get_category(category)
+            if category_data is not None:
                 current_app.logger.info(f"Category {category} retrieved for user: {user_id}")
                 return True, "PREFERENCES_CATEGORY_RETRIEVED_SUCCESS", {
                     "category": category,
@@ -173,7 +170,9 @@ class PreferencesService:
     def get_default_preferences(self) -> Tuple[bool, str, Optional[Dict]]:
         """Get default preferences template for new users"""
         try:
-            default_prefs = UserPreferences.get_default_preferences()
+            # Create a temporary user instance to get default preferences structure
+            temp_user = User(email="temp@example.com")
+            default_prefs = temp_user.preferences
             current_app.logger.info("Default preferences template retrieved")
             return True, "DEFAULT_PREFERENCES_RETRIEVED_SUCCESS", {
                 "default_preferences": default_prefs

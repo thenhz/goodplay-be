@@ -2498,18 +2498,11 @@ components:
           description: ID of the ONLUS organization to donate to
           example: "example_onlus_id"
 
-    # User Preferences Schemas
+    # User Preferences Schemas (embedded in User document)
     UserPreferences:
       type: object
+      description: User preferences embedded in User document
       properties:
-        _id:
-          type: string
-          description: Preferences unique identifier
-          example: "507f1f77bcf86cd799439011"
-        user_id:
-          type: string
-          description: Associated user ID
-          example: "507f1f77bcf86cd799439011"
         gaming:
           $ref: '#/components/schemas/GamingPreferences'
         notifications:
@@ -2518,14 +2511,6 @@ components:
           $ref: '#/components/schemas/PrivacyPreferences'
         donations:
           $ref: '#/components/schemas/DonationPreferences'
-        created_at:
-          type: string
-          format: date-time
-          description: Creation timestamp
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp
 
     GamingPreferences:
       type: object
