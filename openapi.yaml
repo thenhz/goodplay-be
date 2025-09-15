@@ -48,6 +48,45 @@ info:
     - `FRIEND_REQUEST_NOT_FOUND` - Friend request not found
     - `FRIEND_REQUEST_NOT_PENDING` - Friend request is not in pending state
     - `FRIEND_REQUEST_NOT_AUTHORIZED` - User not authorized for this request
+
+    ### Game Engine Message Constants (GOO-8):
+    - `GAMES_RETRIEVED_SUCCESS` - Games list retrieved successfully
+    - `GAMES_SEARCH_SUCCESS` - Game search completed successfully
+    - `GAME_CATEGORIES_RETRIEVED_SUCCESS` - Game categories retrieved successfully
+    - `GAMES_STATS_RETRIEVED_SUCCESS` - Game statistics retrieved successfully
+    - `GAME_INFO_RETRIEVED_SUCCESS` - Game information retrieved successfully
+    - `GAME_PLUGIN_INSTALLED_SUCCESS` - Game plugin installed successfully
+    - `GAME_PLUGIN_UNINSTALLED_SUCCESS` - Game plugin uninstalled successfully
+    - `GAME_PLUGIN_VALIDATED_SUCCESS` - Game plugin validated successfully
+    - `GAME_RATING_SUCCESS` - Game rated successfully
+    - `GAME_SESSION_STARTED_SUCCESS` - Game session started successfully
+    - `GAME_SESSION_ENDED_SUCCESS` - Game session ended successfully
+    - `SESSION_RETRIEVED_SUCCESS` - Session information retrieved successfully
+    - `SESSION_STATE_UPDATED_SUCCESS` - Session state updated successfully
+    - `MOVE_VALIDATED_SUCCESS` - Move validated and recorded successfully
+    - `SESSION_PAUSED_SUCCESS` - Session paused successfully
+    - `SESSION_RESUMED_SUCCESS` - Session resumed successfully
+    - `USER_SESSIONS_RETRIEVED_SUCCESS` - User sessions retrieved successfully
+    - `USER_SESSION_STATS_RETRIEVED_SUCCESS` - User session statistics retrieved successfully
+    - `GAME_NOT_FOUND` - Game not found
+    - `GAME_NOT_ACTIVE` - Game is not active
+    - `ACTIVE_SESSION_EXISTS` - User already has active session for this game
+    - `GAME_PLUGIN_NOT_FOUND` - Game plugin not found
+    - `PLUGIN_SESSION_START_FAILED` - Plugin failed to start session
+    - `SESSION_CREATION_FAILED` - Failed to create session
+    - `SESSION_NOT_FOUND` - Session not found
+    - `SESSION_ALREADY_ENDED` - Session already ended
+    - `SESSION_NOT_ACTIVE` - Session is not active
+    - `SESSION_ACCESS_DENIED` - User not authorized to access this session
+    - `INVALID_END_REASON` - Invalid session end reason
+    - `SESSION_STATE_REQUIRED` - Session state is required
+    - `MOVE_DATA_REQUIRED` - Move data is required
+    - `INVALID_MOVE` - Move is not valid
+    - `SESSION_NOT_PAUSED` - Session is not paused
+    - `SEARCH_QUERY_TOO_SHORT` - Search query too short
+    - `PLUGIN_FILE_REQUIRED` - Plugin file is required
+    - `PLUGIN_FILE_EMPTY` - Plugin file is empty
+    - `INVALID_RATING_VALUE` - Rating value must be between 1.0 and 5.0
     - `FRIEND_REMOVED_SUCCESS` - Friend removed successfully
     - `FRIEND_RELATIONSHIP_NOT_FOUND` - Friend relationship not found
     - `FRIENDS_LIST_SUCCESS` - Friends list retrieved successfully
@@ -1974,6 +2013,867 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # Game Engine Endpoints
+  /api/games:
+    get:
+      tags:
+        - Games
+      summary: Get all available games
+      description: Retrieve all games with pagination and filtering options
+      parameters:
+        - in: query
+          name: active_only
+          schema:
+            type: boolean
+            default: true
+          description: Filter to only active games
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by game category
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of games per page
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, rating, install_count, name]
+            default: created_at
+          description: Sort field
+      responses:
+        '200':
+          description: Games retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAMES_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      games:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Game'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationInfo'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/search:
+    get:
+      tags:
+        - Games
+      summary: Search games
+      description: Search games by name or description
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search query
+        - in: query
+          name: active_only
+          schema:
+            type: boolean
+            default: true
+          description: Filter to only active games
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAMES_SEARCH_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      games:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Game'
+                      query:
+                        type: string
+                      count:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/categories:
+    get:
+      tags:
+        - Games
+      summary: Get game categories
+      description: Retrieve all available game categories
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_CATEGORIES_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            count:
+                              type: integer
+                      total_categories:
+                        type: integer
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/stats:
+    get:
+      tags:
+        - Games
+      summary: Get games statistics
+      description: Retrieve platform-wide game statistics
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAMES_STATS_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/GameStats'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/install:
+    post:
+      tags:
+        - Games
+      summary: Install game plugin
+      description: Install a new game plugin (admin only)
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                plugin_file:
+                  type: string
+                  format: binary
+                  description: Game plugin zip file
+                plugin_id:
+                  type: string
+                  description: Optional custom plugin ID
+              required:
+                - plugin_file
+      responses:
+        '201':
+          description: Plugin installed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_PLUGIN_INSTALLED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      game:
+                        $ref: '#/components/schemas/Game'
+                      plugin_id:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/{game_id}:
+    get:
+      tags:
+        - Games
+      summary: Get game details
+      description: Get detailed information about a specific game
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            type: string
+          description: Game ID
+      responses:
+        '200':
+          description: Game details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_INFO_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      game:
+                        $ref: '#/components/schemas/Game'
+                      plugin_info:
+                        $ref: '#/components/schemas/PluginInfo'
+                      rules:
+                        $ref: '#/components/schemas/GameRules'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/{game_id}/uninstall:
+    delete:
+      tags:
+        - Games
+      summary: Uninstall game plugin
+      description: Uninstall a game plugin (admin only)
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            type: string
+          description: Game ID
+      responses:
+        '200':
+          description: Plugin uninstalled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_PLUGIN_UNINSTALLED_SUCCESS"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/{game_id}/validate:
+    post:
+      tags:
+        - Games
+      summary: Validate game plugin
+      description: Validate a game plugin (admin only)
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            type: string
+          description: Game ID
+      responses:
+        '200':
+          description: Plugin validation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_PLUGIN_VALIDATED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/PluginValidation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/{game_id}/rate:
+    post:
+      tags:
+        - Games
+      summary: Rate a game
+      description: Rate a game (authenticated users only)
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            type: string
+          description: Game ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+                  minimum: 1.0
+                  maximum: 5.0
+                  description: Rating from 1.0 to 5.0
+              required:
+                - rating
+      responses:
+        '200':
+          description: Game rated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_RATING_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      game_id:
+                        type: string
+                      new_rating:
+                        type: number
+                      total_ratings:
+                        type: integer
+                      previous_rating:
+                        type: number
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/{game_id}/sessions:
+    post:
+      tags:
+        - Game Sessions
+      summary: Start game session
+      description: Start a new game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: game_id
+          required: true
+          schema:
+            type: string
+          description: Game ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_config:
+                  type: object
+                  description: Optional session configuration
+      responses:
+        '201':
+          description: Game session started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_SESSION_STARTED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/GameSession'
+                      game:
+                        $ref: '#/components/schemas/Game'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get user sessions
+      description: Get game sessions for the current user
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, paused, completed, abandoned]
+          description: Filter by session status
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of sessions per page
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_SESSIONS_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GameSessionWithGame'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationInfo'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/stats:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get user session statistics
+      description: Get session statistics for the current user
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Session statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_SESSION_STATS_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/UserSessionStats'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get game session
+      description: Get a specific game session by ID
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      responses:
+        '200':
+          description: Session retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SESSION_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/GameSession'
+                      game:
+                        $ref: '#/components/schemas/Game'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/end:
+    put:
+      tags:
+        - Game Sessions
+      summary: End game session
+      description: End an active game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  enum: [completed, abandoned]
+                  default: completed
+                  description: Reason for ending the session
+      responses:
+        '200':
+          description: Session ended successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_SESSION_ENDED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/GameSession'
+                      session_result:
+                        $ref: '#/components/schemas/SessionResult'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/state:
+    put:
+      tags:
+        - Game Sessions
+      summary: Update session state
+      description: Update the state of an active game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: object
+                  description: New session state data
+              required:
+                - state
+      responses:
+        '200':
+          description: Session state updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SESSION_STATE_UPDATED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/GameSession'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/moves:
+    post:
+      tags:
+        - Game Sessions
+      summary: Validate and record move
+      description: Validate and record a move in a game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                move:
+                  type: object
+                  description: Move data (format depends on game)
+              required:
+                - move
+      responses:
+        '200':
+          description: Move validated and recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "MOVE_VALIDATED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session_id:
+                        type: string
+                      move_valid:
+                        type: boolean
+                      move_number:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/pause:
+    put:
+      tags:
+        - Game Sessions
+      summary: Pause game session
+      description: Pause an active game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      responses:
+        '200':
+          description: Session paused successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SESSION_PAUSED_SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/resume:
+    put:
+      tags:
+        - Game Sessions
+      summary: Resume game session
+      description: Resume a paused game session
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      responses:
+        '200':
+          description: Session resumed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SESSION_RESUMED_SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 
 components:
   securitySchemes:
@@ -3078,3 +3978,459 @@ components:
         donations:
           $ref: '#/components/schemas/DonationPreferences'
       description: Update request can contain any combination of preference categories
+
+    # Game Engine Schemas
+    Game:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Game unique identifier
+          example: "507f1f77bcf86cd799439011"
+        name:
+          type: string
+          description: Game name
+          example: "Number Guessing Game"
+        description:
+          type: string
+          description: Game description
+          example: "A simple number guessing game where players try to guess a randomly generated number"
+        category:
+          type: string
+          description: Game category
+          example: "puzzle"
+        version:
+          type: string
+          description: Game version
+          example: "1.0.0"
+        is_active:
+          type: boolean
+          description: Whether the game is active
+          example: true
+        credit_rate:
+          type: number
+          description: Credits earned per minute of gameplay
+          example: 1.5
+        author:
+          type: string
+          description: Game author
+          example: "GoodPlay Team"
+        plugin_id:
+          type: string
+          description: Associated plugin ID
+          example: "number_guessing_game"
+        min_players:
+          type: integer
+          description: Minimum number of players
+          example: 1
+        max_players:
+          type: integer
+          description: Maximum number of players
+          example: 1
+        estimated_duration_minutes:
+          type: integer
+          description: Estimated game duration in minutes
+          example: 5
+        difficulty_level:
+          type: string
+          enum: [easy, medium, hard]
+          description: Game difficulty level
+          example: "easy"
+        requires_internet:
+          type: boolean
+          description: Whether the game requires internet connection
+          example: false
+        instructions:
+          type: string
+          description: Game instructions
+          example: "Guess the secret number between 1 and 100!"
+        install_count:
+          type: integer
+          description: Number of times the game has been installed
+          example: 150
+        rating:
+          type: number
+          description: Average game rating
+          example: 4.5
+        total_ratings:
+          type: integer
+          description: Total number of ratings
+          example: 32
+        created_at:
+          type: string
+          format: date-time
+          description: Game creation timestamp
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-15T10:30:00Z"
+
+    GameSession:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Session document ID
+          example: "507f1f77bcf86cd799439011"
+        session_id:
+          type: string
+          description: Session unique identifier
+          example: "uuid-session-12345"
+        user_id:
+          type: string
+          description: User ID who owns this session
+          example: "507f1f77bcf86cd799439012"
+        game_id:
+          type: string
+          description: Game ID for this session
+          example: "507f1f77bcf86cd799439013"
+        status:
+          type: string
+          enum: [active, paused, completed, abandoned]
+          description: Session status
+          example: "active"
+        current_state:
+          type: object
+          description: Current game state (format depends on game)
+          example:
+            attempts_remaining: 8
+            guesses_made: [25, 50]
+            hints: ["higher", "lower"]
+        score:
+          type: integer
+          nullable: true
+          description: Current session score
+          example: 1200
+        credits_earned:
+          type: integer
+          nullable: true
+          description: Credits earned in this session
+          example: 15
+        started_at:
+          type: string
+          format: date-time
+          description: Session start timestamp
+          example: "2024-01-15T10:30:00Z"
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end timestamp
+          example: "2024-01-15T10:35:00Z"
+        session_config:
+          type: object
+          description: Session configuration
+          example:
+            difficulty: "medium"
+        moves_count:
+          type: integer
+          description: Number of moves made
+          example: 5
+        achievements_unlocked:
+          type: array
+          items:
+            type: string
+          description: Achievements unlocked in this session
+          example: ["QUICK_SOLVER", "GAME_COMPLETED"]
+        statistics:
+          type: object
+          description: Session statistics
+          example:
+            attempts_used: 3
+            completion_time: 180
+        duration_seconds:
+          type: integer
+          nullable: true
+          description: Session duration in seconds
+          example: 300
+
+    GameSessionWithGame:
+      allOf:
+        - $ref: '#/components/schemas/GameSession'
+        - type: object
+          properties:
+            game:
+              $ref: '#/components/schemas/Game'
+
+    GameRules:
+      type: object
+      properties:
+        min_players:
+          type: integer
+          description: Minimum number of players
+          example: 1
+        max_players:
+          type: integer
+          description: Maximum number of players
+          example: 1
+        estimated_duration_minutes:
+          type: integer
+          description: Estimated game duration in minutes
+          example: 5
+        difficulty_level:
+          type: string
+          enum: [easy, medium, hard]
+          description: Game difficulty level
+          example: "easy"
+        requires_internet:
+          type: boolean
+          description: Whether the game requires internet connection
+          example: false
+        description:
+          type: string
+          description: Game rules description
+          example: "Guess the secret number between 1 and 100!"
+        instructions:
+          type: string
+          description: Detailed game instructions
+          example: "You have 10 attempts to guess the correct number..."
+
+    PluginInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Plugin name
+          example: "Number Guessing Game"
+        version:
+          type: string
+          description: Plugin version
+          example: "1.0.0"
+        description:
+          type: string
+          description: Plugin description
+          example: "A simple number guessing game"
+        category:
+          type: string
+          description: Plugin category
+          example: "puzzle"
+        author:
+          type: string
+          description: Plugin author
+          example: "GoodPlay Team"
+        credit_rate:
+          type: number
+          description: Credit rate per minute
+          example: 0.5
+        is_initialized:
+          type: boolean
+          description: Whether the plugin is initialized
+          example: true
+
+    PluginValidation:
+      type: object
+      properties:
+        game_id:
+          type: string
+          description: Game ID
+          example: "507f1f77bcf86cd799439011"
+        plugin_id:
+          type: string
+          description: Plugin ID
+          example: "number_guessing_game"
+        validation:
+          type: object
+          properties:
+            is_valid:
+              type: boolean
+              description: Whether the plugin is valid
+              example: true
+            errors:
+              type: array
+              items:
+                type: string
+              description: Validation errors
+              example: []
+            warnings:
+              type: array
+              items:
+                type: string
+              description: Validation warnings
+              example: ["Plugin description is recommended"]
+        dependencies:
+          type: object
+          properties:
+            dependencies_met:
+              type: boolean
+              description: Whether all dependencies are met
+              example: true
+            missing_dependencies:
+              type: array
+              items:
+                type: string
+              description: Missing dependencies
+              example: []
+            total_dependencies:
+              type: integer
+              description: Total number of dependencies
+              example: 0
+
+    SessionResult:
+      type: object
+      properties:
+        session_id:
+          type: string
+          description: Session ID
+          example: "uuid-session-12345"
+        final_score:
+          type: integer
+          description: Final session score
+          example: 1200
+        credits_earned:
+          type: integer
+          description: Credits earned in session
+          example: 15
+        completion_time_seconds:
+          type: integer
+          description: Session completion time in seconds
+          example: 300
+        achievements_unlocked:
+          type: array
+          items:
+            type: string
+          description: Achievements unlocked
+          example: ["QUICK_SOLVER", "GAME_COMPLETED"]
+        statistics:
+          type: object
+          description: Detailed session statistics
+          example:
+            attempts_used: 3
+            won: true
+            target_number: 42
+
+    GameStats:
+      type: object
+      properties:
+        database_stats:
+          type: object
+          properties:
+            total_games:
+              type: integer
+              description: Total number of games
+              example: 25
+            active_games:
+              type: integer
+              description: Number of active games
+              example: 20
+            inactive_games:
+              type: integer
+              description: Number of inactive games
+              example: 5
+            categories:
+              type: array
+              items:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: Category name
+                    example: "puzzle"
+                  count:
+                    type: integer
+                    description: Number of games in category
+                    example: 8
+              description: Games by category
+            average_rating:
+              type: number
+              description: Average rating across all games
+              example: 4.2
+        plugin_stats:
+          type: object
+          properties:
+            total_plugins:
+              type: integer
+              description: Total number of plugins
+              example: 20
+            active_plugins:
+              type: integer
+              description: Number of active plugins
+              example: 18
+            inactive_plugins:
+              type: integer
+              description: Number of inactive plugins
+              example: 2
+            categories:
+              type: array
+              items:
+                type: string
+              description: Available plugin categories
+              example: ["puzzle", "action", "strategy"]
+            category_count:
+              type: integer
+              description: Number of different categories
+              example: 3
+
+    UserSessionStats:
+      type: object
+      properties:
+        total_sessions:
+          type: integer
+          description: Total number of sessions
+          example: 45
+        completed_sessions:
+          type: integer
+          description: Number of completed sessions
+          example: 38
+        completion_rate:
+          type: number
+          description: Session completion rate as percentage
+          example: 84.4
+        total_score:
+          type: integer
+          description: Total score across all sessions
+          example: 15600
+        total_credits_earned:
+          type: integer
+          description: Total credits earned
+          example: 450
+        stats_by_status:
+          type: object
+          description: Statistics broken down by session status
+          additionalProperties:
+            type: object
+            properties:
+              count:
+                type: integer
+              total_score:
+                type: integer
+              total_credits:
+                type: integer
+          example:
+            completed:
+              count: 38
+              total_score: 15200
+              total_credits: 420
+            abandoned:
+              count: 7
+              total_score: 400
+              total_credits: 30
+
+    PaginationInfo:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          description: Current page number
+          example: 1
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 5
+        total_count:
+          type: integer
+          description: Total number of items
+          example: 95
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        has_previous:
+          type: boolean
+          description: Whether there is a previous page
+          example: false

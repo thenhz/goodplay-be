@@ -29,6 +29,7 @@ def create_app(config_name=None):
     from app.core.controllers.user_controller import user_bp
     from app.preferences.controllers.preferences_controller import preferences_blueprint
     from app.social import register_social_module
+    from app.games import create_games_blueprint, init_games_module
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
@@ -36,6 +37,14 @@ def create_app(config_name=None):
 
     # Register social module
     register_social_module(app)
+
+    # Register games module
+    games_bp = create_games_blueprint()
+    app.register_blueprint(games_bp)
+
+    # Initialize games module (create indexes and discover plugins)
+    with app.app_context():
+        init_games_module()
     
     @app.route('/api/health', methods=['GET'])
     def health_check():

@@ -1,0 +1,21 @@
+{
+  "id": "number_guessing_game",
+  "name": "Number Guessing Game",
+  "version": "1.0.0",
+  "description": "A simple number guessing game where players try to guess a randomly generated number between 1 and 100",
+  "author": "GoodPlay Team",
+  "category": "puzzle",
+  "main_module": "main",
+  "dependencies": {
+    "python_packages": [],
+    "plugins": []
+  },
+  "metadata": {
+    "min_players": 1,
+    "max_players": 1,
+    "estimated_duration_minutes": 5,
+    "difficulty_level": "easy",
+    "requires_internet": false,
+    "credit_rate": 0.5
+  }
+}
