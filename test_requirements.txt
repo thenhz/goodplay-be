@@ -1,0 +1,51 @@
+# Test dependencies for GoodPlay Backend
+# Install with: pip install -r test_requirements.txt
+
+# Core testing framework
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-mock==3.11.1
+pytest-env==1.1.3
+pytest-timeout==2.2.0
+
+# Async testing support
+pytest-asyncio==0.21.1
+
+# Parallel test execution (optional)
+pytest-xdist==3.5.0
+
+# HTML test reports
+pytest-html==4.1.1
+
+# Test fixtures and utilities
+factory-boy==3.3.0
+freezegun==1.2.2
+
+# Coverage reporting
+coverage==7.3.2
+
+# MongoDB testing utilities
+mongomock==4.1.2
+
+# HTTP testing
+responses==0.24.1
+
+# Test data generation
+faker==20.1.0
+
+# Performance testing
+pytest-benchmark==4.0.0
+
+# API testing utilities
+requests-mock==1.11.0
+
+# Security testing
+bandit==1.7.5
+
+# Code quality checks
+flake8==6.1.0
+black==23.11.0
+isort==5.12.0
+
+# Type checking
+mypy==1.7.1

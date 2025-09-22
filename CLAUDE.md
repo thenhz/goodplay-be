@@ -41,12 +41,6 @@ app/
     └── controllers/ # Admin route handlers
 ```
 
-### Migration from Monolithic to Modular
-The application has been restructured from a monolithic architecture to a modular one:
-- **Previous**: Single `models/`, `repositories/`, `services/`, `controllers/` directories
-- **Current**: Feature-based modules with their own MVC structure
-- **Benefits**: Better separation of concerns, easier maintenance, scalable development
-
 ### Key Design Patterns
 - **Modular Architecture**: Feature-based modules (core, social, games, donations, onlus, admin)
 - **Repository Pattern**: Data access abstraction in each module's `repositories/`
@@ -59,7 +53,7 @@ The application has been restructured from a monolithic architecture to a modula
 - ✅ User registration with validation
 - ✅ JWT-based authentication (access + refresh tokens)
 - ✅ User profile management
-- ✅ User preferences management system (GOO-6)
+- ✅ User preferences management system
 - ✅ CORS configuration
 - ✅ Structured logging
 - ✅ Environment-based configuration
@@ -74,147 +68,21 @@ The application has been restructured from a monolithic architecture to a modula
 - **Production Server**: Gunicorn 23.0.0
 - **Config Management**: python-dotenv 1.1.1
 
-## Database Schema
+## Database Schema & API Documentation
 
-### Core Collections
+### Database Models
+Database entities and schemas are defined in each module's `models/` directory:
+- **Core models**: `app/core/models/` (User, Config, etc.)
+- **Social models**: `app/social/models/` (UserRelationship, Achievement, etc.)
+- **Games models**: `app/games/models/` (Game, GameSession, etc.)
+- **Donations models**: `app/donations/models/` (Wallet, Transaction, etc.)
+- **ONLUS models**: `app/onlus/models/` (ONLUS, Campaign, etc.)
 
-#### Users Collection (app/core/models/) - ✅ Includes GOO-6 Preferences
-```javascript
-{
-  _id: ObjectId,
-  email: String (unique, lowercase),
-  first_name: String (optional),
-  last_name: String (optional),
-  password_hash: String,
-  is_active: Boolean (default: true),
-  role: String (default: 'user'),
-  preferences: {
-    gaming: {
-      preferred_categories: Array,
-      difficulty_level: String, // easy, medium, hard
-      tutorial_enabled: Boolean,
-      auto_save: Boolean,
-      sound_enabled: Boolean,
-      music_enabled: Boolean,
-      vibration_enabled: Boolean
-    },
-    notifications: {
-      push_enabled: Boolean,
-      email_enabled: Boolean,
-      frequency: String, // none, daily, weekly, monthly
-      achievement_alerts: Boolean,
-      donation_confirmations: Boolean,
-      friend_activity: Boolean,
-      tournament_reminders: Boolean,
-      maintenance_alerts: Boolean
-    },
-    privacy: {
-      profile_visibility: String, // public, friends, private
-      stats_sharing: Boolean,
-      friends_discovery: Boolean,
-      leaderboard_participation: Boolean,
-      activity_visibility: String, // public, friends, private
-      contact_permissions: String // everyone, friends, none
-    },
-    donations: {
-      auto_donate_enabled: Boolean,
-      auto_donate_percentage: Number,
-      preferred_causes: Array,
-      notification_threshold: Number,
-      monthly_goal: Number (optional),
-      impact_sharing: Boolean
-    }
-  },
-  created_at: DateTime,
-  updated_at: DateTime
-}
-```
-
-
-### Planned Collections (Future Implementation)
-
-#### Games Collection (app/games/models/)
-```javascript
-{
-  _id: ObjectId,
-  name: String,
-  description: String,
-  category: String,
-  version: String,
-  is_active: Boolean,
-  credit_rate: Number, // Credits per minute
-  created_at: DateTime
-}
-```
-
-#### Wallets Collection (app/donations/models/)
-```javascript
-{
-  _id: ObjectId,
-  user_id: ObjectId,
-  balance: Number,
-  total_earned: Number,
-  total_donated: Number,
-  updated_at: DateTime
-}
-```
-
-#### ONLUS Collection (app/onlus/models/)
-```javascript
-{
-  _id: ObjectId,
-  name: String,
-  description: String,
-  verification_status: String, // pending, verified, rejected
-  created_at: DateTime
-}
-```
-
-## API Endpoints
-
-### Current Endpoints
-
-#### Core Routes (`/api/core/`)
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User login
-- `POST /auth/refresh` - Token refresh
-- `GET /auth/profile` - Get user profile (auth required)
-- `PUT /auth/profile` - Update user profile (auth required)
-- `POST /auth/logout` - User logout (auth required)
-- `GET /health` - API health status
-
-#### Preferences Routes (`/api/preferences/`) - ✅ GOO-6 Completed
-- `GET /` - Get user preferences (auth required)
-- `PUT /` - Update user preferences (auth required)
-- `GET /{category}` - Get preferences for specific category (auth required)
-- `PUT /{category}` - Update specific category preferences (auth required)
-- `POST /reset` - Reset preferences to defaults (auth required)
-- `GET /defaults` - Get default preferences template (public)
-
-**Note**: Preferences are stored directly in the User document for optimal performance. The preferences module provides a dedicated API layer for managing the 4 comprehensive preference categories: gaming, notifications, privacy, and donations.
-
-### Planned Endpoints (Future Implementation)
-
-#### Games Routes (`/api/games/`)
-- `GET /` - List available games
-- `GET /{game_id}` - Get game details
-- `POST /{game_id}/sessions` - Start game session
-- `PUT /sessions/{session_id}` - Update session progress
-
-#### Social Routes (`/api/social/`)
-- `GET /leaderboards` - Get leaderboards
-- `GET /achievements` - Get user achievements
-- `GET /friends` - Get user's friends list
-
-#### Donations Routes (`/api/donations/`)
-- `GET /wallet` - Get user wallet balance
-- `POST /donate` - Make donation to ONLUS
-- `GET /transactions` - Get donation history
-
-#### ONLUS Routes (`/api/onlus/`)
-- `GET /` - List verified ONLUS organizations
-- `GET /{onlus_id}` - Get ONLUS details
-- `POST /` - Register new ONLUS (admin)
+### API Endpoints Documentation
+API endpoints and their descriptions are documented in:
+- **OpenAPI Specification**: `openapi.yaml` - Complete API documentation with schemas
+- **Controller modules**: Each feature's `controllers/` directory contains route implementations
+- **Postman Collection**: `GoodPlay_API.postman_collection.json` - API testing collection
 
 ## Development Guidelines
 
@@ -227,16 +95,9 @@ The application has been restructured from a monolithic architecture to a modula
 6. **Register Blueprint** in module's `__init__.py` and main `app/__init__.py`
 7. **Update OpenAPI spec** in `openapi.yaml`
 
-### Module Development Order
-1. **Core** - Foundation (auth, users, health) ✅ Completed
-2. **Games** - Game engine and session management
-3. **Social** - Achievements, leaderboards, social features
-4. **Donations** - Wallet system and donation processing
-5. **ONLUS** - Organization management and verification
-6. **Admin** - Administrative interface and controls
 
 ### Code Standards
-- All user-facing messages in English
+- All user-facing messages should be constants in English. in the UI it will be translated properly
 - Use type hints where possible
 - Follow existing naming conventions
 - Implement proper error handling with try/catch
@@ -245,36 +106,23 @@ The application has been restructured from a monolithic architecture to a modula
 
 ### API Response Standards (🚨 CRITICAL FOR UI LOCALIZATION)
 - **ALL API responses MUST use constant message keys**: Never return dynamic text messages
-- **Message constants**: Use predefined constant keys (e.g., `"USER_CREATED_SUCCESS"`, `"INVALID_CREDENTIALS"`, `"VALIDATION_ERROR"`)
+- **Message constants**: Use specific constant strings as documented in OpenAPI spec
 - **UI Localization**: Frontend will localize these constant keys to user's language
-- **Swagger Documentation**: Document ALL possible return message constants for each endpoint
+- **OpenAPI Documentation**: All possible response constants are documented for each endpoint
 - **Examples**:
   ```python
   # ❌ WRONG - Dynamic message
   return success_response("User John created successfully")
 
-  # ✅ CORRECT - Constant key
-  return success_response("USER_CREATED_SUCCESS", {"user_id": user_id})
+  # ✅ CORRECT - Constant string matching OpenAPI documentation
+  return success_response("Registration completed successfully", {"user_id": user_id})
   ```
 
-### Preferences Module Message Constants (GOO-6):
-- `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
-- `PREFERENCES_UPDATED_SUCCESS` - Preferences updated successfully
-- `PREFERENCES_CATEGORY_RETRIEVED_SUCCESS` - Category preferences retrieved
-- `PREFERENCES_CATEGORY_UPDATED_SUCCESS` - Category preferences updated
-- `PREFERENCES_RESET_SUCCESS` - Preferences reset to defaults
-- `DEFAULT_PREFERENCES_RETRIEVED_SUCCESS` - Default preferences template retrieved
-- `PREFERENCES_CATEGORY_INVALID` - Invalid preference category specified
-- `PREFERENCES_DATA_REQUIRED` - Preferences data is required
-- `PREFERENCES_CREATION_FAILED` - Failed to create preferences
-- `PREFERENCES_UPDATE_FAILED` - Failed to update preferences
-- `PREFERENCES_RETRIEVAL_FAILED` - Failed to retrieve preferences
-- `PREFERENCES_RESET_FAILED` - Failed to reset preferences
-- `GAMING_DIFFICULTY_INVALID` - Invalid gaming difficulty level
-- `GAMING_CATEGORIES_INVALID` - Invalid gaming categories format
-- `NOTIFICATION_FREQUENCY_INVALID` - Invalid notification frequency
-- `PRIVACY_VISIBILITY_INVALID` - Invalid privacy visibility setting
-- `DONATION_PERCENTAGE_INVALID` - Invalid donation percentage value
+### Response Message Constants
+All API response message constants are documented in:
+- **OpenAPI specification**: `openapi.yaml` - Each endpoint lists all possible response messages
+- **Endpoint-specific**: Constants are documented per endpoint with examples
+- **UI Development**: Frontend developers can see exactly what messages each API call can return
 
 ### Security Best Practices
 - Never log sensitive data (passwords, tokens)
@@ -283,11 +131,61 @@ The application has been restructured from a monolithic architecture to a modula
 - Hash passwords with bcrypt
 - Set proper CORS origins for production
 
-### Testing Strategy
-- Unit tests for services layer
-- Integration tests for API endpoints
-- Mock MongoDB operations in tests
-- Test authentication flows
+### Testing Strategy & Requirements
+- **🚨 MANDATORY**: After ANY code change (new features, bug fixes, refactoring), you MUST:
+  1. **Create/Update Unit Tests**: Add tests for new functionality or update existing tests
+  2. **Run Test Suite**: Execute `make test` or `python run_tests.py` to ensure all tests pass
+  3. **Verify Coverage**: Ensure coverage remains above 80% (`make test-coverage`)
+  4. **Update Test Documentation**: Update tests if API contracts change
+
+#### Test Structure (FOLLOW THIS PATTERN):
+- **Service Layer Tests**: Mock repository dependencies, test business logic
+- **Controller Layer Tests**: Mock services, test API endpoints and error handling
+- **Repository Layer Tests**: Mock database, test CRUD operations
+- **Model Layer Tests**: Test validation, serialization, business methods
+- **Integration Tests**: Test full request/response cycles
+- **API Tests**: Test endpoint contracts match Postman collections
+
+#### Test Execution Commands:
+```bash
+# Run all tests before committing
+make test
+
+# Test specific modules after changes
+make test-module MODULE=auth        # After auth changes
+make test-module MODULE=preferences # After preferences changes
+make test-module MODULE=social     # After social changes
+make test-module MODULE=games      # After games changes
+
+# Verify coverage
+make test-coverage
+
+# Fast checks during development
+make test-unit  # Skip coverage for speed
+```
+
+#### Test File Organization:
+- `tests/test_core_auth.py` - Core authentication (47 tests)
+- `tests/test_preferences.py` - Preferences module (35 tests)
+- `tests/test_social.py` - Social features (28 tests)
+- `tests/test_games.py` - Game engine (32 tests)
+- `tests/conftest.py` - Shared fixtures and configuration
+
+#### When to Create New Tests:
+- **New Service Method**: Create corresponding test method
+- **New API Endpoint**: Add controller test + update Postman collection
+- **New Model Field**: Add model validation tests
+- **New Repository Method**: Add repository test with mocked DB
+- **Bug Fix**: Add regression test to prevent future occurrence
+- **Performance Change**: Add benchmark test if significant
+
+#### Test Quality Requirements:
+- **Coverage**: Each new module must have 90%+ coverage
+- **Assertions**: Test both success and failure scenarios
+- **Mocking**: Mock external dependencies (DB, APIs, file system)
+- **Fixtures**: Use shared fixtures from `conftest.py`
+- **Naming**: Follow `test_<method>_<scenario>` pattern
+- **Documentation**: Include docstrings explaining test purpose
 
 ## Environment Configuration
 
@@ -365,15 +263,7 @@ git push heroku main
 - Use structured logging for auth events, DB operations
 - Never log sensitive information
 
-## Future Enhancements
 
-### Platform Features
-- Plugin-based game installation system
-- Real-time session synchronization across devices
-- Advanced social features (chat, tournaments)
-- Impact score calculation and community rankings
-- Multi-language support (currently English-only)
-- Push notifications for achievements and donations
 
 ### Technical Improvements
 - API rate limiting
@@ -392,6 +282,13 @@ git push heroku main
 - **🚨 CRITICAL**: When adding/modifying/moving endpoints, ALWAYS update BOTH:
   - OpenAPI spec in `openapi.yaml`
   - Postman collection in `GoodPlay_API.postman_collection.json`
+- **🚨 MANDATORY TESTING WORKFLOW**: After ANY code modification, you MUST:
+  1. Create/update unit tests for the changed functionality
+  2. Run `make test` to verify all tests pass
+  3. Check coverage with `make test-coverage` (must be 80%+)
+  4. For new features: add tests BEFORE implementing the feature (TDD approach preferred)
+  5. For bug fixes: add regression test to prevent future occurrences
+  6. Update test documentation if API contracts change
 - Always follow the modular Repository → Service → Controller pattern within each module
 - Respect module boundaries - core functionality should not depend on other modules
 - Cross-module dependencies should flow towards core (e.g., games can use core auth, but core shouldn't use games)

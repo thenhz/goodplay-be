@@ -22,20 +22,51 @@ info:
     ## Message Constants for UI Localization
     All API responses use constant message keys instead of dynamic text.
     The UI localizes these constants to the user's language.
+    Each endpoint documents all possible response messages with examples.
 
-    ### Common Message Constants:
-    - `API_HEALTHY` - API health check success
-    - `USER_CREATED_SUCCESS` - User registration success
-    - `LOGIN_SUCCESS` - User login success
-    - `INVALID_CREDENTIALS` - Invalid login credentials
-    - `EMAIL_ALREADY_EXISTS` - Email already registered
-    - `VALIDATION_ERROR` - Input validation failed
-    - `TOKEN_REFRESHED_SUCCESS` - Token refresh success
-    - `LOGOUT_SUCCESS` - User logout success
+    ### Authentication Module Constants:
+    - `USER_REGISTRATION_SUCCESS` - User registration success
+    - `USER_LOGIN_SUCCESS` - User login success
+    - `USER_LOGOUT_SUCCESS` - User logout success
+    - `TOKEN_REFRESH_SUCCESS` - Token refresh success
     - `PROFILE_RETRIEVED_SUCCESS` - Profile retrieved success
     - `PROFILE_UPDATED_SUCCESS` - Profile updated success
-    - `UNAUTHORIZED` - Authentication required
-    - `INTERNAL_SERVER_ERROR` - Server error occurred
+    - `EMAIL_ALREADY_REGISTERED` - Email already registered
+    - `INVALID_EMAIL_FORMAT` - Invalid email format
+    - `PASSWORD_TOO_WEAK` - Password must be at least 6 characters
+    - `CREDENTIALS_REQUIRED` - Email and password required
+    - `INVALID_CREDENTIALS` - Invalid login credentials
+    - `ACCOUNT_DISABLED` - Account disabled
+    - `USER_NOT_FOUND` - User not found
+    - `TOKEN_INVALID` - Invalid token
+    - `TOKEN_EXPIRED` - Token expired
+
+    ### Preferences Module Constants:
+    - `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
+    - `PREFERENCES_UPDATED_SUCCESS` - Preferences updated successfully
+    - `PREFERENCES_CATEGORY_RETRIEVED_SUCCESS` - Category preferences retrieved
+    - `PREFERENCES_CATEGORY_UPDATED_SUCCESS` - Category preferences updated
+    - `PREFERENCES_RESET_SUCCESS` - Preferences reset to defaults
+    - `DEFAULT_PREFERENCES_RETRIEVED_SUCCESS` - Default preferences template retrieved
+    - `PREFERENCES_CATEGORY_INVALID` - Invalid preference category
+    - `PREFERENCES_DATA_REQUIRED` - Preferences data required
+    - `GAMING_DIFFICULTY_INVALID` - Invalid gaming difficulty level
+    - `NOTIFICATION_FREQUENCY_INVALID` - Invalid notification frequency
+    - `PRIVACY_VISIBILITY_INVALID` - Invalid privacy visibility setting
+    - `DONATION_PERCENTAGE_INVALID` - Invalid donation percentage
+
+    ### System Constants:
+    - `SYSTEM_HEALTH_OK` - API health check success
+    - `OPERATION_SUCCESS` - Operation completed successfully
+    - `OPERATION_FAILED` - Operation failed
+    - `DATA_REQUIRED` - Data required
+    - `INVALID_REQUEST` - Invalid request
+    - `UNAUTHORIZED_ACCESS` - Authentication required
+    - `FORBIDDEN_ACTION` - Forbidden action
+    - `RESOURCE_NOT_FOUND` - Resource not found
+    - `INTERNAL_SERVER_ERROR` - Internal server error
+    - `VALIDATION_ERROR` - Validation error
+    - `DATABASE_ERROR` - Database error
 
     ### Social Module Message Constants (GOO-7):
     - `FRIEND_REQUEST_SENT_SUCCESS` - Friend request sent successfully
@@ -192,8 +223,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+              example:
+                success: true
+                message: "Registration completed successfully"
+                data:
+                  user: {...}
+                  tokens: {...}
         '400':
-          description: Validation error or email already exists
+          description: Registration validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_data:
+                  summary: Missing request data
+                  value:
+                    success: false
+                    message: "Data required"
+                missing_credentials:
+                  summary: Missing email or password
+                  value:
+                    success: false
+                    message: "Email and password are required"
+                invalid_email:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    message: "Invalid email format"
+                weak_password:
+                  summary: Password too short
+                  value:
+                    success: false
+                    message: "Password must be at least 6 characters long"
+                email_exists:
+                  summary: Email already registered
+                  value:
+                    success: false
+                    message: "Email already registered"
+                registration_error:
+                  summary: Registration process failed
+                  value:
+                    success: false
+                    message: "Error during registration"
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -207,12 +281,6 @@ paths:
                   value:
                     success: false
                     message: "EMAIL_ALREADY_EXISTS"
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /auth/login:
     post:
@@ -236,33 +304,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: Invalid credentials or account disabled
+              example:
+                success: true
+                message: "Login successful"
+                data:
+                  user: {...}
+                  tokens: {...}
+        '400':
+          description: Missing request data
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                invalid_credentials:
+                missing_data:
+                  summary: Missing request data
                   value:
                     success: false
-                    message: "INVALID_CREDENTIALS"
-                account_disabled:
-                  value:
-                    success: false
-                    message: "ACCOUNT_DISABLED"
-        '400':
-          description: Missing required fields
+                    message: "Data required"
+        '401':
+          description: Authentication errors
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_credentials:
+                  summary: Missing email or password
+                  value:
+                    success: false
+                    message: "Email and password are required"
+                invalid_credentials:
+                  summary: Invalid email/password combination
+                  value:
+                    success: false
+                    message: "Invalid credentials"
+                account_disabled:
+                  summary: User account is disabled
+                  value:
+                    success: false
+                    message: "Account disabled"
+                login_error:
+                  summary: Login process failed
+                  value:
+                    success: false
+                    message: "Error during login"
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Internal server error"
 
   /auth/refresh:
     post:
@@ -285,7 +380,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "TOKEN_REFRESHED_SUCCESS"
+                    example: "Token refreshed successfully"
                   data:
                     type: object
                     properties:
@@ -293,11 +388,22 @@ paths:
                         type: string
                         example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
         '401':
-          description: Invalid or expired refresh token
+          description: Token refresh errors
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                user_not_found:
+                  summary: User not found or disabled
+                  value:
+                    success: false
+                    message: "User not found or disabled"
+                refresh_error:
+                  summary: Token refresh failed
+                  value:
+                    success: false
+                    message: "Error refreshing token"
         '500':
           description: Internal server error
           content:
@@ -327,7 +433,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "LOGOUT_SUCCESS"
+                    example: "Logout successful"
         '401':
           description: Authentication required
           content:
@@ -767,13 +873,40 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Preferences retrieved successfully"
+                    example: "PREFERENCES_RETRIEVED_SUCCESS"
                   data:
-                    $ref: '#/components/schemas/UserPreferences'
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+        '400':
+          description: User or preferences errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                user_not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "USER_NOT_FOUND"
+                preferences_retrieval_failed:
+                  summary: Failed to retrieve preferences
+                  value:
+                    success: false
+                    message: "PREFERENCES_RETRIEVAL_FAILED"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "INTERNAL_SERVER_ERROR"
 
     put:
       tags:
@@ -801,15 +934,50 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Preferences updated successfully"
+                    example: "PREFERENCES_UPDATED_SUCCESS"
                   data:
-                    $ref: '#/components/schemas/UserPreferences'
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
         '400':
-          $ref: '#/components/responses/BadRequestError'
+          description: Validation and update errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                data_required:
+                  summary: Missing preferences data
+                  value:
+                    success: false
+                    message: "PREFERENCES_DATA_REQUIRED"
+                user_not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "USER_NOT_FOUND"
+                update_failed:
+                  summary: Failed to update preferences
+                  value:
+                    success: false
+                    message: "PREFERENCES_UPDATE_FAILED"
+                validation_error:
+                  summary: Validation errors from User model
+                  value:
+                    success: false
+                    message: "GAMING_DIFFICULTY_INVALID"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "INTERNAL_SERVER_ERROR"
 
   /preferences/reset:
     post:
@@ -2917,6 +3085,13 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
+    ForbiddenError:
+      description: Access forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
     NotFoundError:
       description: Resource not found
       content:
@@ -3292,62 +3467,7 @@ components:
           type: integer
           example: 2
 
-    Game:
-      type: object
-      properties:
-        game_id:
-          type: string
-          example: "puzzle-master-v1"
-        name:
-          type: string
-          example: "Puzzle Master"
-        description:
-          type: string
-          example: "Classic puzzle game with multiple difficulty levels"
-        category:
-          type: string
-          example: "puzzle"
-        version:
-          type: string
-          example: "1.2.3"
-        rating:
-          type: number
-          format: float
-          example: 4.5
-        install_count:
-          type: integer
-          example: 25000
-        is_active:
-          type: boolean
-          example: true
 
-    GameSession:
-      type: object
-      properties:
-        session_id:
-          type: string
-          example: "sess_123abc456def"
-        game_id:
-          type: string
-          example: "puzzle-master-v1"
-        user_id:
-          type: string
-          example: "507f1f77bcf86cd799439011"
-        status:
-          type: string
-          enum: [active, paused, completed, abandoned]
-          example: "active"
-        start_time:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
-        play_duration:
-          type: integer
-          description: Duration in milliseconds
-          example: 1800000
-        current_score:
-          type: integer
-          example: 1200
 
     Wallet:
       type: object
