@@ -1954,6 +1954,188 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Synchronize Session State (GOO-9)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"device_state\": {\n        \"current_state\": {\n            \"level\": 2,\n            \"score\": 200\n        },\n        \"play_duration_ms\": 45000,\n        \"sync_version\": 1,\n        \"score\": 200,\n        \"new_moves\": [\n            {\n                \"action\": \"click\",\n                \"position\": {\"x\": 100, \"y\": 200},\n                \"timestamp\": \"2024-01-15T10:34:00Z\"\n            }\n        ],\n        \"new_achievements\": [\"LEVEL_2_REACHED\"],\n        \"statistics\": {\"clicks\": 25}\n    },\n    \"device_info\": {\n        \"device_id\": \"mobile-device-123\",\n        \"device_type\": \"mobile\",\n        \"platform\": \"iOS\",\n        \"app_version\": \"1.2.0\"\n    },\n    \"timestamp\": \"2024-01-15T10:34:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/games/sessions/{{session_id}}/sync",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"sessions",
+								"{{session_id}}",
+								"sync"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Session for Device (GOO-9)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "X-Device-ID",
+								"value": "mobile-device-456",
+								"type": "text"
+							},
+							{
+								"key": "X-Device-Type",
+								"value": "mobile",
+								"type": "text"
+							},
+							{
+								"key": "X-App-Version",
+								"value": "1.2.0",
+								"type": "text"
+							},
+							{
+								"key": "X-Platform",
+								"value": "iOS",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/games/sessions/{{session_id}}/device?device_id=mobile-456&device_type=mobile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"sessions",
+								"{{session_id}}",
+								"device"
+							],
+							"query": [
+								{
+									"key": "device_id",
+									"value": "mobile-456"
+								},
+								{
+									"key": "device_type",
+									"value": "mobile"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resolve Sync Conflict (GOO-9)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"device_state\": {\n        \"current_state\": {\n            \"level\": 3,\n            \"score\": 500\n        },\n        \"score\": 500,\n        \"play_duration_ms\": 60000\n    },\n    \"resolution_strategy\": \"merge\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/games/sessions/{{session_id}}/conflicts/resolve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"sessions",
+								"{{session_id}}",
+								"conflicts",
+								"resolve"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Session Conflicts (GOO-9)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/games/sessions/conflicts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"sessions",
+								"conflicts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Sessions (GOO-9)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/games/sessions/active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"games",
+								"sessions",
+								"active"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}

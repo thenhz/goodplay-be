@@ -1,15 +1,17 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.core.decorators import auth_required, admin_required
+from app.core.utils.decorators import auth_required, admin_required
 from app.core.utils.responses import success_response, error_response
 
 from ..services.game_service import GameService
 from ..services.game_session_service import GameSessionService
+from ..services.state_synchronizer import StateSynchronizer
 
 games_bp = Blueprint('games', __name__, url_prefix='/api/games')
 
 game_service = GameService()
 session_service = GameSessionService()
+state_synchronizer = StateSynchronizer()
 
 @games_bp.route('/', methods=['GET'])
 def get_games():
@@ -202,11 +204,28 @@ def rate_game(current_user, game_id):
 @games_bp.route('/<game_id>/sessions', methods=['POST'])
 @auth_required
 def start_game_session(current_user, game_id):
-    """Start a new game session"""
+    """Start a new game session with enhanced device tracking"""
     try:
         user_id = str(current_user['_id'])
         data = request.get_json() or {}
         session_config = data.get('session_config', {})
+
+        # Extract device information
+        device_info = data.get('device_info', {})
+        if not device_info:
+            # Try to extract from headers
+            device_info = {
+                'device_id': request.headers.get('X-Device-ID'),
+                'device_type': request.headers.get('X-Device-Type', 'unknown'),
+                'app_version': request.headers.get('X-App-Version'),
+                'platform': request.headers.get('X-Platform'),
+                'user_agent': request.headers.get('User-Agent')
+            }
+            # Remove None values
+            device_info = {k: v for k, v in device_info.items() if v is not None}
+
+        # Add device info to session config
+        session_config['device_info'] = device_info
 
         success, message, result = session_service.start_game_session(
             user_id, game_id, session_config
@@ -420,3 +439,172 @@ def get_user_session_stats(current_user):
 
     except Exception as e:
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+# Enhanced GOO-9 Session Management Endpoints
+
+@games_bp.route('/sessions/<session_id>/sync', methods=['POST'])
+@auth_required
+def sync_session_state(current_user, session_id):
+    """Synchronize session state from a device (cross-device sync)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("SYNC_DATA_REQUIRED")
+
+        # Extract device state and device info
+        device_state = data.get('device_state', {})
+        device_info = data.get('device_info', {})
+
+        # Add user info to device tracking
+        device_info['user_id'] = str(current_user['_id'])
+        device_info['sync_timestamp'] = data.get('timestamp')
+
+        # First check if user owns this session
+        success, message, session_data = session_service.get_session_by_id(session_id)
+        if not success:
+            return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
+
+        user_id = str(current_user['_id'])
+        if session_data['session']['user_id'] != user_id:
+            return error_response("SESSION_ACCESS_DENIED", status_code=403)
+
+        success, message, result = state_synchronizer.sync_session_state(
+            session_id, device_state, device_info
+        )
+
+        if success:
+            status_code = 200
+            if message == "SYNC_CONFLICT_SERVER_WINS":
+                status_code = 409  # Conflict
+            return success_response(message, result, status_code=status_code)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+@games_bp.route('/sessions/<session_id>/device', methods=['GET'])
+@auth_required
+def get_session_for_device(current_user, session_id):
+    """Get session optimized for a specific device"""
+    try:
+        # Extract device info from query parameters or headers
+        device_info = {
+            'device_id': request.args.get('device_id') or request.headers.get('X-Device-ID'),
+            'device_type': request.args.get('device_type') or request.headers.get('X-Device-Type'),
+            'app_version': request.headers.get('X-App-Version'),
+            'platform': request.headers.get('X-Platform'),
+            'user_id': str(current_user['_id'])
+        }
+
+        # Remove None values
+        device_info = {k: v for k, v in device_info.items() if v is not None}
+
+        # First check if user owns this session
+        success, message, session_data = session_service.get_session_by_id(session_id)
+        if not success:
+            return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
+
+        user_id = str(current_user['_id'])
+        if session_data['session']['user_id'] != user_id:
+            return error_response("SESSION_ACCESS_DENIED", status_code=403)
+
+        success, message, result = state_synchronizer.get_session_for_device(session_id, device_info)
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+@games_bp.route('/sessions/<session_id>/conflicts/resolve', methods=['POST'])
+@auth_required
+def resolve_sync_conflict(current_user, session_id):
+    """Resolve synchronization conflicts for a session"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("CONFLICT_RESOLUTION_DATA_REQUIRED")
+
+        device_state = data.get('device_state', {})
+        resolution_strategy = data.get('resolution_strategy', 'server_wins')
+
+        if resolution_strategy not in ['server_wins', 'device_wins', 'merge']:
+            return error_response("INVALID_RESOLUTION_STRATEGY")
+
+        # First check if user owns this session
+        success, message, session_data = session_service.get_session_by_id(session_id)
+        if not success:
+            return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
+
+        user_id = str(current_user['_id'])
+        if session_data['session']['user_id'] != user_id:
+            return error_response("SESSION_ACCESS_DENIED", status_code=403)
+
+        success, message, result = state_synchronizer.resolve_sync_conflict(
+            session_id, device_state, resolution_strategy
+        )
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+@games_bp.route('/sessions/conflicts', methods=['GET'])
+@auth_required
+def check_session_conflicts(current_user):
+    """Check for sessions with potential synchronization conflicts"""
+    try:
+        user_id = str(current_user['_id'])
+
+        success, message, data = state_synchronizer.check_session_conflicts(user_id)
+
+        if success:
+            return success_response(message, data)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+@games_bp.route('/sessions/active', methods=['GET'])
+@auth_required
+def get_active_sessions(current_user):
+    """Get all active and paused sessions for the current user"""
+    try:
+        user_id = str(current_user['_id'])
+
+        # Get both active and paused sessions
+        success_active, message_active, data_active = session_service.get_user_sessions(
+            user_id, "active", 1, 50
+        )
+        success_paused, message_paused, data_paused = session_service.get_user_sessions(
+            user_id, "paused", 1, 50
+        )
+
+        if not success_active or not success_paused:
+            return error_response("ACTIVE_SESSIONS_RETRIEVAL_FAILED")
+
+        # Combine sessions
+        all_sessions = data_active.get('sessions', []) + data_paused.get('sessions', [])
+
+        # Sort by last activity
+        all_sessions.sort(key=lambda x: x.get('updated_at', ''), reverse=True)
+
+        result = {
+            "active_sessions": data_active.get('sessions', []),
+            "paused_sessions": data_paused.get('sessions', []),
+            "all_sessions": all_sessions,
+            "total_count": len(all_sessions)
+        }
+
+        return success_response("ACTIVE_SESSIONS_RETRIEVED_SUCCESS", result)
+
+    except Exception as e:
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+

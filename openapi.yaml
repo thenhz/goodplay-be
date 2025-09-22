@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: GoodPlay Backend API
   description: |
@@ -118,6 +118,23 @@ info:
     - `PLUGIN_FILE_REQUIRED` - Plugin file is required
     - `PLUGIN_FILE_EMPTY` - Plugin file is empty
     - `INVALID_RATING_VALUE` - Rating value must be between 1.0 and 5.0
+
+    ### Enhanced Session Management Message Constants (GOO-9):
+    - `SESSION_SYNC_SUCCESS` - Session synchronized successfully
+    - `SYNC_CONFLICT_SERVER_WINS` - Sync conflict resolved - server state maintained
+    - `SESSION_PROVIDED_SUCCESS` - Session provided for device successfully
+    - `SYNC_CONFLICT_RESOLVED` - Synchronization conflict resolved successfully
+    - `NO_SYNC_CONFLICTS` - No synchronization conflicts detected
+    - `SYNC_CONFLICTS_DETECTED` - Synchronization conflicts detected
+    - `ACTIVE_SESSIONS_RETRIEVED_SUCCESS` - Active sessions retrieved successfully
+    - `SYNC_DATA_REQUIRED` - Synchronization data is required
+    - `CONFLICT_RESOLUTION_DATA_REQUIRED` - Conflict resolution data is required
+    - `INVALID_RESOLUTION_STRATEGY` - Invalid conflict resolution strategy
+    - `ACTIVE_SESSIONS_RETRIEVAL_FAILED` - Failed to retrieve active sessions
+    - `SESSION_SYNC_FAILED` - Session synchronization failed
+    - `SESSION_PROVISION_FAILED` - Session provision for device failed
+    - `SYNC_CONFLICT_RESOLUTION_FAILED` - Sync conflict resolution failed
+    - `SYNC_CONFLICT_CHECK_FAILED` - Sync conflict check failed
     - `FRIEND_REMOVED_SUCCESS` - Friend removed successfully
     - `FRIEND_RELATIONSHIP_NOT_FOUND` - Friend relationship not found
     - `FRIENDS_LIST_SUCCESS` - Friends list retrieved successfully
@@ -3042,6 +3059,394 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # Enhanced GOO-9 Session Management Endpoints
+
+  /api/games/sessions/{session_id}/sync:
+    post:
+      tags:
+        - Game Sessions
+      summary: Synchronize session state (GOO-9)
+      description: |
+        Synchronize session state from a device for cross-device play.
+        Handles conflict resolution and maintains session consistency.
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_state:
+                  type: object
+                  properties:
+                    current_state:
+                      type: object
+                      description: Current game state
+                    play_duration_ms:
+                      type: integer
+                      description: Play duration in milliseconds
+                    score:
+                      type: integer
+                      description: Current score
+                    sync_version:
+                      type: integer
+                      description: Device sync version
+                    new_moves:
+                      type: array
+                      items:
+                        type: object
+                      description: New moves since last sync
+                    new_achievements:
+                      type: array
+                      items:
+                        type: string
+                      description: New achievements unlocked
+                    statistics:
+                      type: object
+                      description: Updated game statistics
+                device_info:
+                  type: object
+                  properties:
+                    device_id:
+                      type: string
+                    device_type:
+                      type: string
+                      enum: [mobile, web, desktop]
+                    platform:
+                      type: string
+                    app_version:
+                      type: string
+                timestamp:
+                  type: string
+                  format: date-time
+              required:
+                - device_state
+                - device_info
+      responses:
+        '200':
+          description: Session synchronized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    enum:
+                      - "SESSION_SYNC_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/EnhancedGameSession'
+                      sync_version:
+                        type: integer
+                      last_sync_at:
+                        type: string
+                        format: date-time
+        '409':
+          description: Sync conflict detected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SYNC_CONFLICT_SERVER_WINS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/EnhancedGameSession'
+                      conflict_resolution:
+                        type: string
+                        example: "server_wins"
+                      server_sync_version:
+                        type: integer
+                      device_sync_version:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/device:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get session for device (GOO-9)
+      description: Get session state optimized for a specific device type
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+        - in: query
+          name: device_id
+          schema:
+            type: string
+          description: Device identifier
+        - in: query
+          name: device_type
+          schema:
+            type: string
+            enum: [mobile, web, desktop]
+          description: Device type
+        - in: header
+          name: X-Device-ID
+          schema:
+            type: string
+          description: Device ID from header
+        - in: header
+          name: X-Device-Type
+          schema:
+            type: string
+          description: Device type from header
+        - in: header
+          name: X-App-Version
+          schema:
+            type: string
+          description: App version from header
+        - in: header
+          name: X-Platform
+          schema:
+            type: string
+          description: Platform from header
+      responses:
+        '200':
+          description: Session provided successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SESSION_PROVIDED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/EnhancedGameSession'
+                      sync_version:
+                        type: integer
+                      device_specific_data:
+                        type: object
+                        properties:
+                          device_type:
+                            type: string
+                          optimizations:
+                            type: object
+                          recommended_sync_interval:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/{session_id}/conflicts/resolve:
+    post:
+      tags:
+        - Game Sessions
+      summary: Resolve sync conflicts (GOO-9)
+      description: Manually resolve synchronization conflicts between devices
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_state:
+                  type: object
+                  description: Device state to resolve conflict with
+                resolution_strategy:
+                  type: string
+                  enum: [server_wins, device_wins, merge]
+                  default: server_wins
+                  description: Strategy for conflict resolution
+              required:
+                - device_state
+      responses:
+        '200':
+          description: Conflict resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "SYNC_CONFLICT_RESOLVED"
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/EnhancedGameSession'
+                      resolution:
+                        type: string
+                        enum: [server_wins, device_wins, merge]
+                      merge_summary:
+                        type: object
+                        description: Summary of merge operations (only for merge strategy)
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/conflicts:
+    get:
+      tags:
+        - Game Sessions
+      summary: Check session conflicts (GOO-9)
+      description: Check for sessions with potential synchronization conflicts
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Conflicts check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    enum:
+                      - "NO_SYNC_CONFLICTS"
+                      - "SYNC_CONFLICTS_DETECTED"
+                  data:
+                    type: object
+                    properties:
+                      conflicts_count:
+                        type: integer
+                        description: Number of sessions with conflicts
+                      conflicts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            session_id:
+                              type: string
+                            game_id:
+                              type: string
+                            last_sync_minutes_ago:
+                              type: integer
+                            device_info:
+                              type: object
+                            status:
+                              type: string
+                      total_active_sessions:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/games/sessions/active:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get active sessions (GOO-9)
+      description: Get all active and paused sessions for the current user
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Active sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ACTIVE_SESSIONS_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      active_sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EnhancedGameSession'
+                      paused_sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EnhancedGameSession'
+                      all_sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EnhancedGameSession'
+                      total_count:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 
 components:
   securitySchemes:
@@ -4265,6 +4670,72 @@ components:
           nullable: true
           description: Session duration in seconds
           example: 300
+
+    EnhancedGameSession:
+      allOf:
+        - $ref: '#/components/schemas/GameSession'
+        - type: object
+          properties:
+            play_duration_ms:
+              type: integer
+              description: Precise play duration in milliseconds
+              example: 180000
+            play_duration_seconds:
+              type: number
+              description: Precise play duration in seconds
+              example: 180.0
+            paused_at:
+              type: string
+              format: date-time
+              nullable: true
+              description: When session was paused
+              example: "2024-01-15T10:32:00Z"
+            resumed_at:
+              type: string
+              format: date-time
+              nullable: true
+              description: When session was resumed
+              example: "2024-01-15T10:33:00Z"
+            device_info:
+              type: object
+              description: Device information for cross-device sync
+              properties:
+                device_id:
+                  type: string
+                  example: "mobile-device-456"
+                device_type:
+                  type: string
+                  enum: [mobile, web, desktop]
+                  example: "mobile"
+                platform:
+                  type: string
+                  example: "iOS"
+                app_version:
+                  type: string
+                  example: "1.2.0"
+                user_agent:
+                  type: string
+                  example: "GoodPlay/1.2.0 (iOS)"
+            last_sync_at:
+              type: string
+              format: date-time
+              nullable: true
+              description: Last synchronization timestamp
+              example: "2024-01-15T10:34:00Z"
+            sync_version:
+              type: integer
+              description: Synchronization version for conflict resolution
+              example: 3
+            created_at:
+              type: string
+              format: date-time
+              description: Session creation timestamp
+              example: "2024-01-15T10:30:00Z"
+            updated_at:
+              type: string
+              format: date-time
+              description: Session last update timestamp
+              example: "2024-01-15T10:34:00Z"
 
     GameSessionWithGame:
       allOf:

@@ -235,13 +235,111 @@ GAME_CONFIG = {
 
 ### Game Session Lifecycle
 
+#### Basic Session Management
 1. **Session Start**: `POST /api/games/{game_id}/sessions`
 2. **Move Validation**: `POST /api/games/sessions/{session_id}/moves`
 3. **Progress Update**: `PUT /api/games/sessions/{session_id}/progress`
 4. **Session End**: `PUT /api/games/sessions/{session_id}/complete`
 
+#### Enhanced Session Management (GOO-9)
+1. **Session Pause**: `PUT /api/games/sessions/{session_id}/pause`
+2. **Session Resume**: `PUT /api/games/sessions/{session_id}/resume`
+3. **Cross-Device Sync**: `POST /api/games/sessions/{session_id}/sync`
+4. **Device Optimization**: `GET /api/games/sessions/{session_id}/device`
+5. **Conflict Resolution**: `POST /api/games/sessions/{session_id}/conflicts/resolve`
+6. **Active Sessions**: `GET /api/games/sessions/active`
+7. **Conflict Detection**: `GET /api/games/sessions/conflicts`
+
+### Enhanced Session Management Features (GOO-9)
+
+#### Precise Time Tracking
+The enhanced session management provides millisecond-accuracy time tracking:
+
+```python
+# Session model with enhanced time tracking
+session = GameSession(
+    user_id=user_id,
+    game_id=game_id,
+    play_duration=0,  # Milliseconds of actual play time
+    paused_at=None,
+    resumed_at=None,
+    device_info={
+        "device_id": "mobile-123",
+        "device_type": "mobile",
+        "platform": "iOS",
+        "app_version": "1.2.0"
+    }
+)
+
+# Pause/resume with precise time tracking
+session.pause_session()  # Calculates and stores play duration
+session.resume_session()  # Resumes time tracking
+```
+
+#### Cross-Device Synchronization
+Sessions can be synchronized across multiple devices:
+
+```python
+# Sync session state from device
+sync_data = {
+    "device_state": {
+        "current_state": {"level": 2, "score": 200},
+        "play_duration_ms": 45000,
+        "sync_version": 1,
+        "new_moves": [{"action": "click", "position": {"x": 100, "y": 200}}],
+        "new_achievements": ["LEVEL_2_REACHED"]
+    },
+    "device_info": {
+        "device_id": "mobile-device-123",
+        "device_type": "mobile",
+        "platform": "iOS"
+    }
+}
+
+# POST /api/games/sessions/{session_id}/sync
+success, message, result = state_synchronizer.sync_session_state(
+    session_id, sync_data["device_state"], sync_data["device_info"]
+)
+```
+
+#### Conflict Resolution Strategies
+When sync conflicts occur, multiple resolution strategies are available:
+
+- **server_wins**: Server state takes precedence (default)
+- **device_wins**: Device state overwrites server state
+- **merge**: Intelligent merging of states (highest score, longest duration, union of achievements)
+
+```python
+# Resolve conflicts with merge strategy
+resolution_data = {
+    "device_state": conflicting_state,
+    "resolution_strategy": "merge"
+}
+
+# POST /api/games/sessions/{session_id}/conflicts/resolve
+```
+
+#### Device-Specific Optimizations
+Sessions can be optimized for different device types:
+
+```python
+# Device-specific optimizations
+device_optimizations = {
+    "mobile": {
+        "reduce_state_size": True,
+        "compress_moves": True,
+        "sync_interval": 30  # seconds
+    },
+    "web": {
+        "include_debug_info": True,
+        "sync_interval": 60
+    }
+}
+```
+
 ### Credit Calculation System
 
+#### Legacy Credit Calculation
 ```python
 def calculate_session_credits(session_duration_seconds: int, game_credit_rate: int,
                             performance_multiplier: float = 1.0) -> int:
@@ -258,6 +356,23 @@ def calculate_session_credits(session_duration_seconds: int, game_credit_rate: i
     """
     base_credits = (session_duration_seconds / 60) * game_credit_rate
     return int(base_credits * performance_multiplier)
+```
+
+#### Precise Credit Calculation (GOO-9)
+```python
+def calculate_credits_earned_precise(play_duration_ms: int, credit_rate: float) -> int:
+    """
+    Calculate credits based on precise play duration (excludes paused time)
+
+    Args:
+        play_duration_ms: Actual play time in milliseconds
+        credit_rate: Credits per minute for this game
+
+    Returns:
+        int: Total credits earned based on actual play time
+    """
+    play_duration_minutes = play_duration_ms / (1000 * 60)
+    return int(play_duration_minutes * credit_rate)
 ```
 
 ## 🔌 API Development Standards
