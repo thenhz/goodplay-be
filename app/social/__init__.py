@@ -1,10 +1,14 @@
 from flask import Blueprint
 from .controllers.social_controller import social_bp
+from .achievements import register_achievement_module
 
 def register_social_module(app):
     """Register social module blueprints and initialize repositories"""
-    # Register blueprint with URL prefix
+    # Register social blueprint with URL prefix
     app.register_blueprint(social_bp, url_prefix='/api/social')
+
+    # Register achievement module
+    register_achievement_module(app)
 
     # Initialize database indexes
     try:

@@ -1,0 +1,721 @@
+# Achievement System OpenAPI Endpoints
+# These endpoints should be added to the main openapi.yaml file
+
+  /api/achievements:
+    get:
+      tags:
+        - Achievements
+      summary: Get all available achievements
+      description: Retrieve all active achievements, optionally filtered by category
+      parameters:
+        - name: category
+          in: query
+          description: Filter achievements by category
+          required: false
+          schema:
+            type: string
+            enum: [gaming, social, impact]
+            example: "gaming"
+      responses:
+        '200':
+          description: Achievements retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ACHIEVEMENTS_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Achievement'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/user:
+    get:
+      tags:
+        - Achievements
+      summary: Get user's achievements with progress
+      description: Retrieve user's achievements including progress tracking and completion status
+      parameters:
+        - name: completed_only
+          in: query
+          description: Return only completed achievements
+          required: false
+          schema:
+            type: boolean
+            default: false
+            example: false
+      responses:
+        '200':
+          description: User achievements retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_ACHIEVEMENTS_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserAchievement'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/user/progress:
+    get:
+      tags:
+        - Achievements
+      summary: Get user's comprehensive progress summary
+      description: Get detailed progress summary including stats, recent achievements, and recommendations
+      responses:
+        '200':
+          description: Progress summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_PROGRESS_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/ProgressSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/user/recommendations:
+    get:
+      tags:
+        - Achievements
+      summary: Get achievement recommendations
+      description: Get personalized achievement recommendations based on user activity and progress
+      responses:
+        '200':
+          description: Recommendations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ACHIEVEMENT_RECOMMENDATIONS_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AchievementRecommendation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/claim-reward:
+    post:
+      tags:
+        - Achievements
+      summary: Claim achievement reward
+      description: Claim credits reward for a completed achievement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                achievement_id:
+                  type: string
+                  description: ID of the achievement to claim reward for
+                  example: "rookie_player"
+              required:
+                - achievement_id
+      responses:
+        '200':
+          description: Reward claimed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ACHIEVEMENT_REWARD_CLAIMED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      achievement_id:
+                        type: string
+                        example: "rookie_player"
+                      reward_credits:
+                        type: integer
+                        example: 10
+                      badge_rarity:
+                        type: string
+                        example: "common"
+        '400':
+          description: Invalid request or achievement not ready for claiming
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                achievement_not_found:
+                  summary: Achievement not found
+                  value:
+                    success: false
+                    message: "ACHIEVEMENT_NOT_FOUND"
+                achievement_not_completed:
+                  summary: Achievement not completed
+                  value:
+                    success: false
+                    message: "ACHIEVEMENT_NOT_COMPLETED"
+                reward_already_claimed:
+                  summary: Reward already claimed
+                  value:
+                    success: false
+                    message: "ACHIEVEMENT_REWARD_ALREADY_CLAIMED"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/badges/user:
+    get:
+      tags:
+        - Achievements
+      summary: Get user's badge collection
+      description: Retrieve user's earned badges with optional visibility filtering
+      parameters:
+        - name: visible_only
+          in: query
+          description: Return only visible badges
+          required: false
+          schema:
+            type: boolean
+            default: false
+            example: false
+      responses:
+        '200':
+          description: User badges retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_BADGES_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Badge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/badges/user/collection:
+    get:
+      tags:
+        - Achievements
+      summary: Get comprehensive badge collection with statistics
+      description: Get detailed badge collection including rarity distribution, statistics, and achievements
+      responses:
+        '200':
+          description: Badge collection retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_BADGE_COLLECTION_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/BadgeCollection'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/impact-score:
+    get:
+      tags:
+        - Achievements
+      summary: Get user's impact score
+      description: Calculate and retrieve user's impact score based on completed achievements
+      responses:
+        '200':
+          description: Impact score calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "IMPACT_SCORE_CALCULATED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      impact_score:
+                        type: integer
+                        description: User's total impact score
+                        example: 250
+                      calculated_at:
+                        type: string
+                        format: date-time
+                        description: When the score was calculated
+                        example: "2024-06-01T12:00:00Z"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/leaderboard:
+    get:
+      tags:
+        - Achievements
+      summary: Get achievement leaderboard
+      description: Get top users ranked by completed achievements
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of entries to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+            example: 10
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ACHIEVEMENT_LEADERBOARD_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaderboardEntry'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# Schema Components for Achievement System
+components:
+  schemas:
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Database ID
+          example: "60d5ec49b87dd35c1c8b4567"
+        achievement_id:
+          type: string
+          description: Unique achievement identifier
+          example: "rookie_player"
+        name:
+          type: string
+          description: Display name of the achievement
+          example: "Rookie Player"
+        description:
+          type: string
+          description: Description of how to unlock the achievement
+          example: "Complete your first game session"
+        category:
+          type: string
+          enum: [gaming, social, impact]
+          description: Achievement category
+          example: "gaming"
+        trigger_conditions:
+          type: object
+          description: Conditions required to unlock the achievement
+          properties:
+            type:
+              type: string
+              example: "game_session"
+            target_value:
+              type: integer
+              example: 1
+            comparison:
+              type: string
+              example: "gte"
+        badge_rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+          description: Rarity level of the badge
+          example: "common"
+        reward_credits:
+          type: integer
+          description: Credit reward for completion
+          example: 10
+        icon_url:
+          type: string
+          description: URL for achievement icon
+          example: "/static/badges/rookie_player.png"
+        is_active:
+          type: boolean
+          description: Whether achievement is currently active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    UserAchievement:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Database ID
+          example: "60d5ec49b87dd35c1c8b4568"
+        user_id:
+          type: string
+          description: User ID
+          example: "60d5ec49b87dd35c1c8b4569"
+        achievement_id:
+          type: string
+          description: Achievement identifier
+          example: "rookie_player"
+        progress:
+          type: integer
+          description: Current progress value
+          example: 1
+        max_progress:
+          type: integer
+          description: Maximum progress needed
+          example: 1
+        progress_percentage:
+          type: number
+          description: Progress as percentage (0-100)
+          example: 100.0
+        is_completed:
+          type: boolean
+          description: Whether achievement is completed
+          example: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When achievement was completed
+          example: "2024-06-01T12:00:00Z"
+        reward_claimed:
+          type: boolean
+          description: Whether reward has been claimed
+          example: false
+        claimed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When reward was claimed
+          example: null
+        achievement_definition:
+          $ref: '#/components/schemas/Achievement'
+
+    Badge:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Database ID
+          example: "60d5ec49b87dd35c1c8b4570"
+        user_id:
+          type: string
+          description: User ID
+          example: "60d5ec49b87dd35c1c8b4569"
+        achievement_id:
+          type: string
+          description: Achievement that awarded this badge
+          example: "rookie_player"
+        badge_name:
+          type: string
+          description: Display name of the badge
+          example: "Rookie Player"
+        badge_description:
+          type: string
+          description: Badge description
+          example: "Complete your first game session"
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+          description: Badge rarity level
+          example: "common"
+        rarity_display:
+          type: string
+          description: Formatted rarity display name
+          example: "Common"
+        icon_url:
+          type: string
+          description: Badge icon URL
+          example: "/static/badges/rookie_player.png"
+        earned_at:
+          type: string
+          format: date-time
+          description: When badge was earned
+          example: "2024-06-01T12:00:00Z"
+        is_visible:
+          type: boolean
+          description: Whether badge is visible on profile
+          example: true
+
+    ProgressSummary:
+      type: object
+      properties:
+        stats:
+          type: object
+          properties:
+            total_achievements:
+              type: integer
+              example: 15
+            completed_achievements:
+              type: integer
+              example: 8
+            claimed_rewards:
+              type: integer
+              example: 6
+            total_progress:
+              type: integer
+              example: 45
+            completion_rate:
+              type: number
+              example: 53.3
+        badge_counts:
+          type: object
+          properties:
+            common:
+              type: integer
+              example: 5
+            rare:
+              type: integer
+              example: 2
+            epic:
+              type: integer
+              example: 1
+            legendary:
+              type: integer
+              example: 0
+        recent_achievements:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAchievement'
+        close_to_completion:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAchievement'
+        impact_score:
+          type: integer
+          example: 125
+        next_milestones:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "common_badges"
+              current:
+                type: integer
+                example: 5
+              target:
+                type: integer
+                example: 10
+              progress_percentage:
+                type: number
+                example: 50.0
+
+    AchievementRecommendation:
+      type: object
+      properties:
+        achievement:
+          $ref: '#/components/schemas/Achievement'
+        current_progress:
+          type: number
+          description: Current progress percentage
+          example: 60.0
+        recommendation_score:
+          type: number
+          description: Recommendation score (0-100)
+          example: 85.5
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, very_hard]
+          description: Estimated difficulty level
+          example: "easy"
+        estimated_time:
+          type: string
+          description: Estimated time to complete
+          example: "1-2 sessions"
+
+    BadgeCollection:
+      type: object
+      properties:
+        total_badges:
+          type: integer
+          description: Total number of badges earned
+          example: 8
+        visible_badges:
+          type: integer
+          description: Number of visible badges
+          example: 6
+        badges_by_rarity:
+          type: object
+          properties:
+            common:
+              type: array
+              items:
+                $ref: '#/components/schemas/Badge'
+            rare:
+              type: array
+              items:
+                $ref: '#/components/schemas/Badge'
+            epic:
+              type: array
+              items:
+                $ref: '#/components/schemas/Badge'
+            legendary:
+              type: array
+              items:
+                $ref: '#/components/schemas/Badge'
+        badge_counts:
+          type: object
+          properties:
+            common:
+              type: integer
+              example: 5
+            rare:
+              type: integer
+              example: 2
+            epic:
+              type: integer
+              example: 1
+            legendary:
+              type: integer
+              example: 0
+        rarest_badge:
+          $ref: '#/components/schemas/Badge'
+        recent_badges:
+          type: array
+          items:
+            $ref: '#/components/schemas/Badge'
+        collection_value:
+          type: integer
+          description: Total collection value based on rarity
+          example: 135
+        completion_stats:
+          type: object
+          properties:
+            total_completed:
+              type: integer
+              example: 8
+            total_available:
+              type: integer
+              example: 15
+            overall_percentage:
+              type: number
+              example: 53.3
+            completion_by_category:
+              type: object
+              properties:
+                gaming:
+                  type: object
+                  properties:
+                    completed:
+                      type: integer
+                      example: 4
+                    total:
+                      type: integer
+                      example: 6
+                    percentage:
+                      type: number
+                      example: 66.7
+                social:
+                  type: object
+                  properties:
+                    completed:
+                      type: integer
+                      example: 2
+                    total:
+                      type: integer
+                      example: 5
+                    percentage:
+                      type: number
+                      example: 40.0
+                impact:
+                  type: object
+                  properties:
+                    completed:
+                      type: integer
+                      example: 2
+                    total:
+                      type: integer
+                      example: 4
+                    percentage:
+                      type: number
+                      example: 50.0
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+          description: User's rank on leaderboard
+          example: 1
+        user_id:
+          type: string
+          description: User ID
+          example: "60d5ec49b87dd35c1c8b4569"
+        completed_achievements:
+          type: integer
+          description: Number of completed achievements
+          example: 12
+        total_progress:
+          type: integer
+          description: Total progress across all achievements
+          example: 87
