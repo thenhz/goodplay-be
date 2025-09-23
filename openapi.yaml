@@ -3447,6 +3447,1145 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # ===========================
+  # GOO-10: Game Engine Universal Scoring & Tournament System
+  # ===========================
+
+  # Game Modes Endpoints
+  /api/modes:
+    get:
+      tags:
+        - Game Modes
+      summary: Get available game modes
+      description: Get all currently available game modes including normal, seasonal wars, and special events
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Available modes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "AVAILABLE_MODES_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameMode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/modes/current:
+    get:
+      tags:
+        - Game Modes
+      summary: Get current active mode
+      description: Get the currently active game mode
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Current mode retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CURRENT_MODE_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/GameMode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/modes/admin/create:
+    post:
+      tags:
+        - Game Modes
+        - Admin
+      summary: Create new game mode (Admin)
+      description: Create a new seasonal war or special event mode
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode_type:
+                  type: string
+                  enum: [seasonal_war, special_event]
+                  example: "seasonal_war"
+                name:
+                  type: string
+                  example: "Summer Championship"
+                start_date:
+                  type: string
+                  format: date-time
+                  example: "2024-06-01T00:00:00Z"
+                end_date:
+                  type: string
+                  format: date-time
+                  example: "2024-08-31T23:59:59Z"
+                description:
+                  type: string
+                  example: "Summer tournament with special rewards"
+              required:
+                - mode_type
+                - name
+                - start_date
+                - end_date
+      responses:
+        '201':
+          description: Game mode created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_MODE_CREATED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/GameMode'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/modes/admin/{mode_id}/activate:
+    post:
+      tags:
+        - Game Modes
+        - Admin
+      summary: Activate game mode (Admin)
+      description: Activate a specific game mode
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: mode_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "seasonal_war_summer_2024"
+      responses:
+        '200':
+          description: Game mode activated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GAME_MODE_ACTIVATED_SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Challenges Endpoints
+  /api/challenges:
+    get:
+      tags:
+        - Challenges
+      summary: Get user challenges
+      description: Get challenges for the current user
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, completed, cancelled]
+          description: Filter by challenge status
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of challenges to return
+      responses:
+        '200':
+          description: Challenges retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_CHALLENGES_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Challenge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Challenges
+      summary: Create challenge
+      description: Create a new 1v1, NvN, or cross-game challenge
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Create1v1ChallengeRequest'
+                - $ref: '#/components/schemas/CreateNvNChallengeRequest'
+                - $ref: '#/components/schemas/CreateCrossGameChallengeRequest'
+      responses:
+        '201':
+          description: Challenge created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CHALLENGE_CREATED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/Challenge'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/challenges/{challenge_id}:
+    get:
+      tags:
+        - Challenges
+      summary: Get challenge details
+      description: Get detailed information about a specific challenge
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "challenge_123"
+      responses:
+        '200':
+          description: Challenge details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CHALLENGE_DETAILS_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/Challenge'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/challenges/{challenge_id}/join:
+    post:
+      tags:
+        - Challenges
+      summary: Join challenge
+      description: Join an open NvN challenge
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "challenge_123"
+      responses:
+        '200':
+          description: Successfully joined challenge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CHALLENGE_JOINED_SUCCESS"
+        '400':
+          description: Cannot join challenge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                challenge_full:
+                  value:
+                    success: false
+                    message: "CHALLENGE_FULL"
+                already_participant:
+                  value:
+                    success: false
+                    message: "ALREADY_PARTICIPANT"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/challenges/{challenge_id}/start:
+    post:
+      tags:
+        - Challenges
+      summary: Start challenge
+      description: Start a challenge (creator only)
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "challenge_123"
+      responses:
+        '200':
+          description: Challenge started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CHALLENGE_STARTED_SUCCESS"
+        '400':
+          description: Cannot start challenge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_creator:
+                  value:
+                    success: false
+                    message: "ONLY_CREATOR_CAN_START"
+                already_active:
+                  value:
+                    success: false
+                    message: "CHALLENGE_ALREADY_ACTIVE"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/challenges/{challenge_id}/complete:
+    post:
+      tags:
+        - Challenges
+      summary: Complete challenge
+      description: Submit final results for a challenge
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "challenge_123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                results:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      score:
+                        type: number
+                        example: 1250.5
+                      position:
+                        type: integer
+                        example: 1
+                      completion_time:
+                        type: number
+                        example: 300.5
+                  example:
+                    user1: {score: 1250.5, position: 1, completion_time: 300.5}
+                    user2: {score: 980.2, position: 2, completion_time: 350.2}
+              required:
+                - results
+      responses:
+        '200':
+          description: Challenge completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CHALLENGE_COMPLETED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      winner_id:
+                        type: string
+                        example: "user1"
+                      final_results:
+                        type: object
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/challenges/matchmaking:
+    post:
+      tags:
+        - Challenges
+      summary: Find automatic match
+      description: Find an opponent automatically for 1v1 challenge
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_id:
+                  type: string
+                  example: "tetris"
+                difficulty:
+                  type: string
+                  enum: [easy, medium, hard]
+                  example: "medium"
+                max_skill_gap:
+                  type: integer
+                  example: 200
+                  description: Maximum ELO rating difference
+              required:
+                - game_id
+                - difficulty
+      responses:
+        '200':
+          description: Match found successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "MATCH_FOUND_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      opponent_id:
+                        type: string
+                        example: "user123"
+                      opponent_username:
+                        type: string
+                        example: "player2"
+                      skill_rating:
+                        type: integer
+                        example: 1250
+                      compatibility_score:
+                        type: number
+                        example: 0.85
+        '404':
+          description: No suitable opponents found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "NO_OPPONENTS_FOUND"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Teams Endpoints
+  /api/teams:
+    get:
+      tags:
+        - Teams
+      summary: Get all teams
+      description: Get all global teams with optional filtering
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Return only active teams
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TEAMS_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GlobalTeam'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/leaderboard:
+    get:
+      tags:
+        - Teams
+      summary: Get team leaderboard
+      description: Get teams ranked by total score
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of teams to return
+      responses:
+        '200':
+          description: Team leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TEAM_LEADERBOARD_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GlobalTeam'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/my-team:
+    get:
+      tags:
+        - Teams
+      summary: Get user's team
+      description: Get the current user's team information
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: User team retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "USER_TEAM_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/GlobalTeam'
+        '404':
+          description: User not assigned to any team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "USER_NOT_IN_TEAM"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/join:
+    post:
+      tags:
+        - Teams
+      summary: Join team
+      description: Join a team (auto-assignment or specific team)
+      security:
+        - JWTAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team_id:
+                  type: string
+                  description: Specific team to join (optional - auto-assign if not provided)
+                  example: "fire_dragons"
+      responses:
+        '200':
+          description: Successfully joined team
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TEAM_JOINED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      team_id:
+                        type: string
+                        example: "fire_dragons"
+                      team_name:
+                        type: string
+                        example: "Fire Dragons"
+        '400':
+          description: Cannot join team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                already_in_team:
+                  value:
+                    success: false
+                    message: "ALREADY_IN_TEAM"
+                team_not_found:
+                  value:
+                    success: false
+                    message: "TEAM_NOT_FOUND"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/leave:
+    post:
+      tags:
+        - Teams
+      summary: Leave team
+      description: Leave current team
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Successfully left team
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TEAM_LEFT_SUCCESS"
+        '400':
+          description: Cannot leave team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "NOT_IN_TEAM"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/{team_id}/members:
+    get:
+      tags:
+        - Teams
+      summary: Get team members
+      description: Get list of team members
+      parameters:
+        - name: team_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "fire_dragons"
+      responses:
+        '200':
+          description: Team members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TEAM_MEMBERS_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TeamMember'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/record-contribution:
+    post:
+      tags:
+        - Teams
+      summary: Record game contribution
+      description: Record a game score contribution for the user's team
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                score:
+                  type: number
+                  description: Normalized game score
+                  example: 150.5
+                game_type:
+                  type: string
+                  enum: [individual, team, challenge]
+                  default: individual
+                  example: "individual"
+                session_id:
+                  type: string
+                  description: Game session ID for reference
+                  example: "session_123"
+              required:
+                - score
+      responses:
+        '200':
+          description: Contribution recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CONTRIBUTION_RECORDED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      contribution_points:
+                        type: number
+                        example: 125.5
+                      team_total_score:
+                        type: number
+                        example: 15250.5
+        '400':
+          description: Cannot record contribution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_in_team:
+                  value:
+                    success: false
+                    message: "USER_NOT_IN_TEAM"
+                score_required:
+                  value:
+                    success: false
+                    message: "SCORE_REQUIRED"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Tournament Endpoints
+  /api/teams/tournament/current:
+    get:
+      tags:
+        - Tournaments
+      summary: Get current tournament
+      description: Get the currently active tournament
+      responses:
+        '200':
+          description: Current tournament retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CURRENT_TOURNAMENT_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/Tournament'
+        '404':
+          description: No active tournament
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "NO_ACTIVE_TOURNAMENT"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/tournament/{tournament_id}/leaderboard:
+    get:
+      tags:
+        - Tournaments
+      summary: Get tournament leaderboard
+      description: Get tournament teams leaderboard
+      parameters:
+        - name: tournament_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tournament_summer_2024"
+      responses:
+        '200':
+          description: Tournament leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TOURNAMENT_LEADERBOARD_RETRIEVED_SUCCESS"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        team_id:
+                          type: string
+                          example: "fire_dragons"
+                        team_name:
+                          type: string
+                          example: "Fire Dragons"
+                        total_score:
+                          type: number
+                          example: 25450.5
+                        position:
+                          type: integer
+                          example: 1
+                        member_count:
+                          type: integer
+                          example: 125
+                        avg_score_per_member:
+                          type: number
+                          example: 203.6
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Admin Tournament Endpoints
+  /api/teams/admin/initialize:
+    post:
+      tags:
+        - Teams
+        - Admin
+      summary: Initialize default teams (Admin)
+      description: Create the default global teams
+      security:
+        - JWTAuth: []
+      responses:
+        '201':
+          description: Teams initialized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TEAMS_INITIALIZED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      teams_created:
+                        type: integer
+                        example: 4
+                      team_names:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Fire Dragons", "Ice Phoenix", "Earth Guardians", "Storm Eagles"]
+        '400':
+          description: Teams already initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "TEAMS_ALREADY_INITIALIZED"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/admin/tournament:
+    post:
+      tags:
+        - Tournaments
+        - Admin
+      summary: Create tournament (Admin)
+      description: Create a new team tournament
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tournament_type:
+                  type: string
+                  enum: [seasonal_war, monthly_battle, special_event]
+                  example: "seasonal_war"
+                name:
+                  type: string
+                  example: "Summer War 2024"
+                duration_days:
+                  type: integer
+                  example: 30
+                team_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["fire_dragons", "ice_phoenix", "earth_guardians", "storm_eagles"]
+                description:
+                  type: string
+                  example: "Epic summer tournament with exclusive rewards"
+              required:
+                - tournament_type
+                - name
+                - duration_days
+      responses:
+        '201':
+          description: Tournament created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TOURNAMENT_CREATED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/Tournament'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/teams/admin/tournament/{tournament_id}/start:
+    post:
+      tags:
+        - Tournaments
+        - Admin
+      summary: Start tournament (Admin)
+      description: Start a created tournament
+      security:
+        - JWTAuth: []
+      parameters:
+        - name: tournament_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tournament_summer_2024"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auto_assign_users:
+                  type: boolean
+                  default: true
+                  description: Automatically balance users across teams
+                  example: true
+      responses:
+        '200':
+          description: Tournament started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "TOURNAMENT_STARTED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      tournament_id:
+                        type: string
+                        example: "tournament_summer_2024"
+                      started_at:
+                        type: string
+                        format: date-time
+                        example: "2024-06-01T00:00:00Z"
+                      end_date:
+                        type: string
+                        format: date-time
+                        example: "2024-06-30T23:59:59Z"
+                      users_balanced:
+                        type: integer
+                        example: 150
+        '400':
+          description: Cannot start tournament
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                already_active:
+                  value:
+                    success: false
+                    message: "TOURNAMENT_ALREADY_ACTIVE"
+                invalid_status:
+                  value:
+                    success: false
+                    message: "TOURNAMENT_INVALID_STATUS"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 
 components:
   securitySchemes:
@@ -5025,3 +6164,412 @@ components:
           type: boolean
           description: Whether there is a previous page
           example: false
+
+    # ===========================
+    # GOO-10: New Schemas for Universal Scoring & Tournament System
+    # ===========================
+
+    GameMode:
+      type: object
+      properties:
+        mode_id:
+          type: string
+          description: Unique mode identifier
+          example: "seasonal_war_summer_2024"
+        name:
+          type: string
+          description: Display name of the mode
+          example: "Summer War 2024"
+        mode_type:
+          type: string
+          enum: [normal, seasonal_war, special_event]
+          description: Type of game mode
+          example: "seasonal_war"
+        is_active:
+          type: boolean
+          description: Whether the mode is currently active
+          example: true
+        is_default:
+          type: boolean
+          description: Whether this is the default mode
+          example: false
+        description:
+          type: string
+          description: Mode description
+          example: "Epic summer tournament with special rewards"
+        start_date:
+          type: string
+          format: date-time
+          description: Mode start date (for timed modes)
+          example: "2024-06-01T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          description: Mode end date (for timed modes)
+          example: "2024-08-31T23:59:59Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-05-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-05-01T10:00:00Z"
+
+    Challenge:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          description: Unique challenge identifier
+          example: "challenge_abc123"
+        challenge_type:
+          type: string
+          enum: [1v1, NvN, cross_game]
+          description: Type of challenge
+          example: "1v1"
+        creator_id:
+          type: string
+          description: User ID who created the challenge
+          example: "user123"
+        game_id:
+          type: string
+          description: Primary game for the challenge
+          example: "tetris"
+        game_ids:
+          type: array
+          items:
+            type: string
+          description: Multiple games for cross-game challenges
+          example: ["tetris", "snake"]
+        participants:
+          type: array
+          items:
+            type: string
+          description: List of participant user IDs
+          example: ["user123", "user456"]
+        max_participants:
+          type: integer
+          description: Maximum number of participants (for NvN)
+          example: 4
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          description: Challenge difficulty
+          example: "medium"
+        status:
+          type: string
+          enum: [pending, active, completed, cancelled]
+          description: Current challenge status
+          example: "pending"
+        results:
+          type: object
+          description: Final challenge results
+          additionalProperties:
+            type: object
+            properties:
+              score:
+                type: number
+                example: 1250.5
+              position:
+                type: integer
+                example: 1
+              completion_time:
+                type: number
+                example: 300.5
+        winner_id:
+          type: string
+          description: ID of the challenge winner
+          example: "user123"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:00:00Z"
+        started_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:05:00Z"
+        completed_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+        cancelled_by:
+          type: string
+          description: User ID who cancelled the challenge
+          example: "user123"
+
+    Create1v1ChallengeRequest:
+      type: object
+      properties:
+        challenge_type:
+          type: string
+          enum: [1v1]
+          example: "1v1"
+        opponent_id:
+          type: string
+          description: Specific opponent user ID (or null for auto-match)
+          example: "user456"
+        game_id:
+          type: string
+          description: Game to play
+          example: "tetris"
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          example: "medium"
+        description:
+          type: string
+          description: Optional challenge description
+          example: "Let's see who's the best at Tetris!"
+      required:
+        - challenge_type
+        - game_id
+        - difficulty
+
+    CreateNvNChallengeRequest:
+      type: object
+      properties:
+        challenge_type:
+          type: string
+          enum: [NvN]
+          example: "NvN"
+        participant_ids:
+          type: array
+          items:
+            type: string
+          description: Initial participants (including creator)
+          example: ["user123", "user456", "user789"]
+        game_id:
+          type: string
+          description: Game to play
+          example: "snake"
+        max_participants:
+          type: integer
+          minimum: 2
+          maximum: 10
+          description: Maximum number of participants
+          example: 4
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          example: "medium"
+        description:
+          type: string
+          description: Optional challenge description
+          example: "4-player Snake battle royale!"
+      required:
+        - challenge_type
+        - participant_ids
+        - game_id
+        - max_participants
+        - difficulty
+
+    CreateCrossGameChallengeRequest:
+      type: object
+      properties:
+        challenge_type:
+          type: string
+          enum: [cross_game]
+          example: "cross_game"
+        participant_ids:
+          type: array
+          items:
+            type: string
+          description: Participants for cross-game challenge
+          example: ["user123", "user456"]
+        game_ids:
+          type: array
+          items:
+            type: string
+          description: Games to be played in sequence
+          example: ["tetris", "snake", "puzzle"]
+        description:
+          type: string
+          description: Optional challenge description
+          example: "Multi-game championship!"
+      required:
+        - challenge_type
+        - participant_ids
+        - game_ids
+
+    GlobalTeam:
+      type: object
+      properties:
+        team_id:
+          type: string
+          description: Unique team identifier
+          example: "fire_dragons"
+        name:
+          type: string
+          description: Team display name
+          example: "Fire Dragons"
+        description:
+          type: string
+          description: Team description
+          example: "Fierce competitors with burning passion"
+        color:
+          type: string
+          description: Team color (hex)
+          example: "#FF4500"
+        emoji:
+          type: string
+          description: Team emoji
+          example: "🐉"
+        total_score:
+          type: number
+          description: Team's total accumulated score
+          example: 25450.5
+        member_count:
+          type: integer
+          description: Number of team members
+          example: 125
+        member_ids:
+          type: array
+          items:
+            type: string
+          description: List of team member user IDs
+          example: ["user123", "user456", "user789"]
+        score_history:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                example: "user123"
+              points:
+                type: number
+                example: 150.5
+              timestamp:
+                type: string
+                format: date-time
+                example: "2024-01-15T10:30:00Z"
+              source:
+                type: string
+                example: "game_session"
+        is_active:
+          type: boolean
+          description: Whether the team is currently active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    TeamMember:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: User ID
+          example: "user123"
+        username:
+          type: string
+          description: Username
+          example: "player1"
+        contribution_score:
+          type: number
+          description: User's contribution to team score
+          example: 1250.5
+        games_played:
+          type: integer
+          description: Number of games played for the team
+          example: 25
+        joined_at:
+          type: string
+          format: date-time
+          description: When the user joined the team
+          example: "2024-01-01T12:00:00Z"
+        rank:
+          type: integer
+          description: Rank within the team
+          example: 5
+
+    Tournament:
+      type: object
+      properties:
+        tournament_id:
+          type: string
+          description: Unique tournament identifier
+          example: "tournament_summer_2024"
+        tournament_type:
+          type: string
+          enum: [seasonal_war, monthly_battle, special_event]
+          description: Type of tournament
+          example: "seasonal_war"
+        name:
+          type: string
+          description: Tournament name
+          example: "Summer War 2024"
+        description:
+          type: string
+          description: Tournament description
+          example: "Epic summer tournament with exclusive rewards"
+        status:
+          type: string
+          enum: [created, active, completed, cancelled]
+          description: Tournament status
+          example: "active"
+        participating_teams:
+          type: array
+          items:
+            type: string
+          description: List of participating team IDs
+          example: ["fire_dragons", "ice_phoenix", "earth_guardians", "storm_eagles"]
+        duration_days:
+          type: integer
+          description: Tournament duration in days
+          example: 30
+        start_date:
+          type: string
+          format: date-time
+          description: Tournament start date
+          example: "2024-06-01T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          description: Tournament end date
+          example: "2024-06-30T23:59:59Z"
+        final_results:
+          type: array
+          items:
+            type: object
+            properties:
+              team_id:
+                type: string
+                example: "fire_dragons"
+              position:
+                type: integer
+                example: 1
+              final_score:
+                type: number
+                example: 50000.5
+          description: Final tournament results
+        winner_team_id:
+          type: string
+          description: ID of the winning team
+          example: "fire_dragons"
+        created_by:
+          type: string
+          description: Admin user who created the tournament
+          example: "admin123"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-05-01T00:00:00Z"
+        started_at:
+          type: string
+          format: date-time
+          example: "2024-06-01T00:00:00Z"
+        completed_at:
+          type: string
+          format: date-time
+          example: "2024-06-30T23:59:59Z"
+        cancelled_by:
+          type: string
+          description: Admin user who cancelled the tournament
+          example: "admin123"

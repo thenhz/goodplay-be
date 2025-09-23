@@ -2138,6 +2138,605 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Game Modes (GOO-10)",
+			"item": [
+				{
+					"name": "Get Available Modes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/modes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "modes"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current Mode",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/modes/current",
+							"host": ["{{base_url}}"],
+							"path": ["api", "modes", "current"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Game Mode (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mode_type\": \"seasonal_war\",\n  \"name\": \"Summer Championship 2024\",\n  \"start_date\": \"2024-06-01T00:00:00Z\",\n  \"end_date\": \"2024-08-31T23:59:59Z\",\n  \"description\": \"Epic summer tournament with special rewards\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/modes/admin/create",
+							"host": ["{{base_url}}"],
+							"path": ["api", "modes", "admin", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Mode (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/modes/admin/{{mode_id}}/activate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "modes", "admin", "{{mode_id}}", "activate"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Challenges (GOO-10)",
+			"item": [
+				{
+					"name": "Get User Challenges",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/challenges?status=pending&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create 1v1 Challenge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"challenge_type\": \"1v1\",\n  \"opponent_id\": null,\n  \"game_id\": \"tetris\",\n  \"difficulty\": \"medium\",\n  \"description\": \"Let's see who's the best at Tetris!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/challenges",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create NvN Challenge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"challenge_type\": \"NvN\",\n  \"participant_ids\": [\"{{user_id}}\"],\n  \"game_id\": \"snake\",\n  \"max_participants\": 4,\n  \"difficulty\": \"medium\",\n  \"description\": \"4-player Snake battle royale!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/challenges",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Cross-Game Challenge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"challenge_type\": \"cross_game\",\n  \"participant_ids\": [\"{{user_id}}\", \"user456\"],\n  \"game_ids\": [\"tetris\", \"snake\", \"puzzle\"],\n  \"description\": \"Multi-game championship!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/challenges",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Challenge Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/challenges/{{challenge_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges", "{{challenge_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Join Challenge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/challenges/{{challenge_id}}/join",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges", "{{challenge_id}}", "join"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Start Challenge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/challenges/{{challenge_id}}/start",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges", "{{challenge_id}}", "start"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Challenge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"results\": {\n    \"user1\": {\n      \"score\": 1250.5,\n      \"position\": 1,\n      \"completion_time\": 300.5\n    },\n    \"user2\": {\n      \"score\": 980.2,\n      \"position\": 2,\n      \"completion_time\": 350.2\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/challenges/{{challenge_id}}/complete",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges", "{{challenge_id}}", "complete"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find Match (Matchmaking)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"game_id\": \"tetris\",\n  \"difficulty\": \"medium\",\n  \"max_skill_gap\": 200\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/challenges/matchmaking",
+							"host": ["{{base_url}}"],
+							"path": ["api", "challenges", "matchmaking"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Teams (GOO-10)",
+			"item": [
+				{
+					"name": "Get All Teams",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams?active_only=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams"],
+							"query": [
+								{
+									"key": "active_only",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Team Leaderboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams/leaderboard?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "leaderboard"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Team",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/teams/my-team",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "my-team"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Join Team (Auto-assign)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/join",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "join"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Join Specific Team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"team_id\": \"fire_dragons\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/join",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "join"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Leave Team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/teams/leave",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "leave"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Team Members",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams/{{team_id}}/members",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "{{team_id}}", "members"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Record Game Contribution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"score\": 150.5,\n  \"game_type\": \"individual\",\n  \"session_id\": \"session_123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/record-contribution",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "record-contribution"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tournaments (GOO-10)",
+			"item": [
+				{
+					"name": "Get Current Tournament",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams/tournament/current",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "tournament", "current"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tournament Leaderboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/teams/tournament/{{tournament_id}}/leaderboard",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "tournament", "{{tournament_id}}", "leaderboard"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin - Teams & Tournaments (GOO-10)",
+			"item": [
+				{
+					"name": "Initialize Teams (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/teams/admin/initialize",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "admin", "initialize"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tournament (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tournament_type\": \"seasonal_war\",\n  \"name\": \"Summer War 2024\",\n  \"duration_days\": 30,\n  \"team_ids\": [\"fire_dragons\", \"ice_phoenix\", \"earth_guardians\", \"storm_eagles\"],\n  \"description\": \"Epic summer tournament with exclusive rewards\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/admin/tournament",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "admin", "tournament"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Start Tournament (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"auto_assign_users\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams/admin/tournament/{{tournament_id}}/start",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "admin", "tournament", "{{tournament_id}}", "start"]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [

@@ -29,7 +29,7 @@ def create_app(config_name=None):
     from app.core.controllers.user_controller import user_bp
     from app.preferences.controllers.preferences_controller import preferences_blueprint
     from app.social import register_social_module
-    from app.games import create_games_blueprint, init_games_module
+    from app.games import create_games_blueprint, create_modes_blueprint, create_challenges_blueprint, create_teams_blueprint, init_games_module
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
@@ -41,6 +41,18 @@ def create_app(config_name=None):
     # Register games module
     games_bp = create_games_blueprint()
     app.register_blueprint(games_bp)
+
+    # Register modes module
+    modes_bp = create_modes_blueprint()
+    app.register_blueprint(modes_bp)
+
+    # Register challenges module
+    challenges_bp = create_challenges_blueprint()
+    app.register_blueprint(challenges_bp)
+
+    # Register teams module
+    teams_bp = create_teams_blueprint()
+    app.register_blueprint(teams_bp)
 
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():

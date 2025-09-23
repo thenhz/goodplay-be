@@ -23,7 +23,21 @@ app/
 │   ├── models/      # Game, Session models
 │   ├── repositories/ # Game data access
 │   ├── services/    # Game business logic
-│   └── controllers/ # Game route handlers
+│   ├── controllers/ # Game route handlers
+│   ├── modes/       # Temporary game modes system
+│   │   ├── models/  # GameMode, ModeSchedule models
+│   │   ├── services/ # Mode management and scheduling
+│   │   └── controllers/ # Mode admin APIs
+│   ├── challenges/  # Direct player challenges
+│   │   ├── models/  # Challenge, Participant models
+│   │   ├── services/ # Challenge and matchmaking services
+│   │   └── controllers/ # Challenge APIs
+│   ├── teams/       # Global teams and tournaments
+│   │   ├── models/  # GlobalTeam, TeamMember, Tournament models
+│   │   ├── services/ # Team management and tournaments
+│   │   └── controllers/ # Team APIs
+│   └── scoring/     # Universal scoring system
+│       └── services/ # Score normalization and ELO
 ├── donations/       # Donation and wallet system
 │   ├── models/      # Wallet, Transaction models
 │   ├── repositories/ # Financial data access
@@ -81,6 +95,34 @@ app/
 - ✅ **Precise Credit Calculation**: Credits based on actual play time excluding paused periods
 - ✅ **Comprehensive Test Coverage**: 15+ new test cases covering all session management features
 
+### Universal Scoring & Tournament System Features (GOO-10)
+- ✅ **Game Modes System**: Temporary game modes with scheduling and automatic management
+  - Normal Mode (always available), Challenge Mode, Team Tournament Mode
+  - Admin control for mode activation/deactivation with time constraints
+  - Automatic mode scheduling and cleanup
+- ✅ **Direct Challenges System**: 1v1 and NvN player challenges with matchmaking
+  - Direct challenge invitations with accept/decline workflow
+  - Public NvN challenges that players can join
+  - Automatic matchmaking system with skill-based opponent finding
+  - Cross-game challenges with score normalization
+  - Real-time challenge status and notifications
+- ✅ **Global Teams System**: Automatic team assignment with tournaments
+  - 4 default global teams with automatic user assignment
+  - Team contribution tracking and leaderboards
+  - Dynamic team balancing algorithms
+  - Team member roles (member, veteran, captain) with progression
+- ✅ **Team Tournaments**: Seasonal wars and monthly battles
+  - Configurable tournament types (seasonal_war, monthly_battle, special_event)
+  - Automatic team score aggregation from individual games and challenges
+  - Real-time leaderboards with detailed statistics
+  - Prize and achievement system for tournament winners
+- ✅ **Universal Scoring System**: Cross-game score normalization
+  - Game type and difficulty-based score normalization
+  - ELO rating system for competitive play
+  - Time-based scoring adjustments
+  - Team contribution calculations with weighted scoring
+  - Streak bonuses and challenge multipliers
+
 ## Technology Stack
 - **Framework**: Flask 3.1.2
 - **Database**: MongoDB 
@@ -105,6 +147,12 @@ API endpoints and their descriptions are documented in:
 - **OpenAPI Specification**: `openapi.yaml` - Complete API documentation with schemas
 - **Controller modules**: Each feature's `controllers/` directory contains route implementations
 - **Postman Collection**: `GoodPlay_API.postman_collection.json` - API testing collection
+
+#### Game Engine APIs (50+ endpoints)
+- **Game Management**: `/api/games/*` - Core game and session management
+- **Game Modes**: `/api/modes/*` - Temporary mode management and scheduling
+- **Challenges**: `/api/challenges/*` - Direct challenges and matchmaking
+- **Teams**: `/api/teams/*` - Global teams and tournament management
 
 ## Development Guidelines
 

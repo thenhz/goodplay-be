@@ -392,3 +392,29 @@ class GameSessionRepository(BaseRepository):
             "highest_score": 0,
             "total_playtime_seconds": 0
         }
+
+    def get_recent_sessions_by_game(self, game_id: str, days: int = 7, limit: int = 100) -> List[GameSession]:
+        """
+        Get recent sessions for a specific game.
+
+        Args:
+            game_id: The game ID
+            days: Number of days to look back
+            limit: Maximum number of sessions to return
+
+        Returns:
+            List[GameSession]: List of recent game sessions
+        """
+        from datetime import datetime, timedelta
+
+        since_date = datetime.utcnow() - timedelta(days=days)
+        sessions_data = self.find_many(
+            {
+                "game_id": game_id,
+                "created_at": {"$gte": since_date}
+            },
+            limit=limit,
+            sort=[("created_at", -1)]
+        )
+
+        return [GameSession.from_dict(data) for data in sessions_data]

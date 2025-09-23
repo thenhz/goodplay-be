@@ -1,0 +1,1 @@
+# Game challenges module for direct player challenges
