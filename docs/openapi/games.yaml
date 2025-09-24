@@ -1,0 +1,742 @@
+# Game Engine & Session Management API (GOO-8 & GOO-9)
+# This module contains game engine, sessions, challenges, teams, and tournaments
+
+# Message Constants for Games Module
+games_constants: &games_constants
+  # Game Engine (GOO-8)
+  - `GAMES_RETRIEVED_SUCCESS` - Games list retrieved successfully
+  - `GAMES_SEARCH_SUCCESS` - Game search completed successfully
+  - `GAME_CATEGORIES_RETRIEVED_SUCCESS` - Game categories retrieved successfully
+  - `GAMES_STATS_RETRIEVED_SUCCESS` - Game statistics retrieved successfully
+  - `GAME_INFO_RETRIEVED_SUCCESS` - Game information retrieved successfully
+  - `GAME_PLUGIN_INSTALLED_SUCCESS` - Game plugin installed successfully
+  - `GAME_PLUGIN_UNINSTALLED_SUCCESS` - Game plugin uninstalled successfully
+  - `GAME_PLUGIN_VALIDATED_SUCCESS` - Game plugin validated successfully
+  - `GAME_RATING_SUCCESS` - Game rated successfully
+  - `GAME_SESSION_STARTED_SUCCESS` - Game session started successfully
+  - `GAME_SESSION_ENDED_SUCCESS` - Game session ended successfully
+  - `SESSION_RETRIEVED_SUCCESS` - Session information retrieved successfully
+  - `SESSION_STATE_UPDATED_SUCCESS` - Session state updated successfully
+  - `MOVE_VALIDATED_SUCCESS` - Move validated and recorded successfully
+  - `SESSION_PAUSED_SUCCESS` - Session paused successfully
+  - `SESSION_RESUMED_SUCCESS` - Session resumed successfully
+  - `USER_SESSIONS_RETRIEVED_SUCCESS` - User sessions retrieved successfully
+  - `USER_SESSION_STATS_RETRIEVED_SUCCESS` - User session statistics retrieved successfully
+  - `GAME_NOT_FOUND` - Game not found
+  - `GAME_NOT_ACTIVE` - Game is not active
+  - `ACTIVE_SESSION_EXISTS` - User already has active session for this game
+  - `GAME_PLUGIN_NOT_FOUND` - Game plugin not found
+  - `PLUGIN_SESSION_START_FAILED` - Plugin failed to start session
+  - `SESSION_CREATION_FAILED` - Failed to create session
+  - `SESSION_NOT_FOUND` - Session not found
+  - `SESSION_ALREADY_ENDED` - Session already ended
+  - `SESSION_NOT_ACTIVE` - Session is not active
+  - `SESSION_ACCESS_DENIED` - User not authorized to access this session
+  - `INVALID_END_REASON` - Invalid session end reason
+  - `SESSION_STATE_REQUIRED` - Session state is required
+  - `MOVE_DATA_REQUIRED` - Move data is required
+  - `INVALID_MOVE` - Move is not valid
+  - `SESSION_NOT_PAUSED` - Session is not paused
+  - `SEARCH_QUERY_TOO_SHORT` - Search query too short
+  - `PLUGIN_FILE_REQUIRED` - Plugin file is required
+  - `PLUGIN_FILE_EMPTY` - Plugin file is empty
+  - `INVALID_RATING_VALUE` - Rating value must be between 1.0 and 5.0
+
+  # Enhanced Session Management (GOO-9)
+  - `SESSION_SYNC_SUCCESS` - Session synchronized successfully
+  - `SYNC_CONFLICT_SERVER_WINS` - Sync conflict resolved - server state maintained
+  - `SESSION_PROVIDED_SUCCESS` - Session provided for device successfully
+  - `SYNC_CONFLICT_RESOLVED` - Synchronization conflict resolved successfully
+  - `NO_SYNC_CONFLICTS` - No synchronization conflicts detected
+  - `SYNC_CONFLICTS_DETECTED` - Synchronization conflicts detected
+  - `ACTIVE_SESSIONS_RETRIEVED_SUCCESS` - Active sessions retrieved successfully
+  - `SYNC_DATA_REQUIRED` - Synchronization data is required
+  - `CONFLICT_RESOLUTION_DATA_REQUIRED` - Conflict resolution data is required
+  - `INVALID_RESOLUTION_STRATEGY` - Invalid conflict resolution strategy
+  - `ACTIVE_SESSIONS_RETRIEVAL_FAILED` - Failed to retrieve active sessions
+  - `SESSION_SYNC_FAILED` - Session synchronization failed
+  - `SESSION_PROVISION_FAILED` - Session provision for device failed
+  - `SYNC_CONFLICT_RESOLUTION_FAILED` - Sync conflict resolution failed
+  - `SYNC_CONFLICT_CHECK_FAILED` - Sync conflict check failed
+
+# API Paths
+paths:
+  # Game Management
+  /api/games:
+    get:
+      tags:
+        - Games
+      summary: Get games list
+      description: Retrieve list of available games with filtering and pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by game category
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search games by name or description
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Games retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GamesList'
+
+  /api/games/{game_id}:
+    get:
+      tags:
+        - Games
+      summary: Get game details
+      description: Retrieve detailed information about a specific game
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Game information retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameDetails'
+
+  /api/games/categories:
+    get:
+      tags:
+        - Games
+      summary: Get game categories
+      description: Retrieve list of all game categories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Game categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameCategories'
+
+  # Game Sessions
+  /api/games/sessions:
+    post:
+      tags:
+        - Game Sessions
+      summary: Start game session
+      description: Start a new game session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - game_id
+              properties:
+                game_id:
+                  type: string
+                session_config:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Game session started successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameSession'
+
+    get:
+      tags:
+        - Game Sessions
+      summary: Get user sessions
+      description: Retrieve user's game sessions with filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, paused, completed, abandoned]
+        - name: game_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: User sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SessionsList'
+
+  /api/games/sessions/{session_id}:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get session details
+      description: Retrieve detailed information about a game session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session information retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameSession'
+
+    delete:
+      tags:
+        - Game Sessions
+      summary: End game session
+      description: End an active game session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                final_score:
+                  type: integer
+                end_reason:
+                  type: string
+                  enum: [completed, abandoned, timeout]
+      responses:
+        '200':
+          description: Game session ended successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameSession'
+
+  /api/games/sessions/{session_id}/pause:
+    post:
+      tags:
+        - Game Sessions
+      summary: Pause game session
+      description: Pause an active game session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session paused successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/games/sessions/{session_id}/resume:
+    post:
+      tags:
+        - Game Sessions
+      summary: Resume game session
+      description: Resume a paused game session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session resumed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Enhanced Session Management (GOO-9)
+  /api/games/sessions/{session_id}/sync:
+    post:
+      tags:
+        - Session Sync
+      summary: Synchronize session state
+      description: Synchronize session state across devices with conflict resolution
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionSyncRequest'
+      responses:
+        '200':
+          description: Session synchronized successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SessionSyncResponse'
+
+  /api/games/sessions/{session_id}/device:
+    get:
+      tags:
+        - Session Sync
+      summary: Get session for device
+      description: Get device-optimized session data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: device_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session provided for device successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DeviceSession'
+
+  /api/games/sessions/active:
+    get:
+      tags:
+        - Session Sync
+      summary: Get active sessions
+      description: Get all active/paused sessions for cross-device management
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ActiveSessionsList'
+
+  /api/games/sessions/conflicts:
+    get:
+      tags:
+        - Session Sync
+      summary: Check sync conflicts
+      description: Check for synchronization conflicts across devices
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sync conflicts check completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SyncConflictsResponse'
+
+# Components
+components:
+  schemas:
+    # Game Management
+    GamesList:
+      type: object
+      properties:
+        games:
+          type: array
+          items:
+            $ref: '#/components/schemas/Game'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        categories:
+          type: array
+          items:
+            type: string
+
+    Game:
+      type: object
+      properties:
+        game_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        difficulty_level:
+          type: string
+          enum: [easy, medium, hard]
+        estimated_duration:
+          type: integer
+          description: Estimated duration in minutes
+        rating:
+          type: number
+          format: float
+        thumbnail_url:
+          type: string
+        is_active:
+          type: boolean
+        player_count:
+          type: integer
+
+    GameDetails:
+      allOf:
+        - $ref: '#/components/schemas/Game'
+        - type: object
+          properties:
+            rules:
+              type: string
+            instructions:
+              type: string
+            achievements:
+              type: array
+              items:
+                $ref: '#/components/schemas/Achievement'
+            statistics:
+              $ref: '#/components/schemas/GameStatistics'
+
+    GameCategories:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              display_name:
+                type: string
+              game_count:
+                type: integer
+
+    # Game Sessions
+    GameSession:
+      type: object
+      properties:
+        session_id:
+          type: string
+        game_id:
+          type: string
+        user_id:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, completed, abandoned]
+        current_score:
+          type: integer
+        play_duration_ms:
+          type: integer
+          description: Total play duration in milliseconds
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        paused_at:
+          type: string
+          format: date-time
+          nullable: true
+        resumed_at:
+          type: string
+          format: date-time
+          nullable: true
+        device_info:
+          $ref: '#/components/schemas/DeviceInfo'
+        sync_version:
+          type: integer
+        session_state:
+          type: object
+          additionalProperties: true
+
+    DeviceInfo:
+      type: object
+      properties:
+        device_id:
+          type: string
+        device_type:
+          type: string
+          enum: [mobile, tablet, desktop, web]
+        platform:
+          type: string
+        app_version:
+          type: string
+        screen_resolution:
+          type: string
+
+    SessionsList:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameSession'
+        statistics:
+          $ref: '#/components/schemas/UserSessionStatistics'
+
+    UserSessionStatistics:
+      type: object
+      properties:
+        total_sessions:
+          type: integer
+        total_play_time_ms:
+          type: integer
+        average_session_duration_ms:
+          type: integer
+        favorite_game:
+          type: string
+        total_score:
+          type: integer
+        achievements_unlocked:
+          type: integer
+
+    # Session Synchronization (GOO-9)
+    SessionSyncRequest:
+      type: object
+      required:
+        - device_info
+        - session_state
+        - sync_version
+      properties:
+        device_info:
+          $ref: '#/components/schemas/DeviceInfo'
+        session_state:
+          type: object
+          additionalProperties: true
+        sync_version:
+          type: integer
+        play_duration_ms:
+          type: integer
+        current_score:
+          type: integer
+        conflict_resolution_strategy:
+          type: string
+          enum: [server_wins, client_wins, merge, manual]
+          default: server_wins
+
+    SessionSyncResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        sync_result:
+          type: string
+          enum: [success, conflict_resolved, conflict_detected]
+        conflict_info:
+          $ref: '#/components/schemas/ConflictInfo'
+          nullable: true
+        new_sync_version:
+          type: integer
+
+    DeviceSession:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        device_optimizations:
+          type: object
+          properties:
+            recommended_quality:
+              type: string
+              enum: [low, medium, high]
+            touch_controls:
+              type: boolean
+            offline_mode:
+              type: boolean
+
+    ActiveSessionsList:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameSession'
+        cross_device_sessions:
+          type: array
+          items:
+            type: object
+            properties:
+              session_id:
+                type: string
+              devices:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeviceInfo'
+              last_sync:
+                type: string
+                format: date-time
+
+    SyncConflictsResponse:
+      type: object
+      properties:
+        has_conflicts:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictInfo'
+        total_conflicts:
+          type: integer
+
+    ConflictInfo:
+      type: object
+      properties:
+        session_id:
+          type: string
+        conflict_type:
+          type: string
+          enum: [state_mismatch, version_conflict, device_conflict]
+        description:
+          type: string
+        server_state:
+          type: object
+          additionalProperties: true
+        client_state:
+          type: object
+          additionalProperties: true
+        conflicting_devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceInfo'
+        timestamp:
+          type: string
+          format: date-time
+
+    Achievement:
+      type: object
+      properties:
+        achievement_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon_url:
+          type: string
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+
+    GameStatistics:
+      type: object
+      properties:
+        total_players:
+          type: integer
+        average_rating:
+          type: number
+          format: float
+        average_session_duration:
+          type: integer
+        total_sessions:
+          type: integer

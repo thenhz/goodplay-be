@@ -1,0 +1,1135 @@
+# Social Impact Score & Leaderboards API (GOO-12)
+# This module contains all endpoints and schemas for the leaderboard system
+
+# Message Constants for Leaderboards Module
+leaderboards_constants: &leaderboards_constants
+  - `IMPACT_SCORE_RETRIEVED_SUCCESS` - Impact score retrieved successfully
+  - `IMPACT_SCORE_REFRESHED_SUCCESS` - Impact score refreshed successfully
+  - `IMPACT_SCORE_HISTORY_RETRIEVED_SUCCESS` - Impact score history retrieved successfully
+  - `LEADERBOARD_RETRIEVED_SUCCESS` - Leaderboard retrieved successfully
+  - `LEADERBOARD_SUMMARY_RETRIEVED_SUCCESS` - Leaderboard summary retrieved successfully
+  - `FRIENDS_LEADERBOARD_RETRIEVED_SUCCESS` - Friends leaderboard retrieved successfully
+  - `LEADERBOARD_POSITIONS_RETRIEVED_SUCCESS` - User leaderboard positions retrieved successfully
+  - `LEADERBOARD_STATISTICS_RETRIEVED_SUCCESS` - Leaderboard statistics retrieved successfully
+  - `TOP_PERFORMERS_RETRIEVED_SUCCESS` - Top performers retrieved successfully
+  - `PRIVACY_SETTINGS_UPDATED_SUCCESS` - Privacy settings updated successfully
+  - `PRIVACY_SETTINGS_RETRIEVED_SUCCESS` - Privacy settings retrieved successfully
+  - `RANKING_UPDATE_TRIGGERED_SUCCESS` - Ranking update triggered successfully
+  - `RANKING_HEALTH_RETRIEVED_SUCCESS` - Ranking health status retrieved successfully
+  - `IMPACT_SCORES_RECALCULATION_COMPLETED` - Impact scores recalculation completed
+  - `LEADERBOARDS_REFRESH_COMPLETED` - Leaderboards refresh completed
+  - `FULL_RANKING_RECALCULATION_COMPLETED` - Full ranking recalculation completed
+  - `RANKING_OPTIMIZATION_COMPLETED` - Ranking optimization completed
+  - `BACKGROUND_UPDATES_STARTED` - Background updates started
+  - `BACKGROUND_UPDATES_STOPPED` - Background updates stopped
+  - `LEADERBOARD_CLEARED_SUCCESS` - Leaderboard cleared successfully
+  - `SYSTEM_STATISTICS_RETRIEVED_SUCCESS` - System statistics retrieved successfully
+  - `INVALID_LEADERBOARD_TYPE` - Invalid leaderboard type
+  - `INVALID_PERIOD` - Invalid period
+  - `INVALID_VISIBILITY_LEVEL` - Invalid visibility level
+  - `USER_IMPACT_SCORE_NOT_FOUND` - User impact score not found
+  - `LEADERBOARD_STATISTICS_NOT_FOUND` - Leaderboard statistics not found
+  - `FRIENDS_DATA_NOT_AVAILABLE` - No friends data available
+
+# API Paths
+paths:
+  # Impact Score Endpoints
+  /api/social/impact-score/me:
+    get:
+      tags:
+        - Impact Score
+      summary: Get current user's impact score
+      description: Retrieve the authenticated user's impact score with detailed component breakdown
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Impact score retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImpactScoreResponse'
+              example:
+                success: true
+                message: "IMPACT_SCORE_RETRIEVED_SUCCESS"
+                data:
+                  id: "64f8b2c1234567890abcdef0"
+                  user_id: "64f8b2c1234567890abcdef1"
+                  impact_score: 756.50
+                  components:
+                    gaming:
+                      score: 420.0
+                      percentage: 42.0
+                      details:
+                        play_time_score: 180.0
+                        game_variety_score: 120.0
+                        tournament_score: 80.0
+                        achievement_score: 40.0
+                    social:
+                      score: 180.0
+                      percentage: 36.0
+                      details:
+                        friends_score: 100.0
+                        challenges_score: 50.0
+                        community_score: 30.0
+                    donation:
+                      score: 800.0
+                      percentage: 40.0
+                      details:
+                        amount_score: 500.0
+                        frequency_score: 200.0
+                        diversity_score: 100.0
+                  rankings:
+                    global: 25
+                    weekly: 12
+                  trend:
+                    trend: "increasing"
+                    change: 45.2
+                    change_percentage: 6.3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/impact-score/{user_id}:
+    get:
+      tags:
+        - Impact Score
+      summary: Get impact score for specific user
+      description: Retrieve impact score for a specific user (subject to privacy settings)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID to get impact score for
+      responses:
+        '200':
+          description: Impact score retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImpactScoreResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/impact-score/refresh:
+    post:
+      tags:
+        - Impact Score
+      summary: Refresh current user's impact score
+      description: Force recalculation of the authenticated user's impact score
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Impact score refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImpactScoreResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/impact-score/history:
+    get:
+      tags:
+        - Impact Score
+      summary: Get impact score history
+      description: Retrieve the authenticated user's impact score history and trends
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 90
+          description: Number of days of history to retrieve
+      responses:
+        '200':
+          description: Impact score history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImpactScoreHistory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Leaderboard Endpoints
+  /api/social/leaderboards/{leaderboard_type}:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get leaderboard by type
+      description: Retrieve a specific leaderboard with pagination support
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: leaderboard_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [global_impact, weekly_warriors, gaming_masters, social_champions, donation_heroes, friends_circle]
+          description: Type of leaderboard to retrieve
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, all_time]
+            default: all_time
+          description: Time period for the leaderboard
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number for pagination
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+          description: Number of entries per page
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LeaderboardResponse'
+        '400':
+          description: Invalid leaderboard type or period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "INVALID_LEADERBOARD_TYPE"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/leaderboards:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get leaderboard summary
+      description: Retrieve summary of all available leaderboards with metadata
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Leaderboard summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LeaderboardSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/leaderboards/friends:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get friends leaderboard
+      description: Retrieve leaderboard showing current user and their friends
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number for pagination
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+          description: Number of entries per page
+      responses:
+        '200':
+          description: Friends leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LeaderboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/leaderboards/my-positions:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get user's leaderboard positions
+      description: Retrieve current user's positions across all leaderboards
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User leaderboard positions retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserLeaderboardSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/leaderboards/{leaderboard_type}/statistics:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get leaderboard statistics
+      description: Retrieve detailed statistics for a specific leaderboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: leaderboard_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [global_impact, weekly_warriors, gaming_masters, social_champions, donation_heroes, friends_circle]
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, all_time]
+            default: all_time
+      responses:
+        '200':
+          description: Leaderboard statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LeaderboardStatistics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/leaderboards/{leaderboard_type}/top:
+    get:
+      tags:
+        - Leaderboards
+      summary: Get top performers
+      description: Retrieve top N performers from a specific leaderboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: leaderboard_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [global_impact, weekly_warriors, gaming_masters, social_champions, donation_heroes, friends_circle]
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, all_time]
+            default: all_time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: Top performers retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TopPerformersResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Privacy Endpoints
+  /api/social/privacy/leaderboard-participation:
+    get:
+      tags:
+        - Privacy
+      summary: Get leaderboard privacy settings
+      description: Retrieve current user's leaderboard privacy settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Privacy settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PrivacySettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Privacy
+      summary: Update leaderboard privacy settings
+      description: Update current user's leaderboard participation settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - participation
+              properties:
+                participation:
+                  type: boolean
+                  description: Whether user wants to participate in leaderboards
+            example:
+              participation: false
+      responses:
+        '200':
+          description: Privacy settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "PRIVACY_SETTINGS_UPDATED_SUCCESS"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "DATA_REQUIRED"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Ranking Engine Endpoints
+  /api/social/rankings/trigger-update:
+    post:
+      tags:
+        - Ranking Engine
+      summary: Trigger ranking update
+      description: Manually trigger a ranking update for the current user
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activity_type:
+                  type: string
+                  enum: [gaming, social, donation, general]
+                  default: general
+                  description: Type of activity that triggered the update
+            example:
+              activity_type: "gaming"
+      responses:
+        '200':
+          description: Ranking update triggered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "RANKING_UPDATE_TRIGGERED_SUCCESS"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/rankings/health:
+    get:
+      tags:
+        - Ranking Engine
+      summary: Get ranking system health
+      description: Retrieve health status and metrics of the ranking system
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ranking health status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RankingHealthStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # Admin Endpoints
+  /api/social/admin/impact-scores/recalculate:
+    post:
+      tags:
+        - Admin
+      summary: Admin - Recalculate all impact scores
+      description: Admin endpoint to recalculate all user impact scores
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch_size:
+                  type: integer
+                  default: 100
+                  minimum: 1
+                  maximum: 1000
+                  description: Number of users to process per batch
+            example:
+              batch_size: 100
+      responses:
+        '200':
+          description: Impact scores recalculation completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BatchOperationStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/admin/leaderboards/refresh:
+    post:
+      tags:
+        - Admin
+      summary: Admin - Refresh all leaderboards
+      description: Admin endpoint to refresh all leaderboards with current data
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Leaderboards refresh completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BatchOperationStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/social/admin/system/stats:
+    get:
+      tags:
+        - Admin
+      summary: Admin - Get system statistics
+      description: Admin endpoint to get comprehensive system statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SystemStatistics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# Components
+components:
+  schemas:
+    # Core Response Schemas
+    ImpactScoreResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Impact score record ID
+        user_id:
+          type: string
+          description: User ID
+        impact_score:
+          type: number
+          format: float
+          description: Total calculated impact score
+        components:
+          type: object
+          properties:
+            gaming:
+              $ref: '#/components/schemas/ScoreComponent'
+            social:
+              $ref: '#/components/schemas/ScoreComponent'
+            donation:
+              $ref: '#/components/schemas/ScoreComponent'
+        rankings:
+          type: object
+          properties:
+            global:
+              type: integer
+              nullable: true
+              description: Global ranking position
+            weekly:
+              type: integer
+              nullable: true
+              description: Weekly ranking position
+        trend:
+          $ref: '#/components/schemas/ScoreTrend'
+        last_calculated:
+          type: string
+          format: date-time
+          description: Last calculation timestamp
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    ScoreComponent:
+      type: object
+      properties:
+        score:
+          type: number
+          format: float
+          description: Component score value
+        percentage:
+          type: number
+          format: float
+          description: Percentage of maximum possible score
+        details:
+          type: object
+          description: Detailed breakdown of component calculation
+          additionalProperties: true
+
+    ScoreTrend:
+      type: object
+      properties:
+        trend:
+          type: string
+          enum: [increasing, decreasing, stable, insufficient_data]
+          description: Overall trend direction
+        change:
+          type: number
+          format: float
+          description: Absolute change in score
+        change_percentage:
+          type: number
+          format: float
+          description: Percentage change in score
+
+    ImpactScoreHistory:
+      type: object
+      properties:
+        current_score:
+          type: number
+          format: float
+          description: Current impact score
+        trend:
+          $ref: '#/components/schemas/ScoreTrend'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEntry'
+          description: Historical score entries
+
+    HistoryEntry:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        score:
+          type: number
+          format: float
+        rank:
+          type: integer
+          nullable: true
+        period:
+          type: string
+        gaming_component:
+          type: number
+          format: float
+        social_component:
+          type: number
+          format: float
+        donation_component:
+          type: number
+          format: float
+
+    LeaderboardResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Leaderboard ID
+        leaderboard_type:
+          type: string
+          enum: [global_impact, weekly_warriors, gaming_masters, social_champions, donation_heroes, friends_circle]
+        period:
+          type: string
+          enum: [daily, weekly, monthly, all_time]
+        metadata:
+          $ref: '#/components/schemas/LeaderboardMetadata'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntryResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        user_position:
+          $ref: '#/components/schemas/UserPosition'
+          nullable: true
+        last_updated:
+          type: string
+          format: date-time
+
+    LeaderboardMetadata:
+      type: object
+      properties:
+        total_participants:
+          type: integer
+        min_score:
+          type: number
+          format: float
+        max_score:
+          type: number
+          format: float
+        avg_score:
+          type: number
+          format: float
+        score_range:
+          type: number
+          format: float
+        update_frequency:
+          type: string
+
+    LeaderboardEntryResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+        score:
+          type: number
+          format: float
+        rank:
+          type: integer
+        display_name:
+          type: string
+        user_profile:
+          $ref: '#/components/schemas/UserProfileInfo'
+        score_breakdown:
+          type: object
+          additionalProperties: true
+        last_updated:
+          type: string
+          format: date-time
+
+    UserProfileInfo:
+      type: object
+      properties:
+        avatar_url:
+          type: string
+          nullable: true
+        level:
+          type: integer
+        badge_count:
+          type: integer
+        member_since:
+          type: string
+          format: date-time
+          nullable: true
+
+    UserPosition:
+      type: object
+      properties:
+        rank:
+          type: integer
+        score:
+          type: number
+          format: float
+        percentile:
+          type: number
+          format: float
+        rank_display:
+          type: string
+        is_top_performer:
+          type: boolean
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_entries:
+          type: integer
+        total_pages:
+          type: integer
+
+    LeaderboardSummary:
+      type: object
+      properties:
+        leaderboards:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardInfo'
+        total_types:
+          type: integer
+
+    LeaderboardInfo:
+      type: object
+      properties:
+        type:
+          type: string
+        display_name:
+          type: string
+        periods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PeriodInfo'
+
+    PeriodInfo:
+      type: object
+      properties:
+        period:
+          type: string
+        display_name:
+          type: string
+        stats:
+          $ref: '#/components/schemas/LeaderboardStatistics'
+          nullable: true
+
+    LeaderboardStatistics:
+      type: object
+      properties:
+        total_participants:
+          type: integer
+        avg_score:
+          type: number
+          format: float
+        max_score:
+          type: number
+          format: float
+        min_score:
+          type: number
+          format: float
+        median_rank:
+          type: number
+          format: float
+        percentiles:
+          type: object
+          properties:
+            "25th":
+              type: number
+              format: float
+            "50th":
+              type: number
+              format: float
+            "75th":
+              type: number
+              format: float
+            "90th":
+              type: number
+              format: float
+
+    UserLeaderboardSummary:
+      type: object
+      properties:
+        user_id:
+          type: string
+        impact_score:
+          $ref: '#/components/schemas/ImpactScoreResponse'
+        leaderboard_positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserLeaderboardPosition'
+        global_ranking:
+          $ref: '#/components/schemas/UserRankInfo'
+        achievements:
+          type: object
+          properties:
+            top_10_positions:
+              type: integer
+            top_100_positions:
+              type: integer
+
+    UserLeaderboardPosition:
+      type: object
+      properties:
+        leaderboard_type:
+          type: string
+        period:
+          type: string
+        rank:
+          type: integer
+        score:
+          type: number
+          format: float
+        total_participants:
+          type: integer
+        last_updated:
+          type: string
+          format: date-time
+
+    UserRankInfo:
+      type: object
+      properties:
+        global_rank:
+          type: integer
+        weekly_rank:
+          type: integer
+          nullable: true
+        percentile:
+          type: number
+          format: float
+        total_users:
+          type: integer
+        impact_score:
+          type: number
+          format: float
+        components:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+
+    TopPerformersResponse:
+      type: object
+      properties:
+        leaderboard_type:
+          type: string
+        period:
+          type: string
+        limit:
+          type: integer
+        performers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopPerformer'
+
+    TopPerformer:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        score:
+          type: number
+          format: float
+        rank:
+          type: integer
+        score_components:
+          type: object
+          additionalProperties: true
+        user_data:
+          $ref: '#/components/schemas/UserProfileInfo'
+
+    PrivacySettings:
+      type: object
+      properties:
+        leaderboard_participation:
+          type: boolean
+        impact_score_visibility:
+          type: string
+          enum: [public, friends, private]
+        profile_visibility:
+          type: string
+          enum: [public, friends, private]
+        stats_sharing:
+          type: boolean
+        activity_visibility:
+          type: string
+          enum: [public, friends, private]
+        contact_permissions:
+          type: string
+          enum: [everyone, friends, none]
+
+    RankingHealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, warning, critical, error]
+        health_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        metrics:
+          type: object
+          properties:
+            total_users_with_scores:
+              type: integer
+            stale_scores:
+              type: integer
+            stale_leaderboards:
+              type: integer
+            last_batch_update:
+              type: string
+              format: date-time
+        score_statistics:
+          type: object
+          additionalProperties: true
+        leaderboard_summary:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: string
+          nullable: true
+
+    BatchOperationStats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+        processed:
+          type: integer
+        errors:
+          type: integer
+        execution_time_seconds:
+          type: number
+          format: float
+        timestamp:
+          type: string
+          format: date-time
+
+    SystemStatistics:
+      type: object
+      properties:
+        impact_scores:
+          type: object
+          additionalProperties: true
+        leaderboards:
+          type: object
+          additionalProperties: true
+        system_health:
+          $ref: '#/components/schemas/RankingHealthStatus'
+        timestamp:
+          type: string
+          format: date-time

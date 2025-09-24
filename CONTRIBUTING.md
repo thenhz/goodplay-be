@@ -452,11 +452,38 @@ def service_method(self, params) -> Tuple[bool, str, Optional[Dict]]:
         return False, "OPERATION_FAILED", None
 ```
 
-### OpenAPI Documentation Requirements
+### API Documentation Requirements
 
-Every endpoint must be fully documented in `openapi.yaml`:
+#### Modular Documentation Structure
+
+All API documentation is organized modularly under the `docs/` directory:
+
+```
+docs/
+├── openapi.yaml              # Main OpenAPI specification
+├── openapi/                  # Modular OpenAPI specifications
+│   ├── core.yaml            # Authentication & user management
+│   ├── social.yaml          # Social features & relationships
+│   ├── games.yaml           # Game engine & sessions
+│   └── leaderboards.yaml    # Impact scores & leaderboards
+├── postman/                  # Modular Postman collections
+│   ├── core_collection.json        # Core API collection
+│   ├── social_collection.json      # Social API collection
+│   ├── games_collection.json       # Games API collection
+│   └── leaderboards_collection.json # Leaderboards API collection
+└── API_ORGANIZATION.md       # Documentation guide
+```
+
+#### Documentation Maintenance Workflow
+
+When adding new endpoints or modifying existing ones:
+
+1. **Choose the Appropriate Module**: Determine which module your endpoint belongs to (core, social, games, leaderboards)
+
+2. **Update Module OpenAPI Spec**: Add/modify endpoints in the appropriate `docs/openapi/{module}.yaml` file:
 
 ```yaml
+# docs/openapi/games.yaml
 /api/games/{gameId}/sessions:
   post:
     summary: Start a new game session
@@ -482,22 +509,55 @@ Every endpoint must be fully documented in `openapi.yaml`:
                   enum: ["GAME_SESSION_STARTED"]
                 data:
                   $ref: '#/components/schemas/GameSession'
-      400:
-        description: Invalid game or user
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ErrorResponse'
-            examples:
-              game_not_found:
-                value:
-                  success: false
-                  message: "GAME_NOT_FOUND"
-              user_not_authorized:
-                value:
-                  success: false
-                  message: "USER_NOT_AUTHORIZED"
 ```
+
+3. **Update Main OpenAPI Spec**: If adding new paths, reference them in `docs/openapi.yaml`:
+
+```yaml
+# docs/openapi.yaml
+paths:
+  /api/games/{gameId}/sessions:
+    $ref: './openapi/games.yaml#/paths/~1api~1games~1{gameId}~1sessions'
+```
+
+4. **Update Postman Collection**: Add/modify requests in the appropriate `docs/postman/{module}_collection.json` file:
+
+```json
+{
+  "name": "Start Game Session",
+  "request": {
+    "method": "POST",
+    "header": [
+      {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+      }
+    ],
+    "url": {
+      "raw": "{{baseUrl}}/api/games/{{gameId}}/sessions",
+      "host": ["{{baseUrl}}"],
+      "path": ["api", "games", "{{gameId}}", "sessions"]
+    }
+  }
+}
+```
+
+5. **Validate Documentation**: Ensure consistency between OpenAPI spec and Postman collections
+
+#### Module-Specific Documentation Guidelines
+
+- **Core Module**: Authentication, user management, preferences, health checks
+- **Social Module**: Friend relationships, blocking, user discovery, social stats
+- **Games Module**: Game management, sessions, modes, challenges, teams, tournaments
+- **Leaderboards Module**: Impact scores, leaderboards, privacy controls, ranking engine
+
+#### Documentation Quality Standards
+
+- **Complete Coverage**: Every endpoint must be documented in both OpenAPI and Postman
+- **Consistent Naming**: Use consistent parameter names and response structures across modules
+- **Example Values**: Provide realistic example values for all parameters and responses
+- **Error Documentation**: Document all possible error responses with specific message constants
+- **Environment Variables**: Use consistent variable names across Postman collections ({{baseUrl}}, {{token}}, etc.)
 
 ## 🎨 Code Style Guidelines
 
@@ -827,9 +887,14 @@ Contributors are recognized through:
 
 ### Development Tools
 
-- **Postman Collection**: Import `GoodPlay_API.postman_collection.json`
+- **API Documentation**: Swagger UI available at `/api/docs`
+- **OpenAPI Specifications**: Modular specs in `docs/openapi/` directory
+- **Postman Collections**: Modular collections in `docs/postman/` directory
+  - Core API: `docs/postman/core_collection.json`
+  - Social API: `docs/postman/social_collection.json`
+  - Games API: `docs/postman/games_collection.json`
+  - Leaderboards API: `docs/postman/leaderboards_collection.json`
 - **Database GUI**: MongoDB Compass for database exploration
-- **API Testing**: Swagger UI available at `/api/docs`
 - **Logging**: Check `logs/` directory for application logs
 
 ### Community Resources

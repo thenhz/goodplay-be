@@ -1,0 +1,607 @@
+# Social Features & Relationships API (GOO-7)
+# This module contains social graph and relationship functionality
+
+# Message Constants for Social Module
+social_constants: &social_constants
+  - `FRIEND_REQUEST_SENT_SUCCESS` - Friend request sent successfully
+  - `FRIEND_REQUEST_ALREADY_FRIENDS` - Users are already friends
+  - `FRIEND_REQUEST_ALREADY_SENT` - Friend request already sent
+  - `FRIEND_REQUEST_USER_BLOCKED` - Cannot send request to blocked user
+  - `FRIEND_REQUEST_NOT_ALLOWED` - User privacy settings don't allow requests
+  - `FRIEND_REQUEST_ACCEPTED_SUCCESS` - Friend request accepted successfully
+  - `FRIEND_REQUEST_DECLINED_SUCCESS` - Friend request declined successfully
+  - `FRIEND_REQUEST_NOT_FOUND` - Friend request not found
+  - `FRIEND_REQUEST_NOT_PENDING` - Friend request is not in pending state
+  - `FRIEND_REQUEST_NOT_AUTHORIZED` - User not authorized for this request
+  - `FRIEND_REMOVED_SUCCESS` - Friend removed successfully
+  - `FRIEND_RELATIONSHIP_NOT_FOUND` - Friend relationship not found
+  - `FRIENDS_LIST_SUCCESS` - Friends list retrieved successfully
+  - `FRIEND_REQUESTS_SUCCESS` - Friend requests retrieved successfully
+  - `USER_BLOCKED_SUCCESS` - User blocked successfully
+  - `USER_ALREADY_BLOCKED` - User is already blocked
+  - `USER_UNBLOCKED_SUCCESS` - User unblocked successfully
+  - `USER_NOT_BLOCKED` - User is not blocked
+  - `BLOCKED_USERS_SUCCESS` - Blocked users list retrieved successfully
+  - `SEARCH_USERS_SUCCESS` - User search completed successfully
+  - `SEARCH_NO_RESULTS` - No users found matching search criteria
+  - `SEARCH_QUERY_TOO_SHORT` - Search query must be at least 2 characters
+  - `SEARCH_USERS_FAILED` - User search failed
+  - `FRIEND_SUGGESTIONS_SUCCESS` - Friend suggestions retrieved successfully
+  - `FRIEND_SUGGESTIONS_FAILED` - Failed to retrieve friend suggestions
+  - `RELATIONSHIP_STATUS_SUCCESS` - Relationship status retrieved successfully
+  - `SOCIAL_STATS_SUCCESS` - Social statistics retrieved successfully
+  - `TARGET_USER_NOT_FOUND` - Target user not found
+  - `CANNOT_INTERACT_WITH_SELF` - Cannot perform this action on yourself
+
+# API Paths
+paths:
+  # Friend Request Management
+  /api/social/friends/request:
+    post:
+      tags:
+        - Social
+      summary: Send friend request
+      description: Send a friend request to another user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_user_id
+              properties:
+                target_user_id:
+                  type: string
+                  description: ID of user to send friend request to
+            example:
+              target_user_id: "64f8b2c1234567890abcdef2"
+      responses:
+        '200':
+          description: Friend request sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "FRIEND_REQUEST_SENT_SUCCESS"
+        '400':
+          description: Friend request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                already_friends:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_ALREADY_FRIENDS"
+                already_sent:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_ALREADY_SENT"
+                user_blocked:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_USER_BLOCKED"
+
+  /api/social/friends/request/{request_id}/accept:
+    post:
+      tags:
+        - Social
+      summary: Accept friend request
+      description: Accept a pending friend request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Friend request ID
+      responses:
+        '200':
+          description: Friend request accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "FRIEND_REQUEST_ACCEPTED_SUCCESS"
+
+  /api/social/friends/request/{request_id}/decline:
+    post:
+      tags:
+        - Social
+      summary: Decline friend request
+      description: Decline a pending friend request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend request declined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Friends Management
+  /api/social/friends:
+    get:
+      tags:
+        - Social
+      summary: Get friends list
+      description: Retrieve current user's friends list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Friends list retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FriendsList'
+
+  /api/social/friends/{friend_id}:
+    delete:
+      tags:
+        - Social
+      summary: Remove friend
+      description: Remove a user from friends list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/social/friends/requests:
+    get:
+      tags:
+        - Social
+      summary: Get friend requests
+      description: Retrieve pending friend requests
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [received, sent, all]
+            default: received
+      responses:
+        '200':
+          description: Friend requests retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FriendRequestsList'
+
+  # User Blocking
+  /api/social/block:
+    post:
+      tags:
+        - Social
+      summary: Block user
+      description: Block a user from interacting
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_user_id
+              properties:
+                target_user_id:
+                  type: string
+      responses:
+        '200':
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/social/unblock:
+    post:
+      tags:
+        - Social
+      summary: Unblock user
+      description: Unblock a previously blocked user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_user_id
+              properties:
+                target_user_id:
+                  type: string
+      responses:
+        '200':
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/social/blocked:
+    get:
+      tags:
+        - Social
+      summary: Get blocked users
+      description: Retrieve list of blocked users
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Blocked users list retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BlockedUsersList'
+
+  # User Discovery
+  /api/social/search:
+    get:
+      tags:
+        - Social
+      summary: Search users
+      description: Search for users by name or email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search query (minimum 2 characters)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: User search completed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSearchResults'
+
+  /api/social/suggestions:
+    get:
+      tags:
+        - Social
+      summary: Get friend suggestions
+      description: Get suggested users to add as friends
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 20
+      responses:
+        '200':
+          description: Friend suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FriendSuggestions'
+
+  # Relationship Status
+  /api/social/relationship/{user_id}:
+    get:
+      tags:
+        - Social
+      summary: Get relationship status
+      description: Get relationship status with another user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Relationship status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RelationshipStatus'
+
+  # Social Statistics
+  /api/social/stats:
+    get:
+      tags:
+        - Social
+      summary: Get social statistics
+      description: Get current user's social statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Social statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SocialStatistics'
+
+# Components
+components:
+  schemas:
+    # Friends Management
+    FriendsList:
+      type: object
+      properties:
+        friends:
+          type: array
+          items:
+            $ref: '#/components/schemas/Friend'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    Friend:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [online, offline, away]
+        friendship_date:
+          type: string
+          format: date-time
+        mutual_friends_count:
+          type: integer
+
+    FriendRequestsList:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/FriendRequest'
+        total_count:
+          type: integer
+
+    FriendRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+        from_user:
+          $ref: '#/components/schemas/UserProfile'
+        to_user:
+          $ref: '#/components/schemas/UserProfile'
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # User Blocking
+    BlockedUsersList:
+      type: object
+      properties:
+        blocked_users:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockedUser'
+        total_count:
+          type: integer
+
+    BlockedUser:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        blocked_at:
+          type: string
+          format: date-time
+
+    # User Discovery
+    UserSearchResults:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchUser'
+        total_results:
+          type: integer
+        query:
+          type: string
+
+    SearchUser:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        mutual_friends_count:
+          type: integer
+        relationship_status:
+          type: string
+          enum: [none, friend, blocked, request_sent, request_received]
+
+    FriendSuggestions:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestedUser'
+        total_suggestions:
+          type: integer
+
+    SuggestedUser:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        mutual_friends_count:
+          type: integer
+        suggestion_reason:
+          type: string
+          enum: [mutual_friends, similar_interests, location]
+
+    # Relationship Status
+    RelationshipStatus:
+      type: object
+      properties:
+        relationship_type:
+          type: string
+          enum: [none, friend, blocked, request_sent, request_received]
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_send_request:
+          type: boolean
+
+    # Social Statistics
+    SocialStatistics:
+      type: object
+      properties:
+        friends_count:
+          type: integer
+        pending_requests_count:
+          type: integer
+        sent_requests_count:
+          type: integer
+        blocked_users_count:
+          type: integer
+        mutual_friends_avg:
+          type: number
+          format: float
+        social_activity_score:
+          type: number
+          format: float
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean

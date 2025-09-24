@@ -1,0 +1,322 @@
+openapi: 3.1.0
+info:
+  title: GoodPlay Backend API
+  description: |
+    REST API backend for GoodPlay application with JWT authentication and MongoDB.
+
+    ## Architecture
+    This API is organized in modular components for better maintainability:
+    - **Core**: Authentication, user management, and preferences
+    - **Social**: Friend relationships and social interactions (GOO-7)
+    - **Games**: Game engine, sessions, and cross-device sync (GOO-8, GOO-9)
+    - **Leaderboards**: Impact scores and ranking system (GOO-12)
+
+    ## Authentication
+    - Uses JWT Bearer tokens for authentication
+    - Access tokens expire in 1 hour (configurable)
+    - Refresh tokens expire in 30 days (configurable)
+
+    ## Response Format
+    All responses follow this structure:
+    ```json
+    {
+      "success": boolean,
+      "message": "CONSTANT_KEY",
+      "data": {} // optional
+    }
+    ```
+
+    ## Message Constants for UI Localization
+    All API responses use constant message keys instead of dynamic text.
+    The UI localizes these constants to the user's language.
+    Each endpoint documents all possible response messages with examples.
+
+    ## Module Documentation
+    - **Core Module**: [core.yaml](./core.yaml) - Authentication & user management
+    - **Social Module**: [social.yaml](./social.yaml) - Social features & relationships
+    - **Games Module**: [games.yaml](./games.yaml) - Game engine & session management
+    - **Leaderboards Module**: [leaderboards.yaml](./leaderboards.yaml) - Impact scores & rankings
+
+  version: 1.0.0
+  contact:
+    name: GoodPlay API Support
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: https://your-app.herokuapp.com
+    description: Production server
+
+tags:
+  # Core Module Tags
+  - name: Authentication
+    description: User authentication (login, register, logout)
+  - name: User Management
+    description: User profile and account management
+  - name: User Preferences
+    description: User preferences and settings management
+  - name: Health
+    description: API health checks
+
+  # Social Module Tags (GOO-7)
+  - name: Social
+    description: Social features, friends, and relationships
+
+  # Games Module Tags (GOO-8, GOO-9)
+  - name: Games
+    description: Game engine, plugins, and sessions
+  - name: Game Sessions
+    description: Game session management and state
+  - name: Session Sync
+    description: Cross-device session synchronization
+  - name: Tournaments
+    description: Tournament and competition management
+  - name: Challenges
+    description: Social challenges and competitions
+
+  # Leaderboards Module Tags (GOO-12)
+  - name: Impact Score
+    description: Impact score calculation and retrieval
+  - name: Leaderboards
+    description: Multi-category leaderboard system
+  - name: Privacy
+    description: Privacy controls and user settings
+  - name: Ranking Engine
+    description: Ranking system monitoring and control
+
+  # Other Feature Tags
+  - name: Achievements
+    description: Achievement system and badges
+  - name: Wallet
+    description: Virtual wallet and credit management
+  - name: Donations
+    description: Donation processing and management
+  - name: Impact
+    description: Impact tracking and reporting
+  - name: ONLUS
+    description: ONLUS management and verification
+  - name: Admin
+    description: Administrative dashboard and management
+
+# Import all module paths and components
+paths:
+  # Import Core module paths
+  /api/auth/register:
+    $ref: './core.yaml#/paths/~1api~1auth~1register'
+  /api/auth/login:
+    $ref: './core.yaml#/paths/~1api~1auth~1login'
+  /api/auth/logout:
+    $ref: './core.yaml#/paths/~1api~1auth~1logout'
+  /api/auth/refresh:
+    $ref: './core.yaml#/paths/~1api~1auth~1refresh'
+  /api/users/profile:
+    $ref: './core.yaml#/paths/~1api~1users~1profile'
+  /api/preferences:
+    $ref: './core.yaml#/paths/~1api~1preferences'
+  /api/preferences/{category}:
+    $ref: './core.yaml#/paths/~1api~1preferences~1{category}'
+  /api/health:
+    $ref: './core.yaml#/paths/~1api~1health'
+
+  # Import Social module paths
+  /api/social/friends/request:
+    $ref: './social.yaml#/paths/~1api~1social~1friends~1request'
+  /api/social/friends/request/{request_id}/accept:
+    $ref: './social.yaml#/paths/~1api~1social~1friends~1request~1{request_id}~1accept'
+  /api/social/friends/request/{request_id}/decline:
+    $ref: './social.yaml#/paths/~1api~1social~1friends~1request~1{request_id}~1decline'
+  /api/social/friends:
+    $ref: './social.yaml#/paths/~1api~1social~1friends'
+  /api/social/friends/{friend_id}:
+    $ref: './social.yaml#/paths/~1api~1social~1friends~1{friend_id}'
+  /api/social/friends/requests:
+    $ref: './social.yaml#/paths/~1api~1social~1friends~1requests'
+  /api/social/block:
+    $ref: './social.yaml#/paths/~1api~1social~1block'
+  /api/social/unblock:
+    $ref: './social.yaml#/paths/~1api~1social~1unblock'
+  /api/social/blocked:
+    $ref: './social.yaml#/paths/~1api~1social~1blocked'
+  /api/social/search:
+    $ref: './social.yaml#/paths/~1api~1social~1search'
+  /api/social/suggestions:
+    $ref: './social.yaml#/paths/~1api~1social~1suggestions'
+  /api/social/relationship/{user_id}:
+    $ref: './social.yaml#/paths/~1api~1social~1relationship~1{user_id}'
+  /api/social/stats:
+    $ref: './social.yaml#/paths/~1api~1social~1stats'
+
+  # Import Games module paths
+  /api/games:
+    $ref: './games.yaml#/paths/~1api~1games'
+  /api/games/{game_id}:
+    $ref: './games.yaml#/paths/~1api~1games~1{game_id}'
+  /api/games/categories:
+    $ref: './games.yaml#/paths/~1api~1games~1categories'
+  /api/games/sessions:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions'
+  /api/games/sessions/{session_id}:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1{session_id}'
+  /api/games/sessions/{session_id}/pause:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1{session_id}~1pause'
+  /api/games/sessions/{session_id}/resume:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1{session_id}~1resume'
+  /api/games/sessions/{session_id}/sync:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1{session_id}~1sync'
+  /api/games/sessions/{session_id}/device:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1{session_id}~1device'
+  /api/games/sessions/active:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1active'
+  /api/games/sessions/conflicts:
+    $ref: './games.yaml#/paths/~1api~1games~1sessions~1conflicts'
+
+  # Import Leaderboards module paths
+  /api/social/impact-score/me:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1impact-score~1me'
+  /api/social/impact-score/{user_id}:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1impact-score~1{user_id}'
+  /api/social/impact-score/refresh:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1impact-score~1refresh'
+  /api/social/impact-score/history:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1impact-score~1history'
+  /api/social/leaderboards/{leaderboard_type}:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1leaderboards~1{leaderboard_type}'
+  /api/social/leaderboards:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1leaderboards'
+  /api/social/leaderboards/friends:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1leaderboards~1friends'
+  /api/social/leaderboards/my-positions:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1leaderboards~1my-positions'
+  /api/social/leaderboards/{leaderboard_type}/statistics:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1leaderboards~1{leaderboard_type}~1statistics'
+  /api/social/leaderboards/{leaderboard_type}/top:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1leaderboards~1{leaderboard_type}~1top'
+  /api/social/privacy/leaderboard-participation:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1privacy~1leaderboard-participation'
+  /api/social/rankings/trigger-update:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1rankings~1trigger-update'
+  /api/social/rankings/health:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1rankings~1health'
+  /api/social/admin/impact-scores/recalculate:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1admin~1impact-scores~1recalculate'
+  /api/social/admin/leaderboards/refresh:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1admin~1leaderboards~1refresh'
+  /api/social/admin/system/stats:
+    $ref: './leaderboards.yaml#/paths/~1api~1social~1admin~1system~1stats'
+
+components:
+  # Import schemas from all modules
+  schemas:
+    # Core schemas
+    ApiResponse:
+      $ref: './core.yaml#/components/schemas/ApiResponse'
+    UserRegistration:
+      $ref: './core.yaml#/components/schemas/UserRegistration'
+    UserLogin:
+      $ref: './core.yaml#/components/schemas/UserLogin'
+    AuthTokens:
+      $ref: './core.yaml#/components/schemas/AuthTokens'
+    UserProfile:
+      $ref: './core.yaml#/components/schemas/UserProfile'
+    UserPreferences:
+      $ref: './core.yaml#/components/schemas/UserPreferences'
+
+    # Social schemas
+    FriendsList:
+      $ref: './social.yaml#/components/schemas/FriendsList'
+    Friend:
+      $ref: './social.yaml#/components/schemas/Friend'
+    FriendRequest:
+      $ref: './social.yaml#/components/schemas/FriendRequest'
+    RelationshipStatus:
+      $ref: './social.yaml#/components/schemas/RelationshipStatus'
+
+    # Games schemas
+    GamesList:
+      $ref: './games.yaml#/components/schemas/GamesList'
+    Game:
+      $ref: './games.yaml#/components/schemas/Game'
+    GameSession:
+      $ref: './games.yaml#/components/schemas/GameSession'
+    SessionSyncRequest:
+      $ref: './games.yaml#/components/schemas/SessionSyncRequest'
+    SessionSyncResponse:
+      $ref: './games.yaml#/components/schemas/SessionSyncResponse'
+
+    # Leaderboards schemas
+    ImpactScoreResponse:
+      $ref: './leaderboards.yaml#/components/schemas/ImpactScoreResponse'
+    LeaderboardResponse:
+      $ref: './leaderboards.yaml#/components/schemas/LeaderboardResponse'
+    LeaderboardSummary:
+      $ref: './leaderboards.yaml#/components/schemas/LeaderboardSummary'
+    PrivacySettings:
+      $ref: './leaderboards.yaml#/components/schemas/PrivacySettings'
+    RankingHealthStatus:
+      $ref: './leaderboards.yaml#/components/schemas/RankingHealthStatus'
+
+    # Common schemas
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+  # Standard responses
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "UNAUTHORIZED_ACCESS"
+
+    Forbidden:
+      description: Forbidden action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "FORBIDDEN_ACTION"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "RESOURCE_NOT_FOUND"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "INTERNAL_SERVER_ERROR"
+
+  # Security schemes
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

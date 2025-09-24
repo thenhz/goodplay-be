@@ -1,0 +1,613 @@
+# Core Authentication & User Management API
+# This module contains core platform functionality
+
+# Message Constants for Core Module
+core_constants: &core_constants
+  # Authentication
+  - `USER_REGISTRATION_SUCCESS` - User registration success
+  - `USER_LOGIN_SUCCESS` - User login success
+  - `USER_LOGOUT_SUCCESS` - User logout success
+  - `TOKEN_REFRESH_SUCCESS` - Token refresh success
+  - `PROFILE_RETRIEVED_SUCCESS` - Profile retrieved success
+  - `PROFILE_UPDATED_SUCCESS` - Profile updated success
+  - `EMAIL_ALREADY_REGISTERED` - Email already registered
+  - `INVALID_EMAIL_FORMAT` - Invalid email format
+  - `PASSWORD_TOO_WEAK` - Password must be at least 6 characters
+  - `CREDENTIALS_REQUIRED` - Email and password required
+  - `INVALID_CREDENTIALS` - Invalid login credentials
+  - `ACCOUNT_DISABLED` - Account disabled
+  - `USER_NOT_FOUND` - User not found
+  - `TOKEN_INVALID` - Invalid token
+  - `TOKEN_EXPIRED` - Token expired
+
+  # Preferences
+  - `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
+  - `PREFERENCES_UPDATED_SUCCESS` - Preferences updated successfully
+  - `PREFERENCES_CATEGORY_RETRIEVED_SUCCESS` - Category preferences retrieved
+  - `PREFERENCES_CATEGORY_UPDATED_SUCCESS` - Category preferences updated
+  - `PREFERENCES_RESET_SUCCESS` - Preferences reset to defaults
+  - `DEFAULT_PREFERENCES_RETRIEVED_SUCCESS` - Default preferences template retrieved
+  - `PREFERENCES_CATEGORY_INVALID` - Invalid preference category
+  - `PREFERENCES_DATA_REQUIRED` - Preferences data required
+  - `GAMING_DIFFICULTY_INVALID` - Invalid gaming difficulty level
+  - `NOTIFICATION_FREQUENCY_INVALID` - Invalid notification frequency
+  - `PRIVACY_VISIBILITY_INVALID` - Invalid privacy visibility setting
+  - `DONATION_PERCENTAGE_INVALID` - Invalid donation percentage
+
+  # System
+  - `SYSTEM_HEALTH_OK` - API health check success
+  - `OPERATION_SUCCESS` - Operation completed successfully
+  - `OPERATION_FAILED` - Operation failed
+  - `DATA_REQUIRED` - Data required
+  - `INVALID_REQUEST` - Invalid request
+  - `UNAUTHORIZED_ACCESS` - Authentication required
+  - `FORBIDDEN_ACTION` - Forbidden action
+  - `RESOURCE_NOT_FOUND` - Resource not found
+  - `INTERNAL_SERVER_ERROR` - Internal server error
+  - `VALIDATION_ERROR` - Validation error
+  - `DATABASE_ERROR` - Database error
+
+# API Paths
+paths:
+  # Authentication Endpoints
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+            example:
+              email: "user@example.com"
+              password: "securepassword123"
+              first_name: "John"
+              last_name: "Doe"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+              example:
+                success: true
+                message: "USER_REGISTRATION_SUCCESS"
+                data:
+                  user_id: "64f8b2c1234567890abcdef1"
+                  email: "user@example.com"
+                  first_name: "John"
+                  last_name: "Doe"
+        '400':
+          description: Registration failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                email_exists:
+                  value:
+                    success: false
+                    message: "EMAIL_ALREADY_REGISTERED"
+                invalid_email:
+                  value:
+                    success: false
+                    message: "INVALID_EMAIL_FORMAT"
+                weak_password:
+                  value:
+                    success: false
+                    message: "PASSWORD_TOO_WEAK"
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+            example:
+              email: "user@example.com"
+              password: "securepassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Login failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_credentials:
+                  value:
+                    success: false
+                    message: "INVALID_CREDENTIALS"
+                account_disabled:
+                  value:
+                    success: false
+                    message: "ACCOUNT_DISABLED"
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Logout user and invalidate tokens
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "USER_LOGOUT_SUCCESS"
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+
+  # User Management Endpoints
+  /api/users/profile:
+    get:
+      tags:
+        - User Management
+      summary: Get user profile
+      description: Retrieve current user's profile information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+
+    put:
+      tags:
+        - User Management
+      summary: Update user profile
+      description: Update current user's profile information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+
+  # Preferences Endpoints
+  /api/preferences:
+    get:
+      tags:
+        - User Preferences
+      summary: Get user preferences
+      description: Retrieve all user preferences
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserPreferences'
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update user preferences
+      description: Update user preferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/preferences/{category}:
+    get:
+      tags:
+        - User Preferences
+      summary: Get preferences by category
+      description: Retrieve preferences for a specific category
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [gaming, notifications, privacy, donations]
+      responses:
+        '200':
+          description: Category preferences retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update preferences by category
+      description: Update preferences for a specific category
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [gaming, notifications, privacy, donations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Category preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Health Check
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: API health check
+      description: Check if the API is running and healthy
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "SYSTEM_HEALTH_OK"
+
+# Components
+components:
+  schemas:
+    # Core response structure
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+        message:
+          type: string
+          description: Constant message key for UI localization
+        data:
+          type: object
+          description: Optional response data
+          nullable: true
+
+    # Authentication schemas
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+        password:
+          type: string
+          minLength: 6
+          description: User's password (minimum 6 characters)
+        first_name:
+          type: string
+          description: User's first name
+        last_name:
+          type: string
+          description: User's last name
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthTokens:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        refresh_token:
+          type: string
+          description: JWT refresh token
+        expires_in:
+          type: integer
+          description: Access token expiration time in seconds
+
+    # User management schemas
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        is_active:
+          type: boolean
+        role:
+          type: string
+          enum: [user, admin]
+        created_at:
+          type: string
+          format: date-time
+        gaming_stats:
+          $ref: '#/components/schemas/GamingStats'
+        social_profile:
+          $ref: '#/components/schemas/SocialProfile'
+        wallet_credits:
+          $ref: '#/components/schemas/WalletCredits'
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+
+    GamingStats:
+      type: object
+      properties:
+        total_play_time:
+          type: integer
+          description: Total play time in minutes
+        games_played:
+          type: integer
+        favorite_category:
+          type: string
+          nullable: true
+        last_activity:
+          type: string
+          format: date-time
+          nullable: true
+
+    SocialProfile:
+      type: object
+      properties:
+        display_name:
+          type: string
+        privacy_level:
+          type: string
+          enum: [public, friends, private]
+        friends_count:
+          type: integer
+
+    WalletCredits:
+      type: object
+      properties:
+        current_balance:
+          type: number
+          format: float
+        total_earned:
+          type: number
+          format: float
+        total_donated:
+          type: number
+          format: float
+
+    # Preferences schemas
+    UserPreferences:
+      type: object
+      properties:
+        gaming:
+          $ref: '#/components/schemas/GamingPreferences'
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+        privacy:
+          $ref: '#/components/schemas/PrivacyPreferences'
+        donations:
+          $ref: '#/components/schemas/DonationPreferences'
+
+    GamingPreferences:
+      type: object
+      properties:
+        preferred_categories:
+          type: array
+          items:
+            type: string
+        difficulty_level:
+          type: string
+          enum: [easy, medium, hard]
+        tutorial_enabled:
+          type: boolean
+        auto_save:
+          type: boolean
+        sound_enabled:
+          type: boolean
+        music_enabled:
+          type: boolean
+        vibration_enabled:
+          type: boolean
+
+    NotificationPreferences:
+      type: object
+      properties:
+        push_enabled:
+          type: boolean
+        email_enabled:
+          type: boolean
+        frequency:
+          type: string
+          enum: [never, daily, weekly, monthly]
+        achievement_alerts:
+          type: boolean
+        donation_confirmations:
+          type: boolean
+        friend_activity:
+          type: boolean
+        tournament_reminders:
+          type: boolean
+        maintenance_alerts:
+          type: boolean
+
+    PrivacyPreferences:
+      type: object
+      properties:
+        profile_visibility:
+          type: string
+          enum: [public, friends, private]
+        stats_sharing:
+          type: boolean
+        friends_discovery:
+          type: boolean
+        leaderboard_participation:
+          type: boolean
+        activity_visibility:
+          type: string
+          enum: [public, friends, private]
+        contact_permissions:
+          type: string
+          enum: [everyone, friends, none]
+
+    DonationPreferences:
+      type: object
+      properties:
+        auto_donate_enabled:
+          type: boolean
+        auto_donate_percentage:
+          type: integer
+          minimum: 1
+          maximum: 100
+        preferred_causes:
+          type: array
+          items:
+            type: string
+        notification_threshold:
+          type: number
+          format: float
+        monthly_goal:
+          type: number
+          format: float
+          nullable: true
+        impact_sharing:
+          type: boolean
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

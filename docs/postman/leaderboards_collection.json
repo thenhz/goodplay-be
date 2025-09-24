@@ -1,0 +1,400 @@
+{
+  "info": {
+    "name": "GoodPlay Leaderboards API (GOO-12)",
+    "description": "Social Impact Score and Leaderboards system API endpoints\n\nThis collection covers:\n- Impact score calculation and retrieval\n- Multi-category leaderboard system\n- Privacy controls and user settings\n- Ranking engine monitoring\n- Administrative functions\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{token}}` - JWT access token\n- `{{targetUserId}}` - Target user ID for testing\n- `{{leaderboardType}}` - Leaderboard type for testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "leaderboards-api-collection"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "targetUserId",
+      "value": "64f8b2c1234567890abcdef2",
+      "type": "string"
+    },
+    {
+      "key": "leaderboardType",
+      "value": "global_impact",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Impact Score",
+      "item": [
+        {
+          "name": "Get My Impact Score",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/impact-score/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "impact-score", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get User Impact Score",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/impact-score/{{targetUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "impact-score", "{{targetUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Impact Score",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/impact-score/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "impact-score", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Get Impact Score History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/impact-score/history?days=30&granularity=daily",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "impact-score", "history"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30",
+                  "description": "Number of days to retrieve (1-365)"
+                },
+                {
+                  "key": "granularity",
+                  "value": "daily",
+                  "description": "daily, weekly, monthly"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leaderboards",
+      "item": [
+        {
+          "name": "Get Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/leaderboards/{{leaderboardType}}?limit=50&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "leaderboards", "{{leaderboardType}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Number of entries to return (1-100)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Starting position"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Leaderboards Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/leaderboards",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "leaderboards"]
+            }
+          }
+        },
+        {
+          "name": "Get Friends Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/leaderboards/friends?type={{leaderboardType}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "leaderboards", "friends"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "{{leaderboardType}}",
+                  "description": "Leaderboard type to filter friends"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Positions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/leaderboards/my-positions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "leaderboards", "my-positions"]
+            }
+          }
+        },
+        {
+          "name": "Get Leaderboard Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/leaderboards/{{leaderboardType}}/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "leaderboards", "{{leaderboardType}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Top Performers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/leaderboards/{{leaderboardType}}/top?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "leaderboards", "{{leaderboardType}}", "top"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of top performers (1-50)"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Privacy Controls",
+      "item": [
+        {
+          "name": "Get Privacy Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/privacy/leaderboard-participation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "privacy", "leaderboard-participation"]
+            }
+          }
+        },
+        {
+          "name": "Update Privacy Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"show_in_global_leaderboards\": true,\n  \"show_in_friends_leaderboards\": true,\n  \"show_detailed_scores\": false,\n  \"allow_score_sharing\": true,\n  \"visible_leaderboards\": [\"global_impact\", \"gaming_masters\", \"social_champions\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/privacy/leaderboard-participation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "privacy", "leaderboard-participation"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ranking Engine",
+      "item": [
+        {
+          "name": "Trigger Rankings Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leaderboard_types\": [\"global_impact\", \"weekly_warriors\"],\n  \"force_full_recalculation\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/rankings/trigger-update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "rankings", "trigger-update"]
+            }
+          }
+        },
+        {
+          "name": "Get Ranking Engine Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/rankings/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "rankings", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Functions",
+      "item": [
+        {
+          "name": "Recalculate All Impact Scores",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batch_size\": 100,\n  \"include_inactive_users\": false,\n  \"recalculate_history\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/admin/impact-scores/recalculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "admin", "impact-scores", "recalculate"]
+            }
+          }
+        },
+        {
+          "name": "Refresh All Leaderboards",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leaderboard_types\": [\"global_impact\", \"weekly_warriors\", \"gaming_masters\", \"social_champions\", \"donation_heroes\", \"friends_circle\"],\n  \"clear_cache\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/admin/leaderboards/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "admin", "leaderboards", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Get System Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/admin/system/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "admin", "system", "stats"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default leaderboard type if not exists",
+          "if (!pm.environment.get('leaderboardType')) {",
+          "    pm.environment.set('leaderboardType', 'global_impact');",
+          "}",
+          "",
+          "// Set default target user ID if not exists",
+          "if (!pm.environment.get('targetUserId')) {",
+          "    pm.environment.set('targetUserId', '64f8b2c1234567890abcdef2');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Status code is successful', function () {",
+          "    pm.response.to.have.status.oneOf([200, 201, 202, 204]);",
+          "});",
+          "",
+          "pm.test('Response has success field', function () {",
+          "    const responseJson = pm.response.json();",
+          "    pm.expect(responseJson).to.have.property('success');",
+          "});",
+          "",
+          "pm.test('Response has message field', function () {",
+          "    const responseJson = pm.response.json();",
+          "    pm.expect(responseJson).to.have.property('message');",
+          "});",
+          "",
+          "// Store relevant data for subsequent requests",
+          "if (pm.response.json().success && pm.response.json().data) {",
+          "    const data = pm.response.json().data;",
+          "    ",
+          "    // Store impact score data",
+          "    if (data.impact_score !== undefined) {",
+          "        pm.environment.set('currentImpactScore', data.impact_score);",
+          "    }",
+          "    ",
+          "    // Store user position data",
+          "    if (data.position !== undefined) {",
+          "        pm.environment.set('currentPosition', data.position);",
+          "    }",
+          "    ",
+          "    // Store leaderboard entry count",
+          "    if (data.total_entries !== undefined) {",
+          "        pm.environment.set('totalEntries', data.total_entries);",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

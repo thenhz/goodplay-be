@@ -96,8 +96,8 @@ def make_move(current_user):
 ```
 
 4. **Update Documentation**
-   - Add endpoints to `openapi.yaml`
-   - Update Postman collection
+   - Add endpoints to `docs/openapi/games.yaml`
+   - Update `docs/postman/games_collection.json`
    - Add game to this README
 
 ### Game Categories
@@ -108,26 +108,60 @@ def make_move(current_user):
 - 🎨 **Creative Games**: Drawing, building, design challenges
 - 📚 **Educational Games**: Learning-focused games
 
-## 📡 API Overview
+## 📡 API Documentation
 
-### Core Endpoints
+### Documentation Structure
 
-```http
-POST   /api/auth/register      # User registration
-POST   /api/auth/login         # User login
-GET    /api/auth/profile       # Get user profile
-PUT    /api/user/preferences   # Update preferences
-GET    /api/health             # System health check
+All API documentation is organized modularly under the `docs/` directory:
+
+```
+docs/
+├── openapi.yaml              # Main OpenAPI specification
+├── openapi/                  # Modular OpenAPI specifications
+│   ├── core.yaml            # Authentication & user management
+│   ├── social.yaml          # Social features & relationships
+│   ├── games.yaml           # Game engine & sessions
+│   └── leaderboards.yaml    # Impact scores & leaderboards
+├── postman/                  # Modular Postman collections
+│   ├── core_collection.json        # Core API collection
+│   ├── social_collection.json      # Social API collection
+│   ├── games_collection.json       # Games API collection
+│   └── leaderboards_collection.json # Leaderboards API collection
+└── API_ORGANIZATION.md       # Documentation guide
 ```
 
-### Game Endpoints
+### API Access Points
 
-```http
-GET    /api/games              # List available games
-POST   /api/games/{id}/sessions  # Start game session
-POST   /api/games/sessions/{id}/moves  # Submit game move
-PUT    /api/games/sessions/{id}/complete  # Complete session
-```
+- **Swagger UI**: `http://localhost:5000/api/docs`
+- **OpenAPI Spec**: `docs/openapi.yaml`
+- **Postman Collections**: `docs/postman/`
+
+### API Modules Overview
+
+#### Core Module (`/api/auth`, `/api/users`, `/api/preferences`)
+- User registration and authentication
+- Profile management
+- User preferences and settings
+- System health checks
+
+#### Social Module (`/api/social`)
+- Friend request management
+- User relationships and blocking
+- User discovery and search
+- Social statistics
+
+#### Games Module (`/api/games`, `/api/modes`, `/api/challenges`, `/api/teams`)
+- Game management and plugin system
+- Session lifecycle and cross-device sync
+- Game modes and scheduling
+- Direct challenges and tournaments
+- Global teams and scoring
+
+#### Leaderboards Module (`/api/social/impact-score`, `/api/social/leaderboards`)
+- Social impact score calculation
+- Multi-category leaderboard system
+- Privacy controls and settings
+- Ranking engine monitoring
 
 ### Response Format
 
@@ -290,6 +324,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Documentation
 - **API Docs**: [Swagger UI](http://localhost:5000/api/docs)
+- **OpenAPI Specification**: [docs/openapi.yaml](docs/openapi.yaml)
+- **Postman Collections**: [docs/postman/](docs/postman/)
+- **API Organization Guide**: [docs/API_ORGANIZATION.md](docs/API_ORGANIZATION.md)
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Architecture Guide**: [CLAUDE.md](CLAUDE.md)
 

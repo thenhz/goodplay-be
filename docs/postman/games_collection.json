@@ -1,0 +1,542 @@
+{
+  "info": {
+    "name": "GoodPlay Games API (GOO-8, GOO-9, GOO-10)",
+    "description": "Game engine, session management, and tournament system API endpoints\n\nThis collection covers:\n- Game management and plugin system\n- Game session lifecycle and cross-device sync\n- Game modes and scheduling\n- Direct challenges and matchmaking\n- Global teams and tournaments\n- Universal scoring system\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{token}}` - JWT access token\n- `{{gameId}}` - Game ID for testing\n- `{{sessionId}}` - Session ID for testing\n- `{{challengeId}}` - Challenge ID for testing\n- `{{teamId}}` - Team ID for testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "games-api-collection"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "gameId",
+      "value": "64f8b2c1234567890abcdef3",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "64f8b2c1234567890abcdef4",
+      "type": "string"
+    },
+    {
+      "key": "challengeId",
+      "value": "64f8b2c1234567890abcdef5",
+      "type": "string"
+    },
+    {
+      "key": "teamId",
+      "value": "64f8b2c1234567890abcdef6",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Game Management",
+      "item": [
+        {
+          "name": "Get Available Games",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games?category=puzzle&page=1&per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "puzzle",
+                  "description": "Filter by game category"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Game Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "{{gameId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Game Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Game Sessions",
+      "item": [
+        {
+          "name": "Start Game Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{gameId}}\",\n  \"device_info\": {\n    \"platform\": \"web\",\n    \"device_type\": \"desktop\",\n    \"app_version\": \"1.0.0\",\n    \"user_agent\": \"Mozilla/5.0...\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Get Session Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 1500,\n  \"level\": 3,\n  \"game_state\": {\n    \"current_level\": 3,\n    \"lives\": 2,\n    \"powerups\": [\"speed\", \"shield\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Pause Session",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}", "pause"]
+            }
+          }
+        },
+        {
+          "name": "Resume Session",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}", "resume"]
+            }
+          }
+        },
+        {
+          "name": "End Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"final_score\": 2500,\n  \"completed\": true,\n  \"achievements\": [\"first_level\", \"speed_demon\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cross-Device Sync",
+      "item": [
+        {
+          "name": "Sync Session State",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync_version\": 5,\n  \"game_state\": {\n    \"current_level\": 4,\n    \"lives\": 3,\n    \"score\": 1800\n  },\n  \"device_info\": {\n    \"platform\": \"mobile\",\n    \"device_type\": \"smartphone\",\n    \"app_version\": \"1.0.1\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}", "sync"]
+            }
+          }
+        },
+        {
+          "name": "Get Device-Optimized Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{sessionId}}/device",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "{{sessionId}}", "device"]
+            }
+          }
+        },
+        {
+          "name": "Get Active Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "active"]
+            }
+          }
+        },
+        {
+          "name": "Check Sync Conflicts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/conflicts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "games", "sessions", "conflicts"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Game Modes",
+      "item": [
+        {
+          "name": "Get Available Modes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modes"]
+            }
+          }
+        },
+        {
+          "name": "Get Active Mode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modes/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modes", "active"]
+            }
+          }
+        },
+        {
+          "name": "Activate Mode (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode_type\": \"challenge\",\n  \"duration_hours\": 24,\n  \"config\": {\n    \"max_participants\": 100,\n    \"difficulty_multiplier\": 1.5\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/modes/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modes", "activate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challenges",
+      "item": [
+        {
+          "name": "Create Direct Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_type\": \"direct\",\n  \"game_id\": \"{{gameId}}\",\n  \"opponent_id\": \"64f8b2c1234567890abcdef7\",\n  \"duration_minutes\": 30,\n  \"stakes\": {\n    \"credits\": 50,\n    \"type\": \"winner_takes_all\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/challenges",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challenges"]
+            }
+          }
+        },
+        {
+          "name": "Accept Challenge",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/challenges/{{challengeId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challenges", "{{challengeId}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Get My Challenges",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/challenges/my?status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challenges", "my"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "pending, active, completed, expired"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Find Opponents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/challenges/matchmaking?game_id={{gameId}}&skill_range=similar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challenges", "matchmaking"],
+              "query": [
+                {
+                  "key": "game_id",
+                  "value": "{{gameId}}"
+                },
+                {
+                  "key": "skill_range",
+                  "value": "similar",
+                  "description": "similar, any, expert"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Global Teams",
+      "item": [
+        {
+          "name": "Get All Teams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teams"]
+            }
+          }
+        },
+        {
+          "name": "Get My Team",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teams", "my"]
+            }
+          }
+        },
+        {
+          "name": "Get Team Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/{{teamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teams", "{{teamId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Team Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teams", "leaderboard"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tournaments",
+      "item": [
+        {
+          "name": "Get Active Tournaments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tournaments/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tournaments", "active"]
+            }
+          }
+        },
+        {
+          "name": "Get Tournament Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tournaments/{{tournamentId}}/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tournaments", "{{tournamentId}}", "leaderboard"]
+            }
+          }
+        },
+        {
+          "name": "Join Tournament",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tournaments/{{tournamentId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tournaments", "{{tournamentId}}", "join"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default game ID if not exists",
+          "if (!pm.environment.get('gameId')) {",
+          "    pm.environment.set('gameId', '64f8b2c1234567890abcdef3');",
+          "}",
+          "",
+          "// Set default session ID if not exists",
+          "if (!pm.environment.get('sessionId')) {",
+          "    pm.environment.set('sessionId', '64f8b2c1234567890abcdef4');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Status code is successful', function () {",
+          "    pm.response.to.have.status.oneOf([200, 201, 204]);",
+          "});",
+          "",
+          "pm.test('Response has success field', function () {",
+          "    const responseJson = pm.response.json();",
+          "    pm.expect(responseJson).to.have.property('success');",
+          "});",
+          "",
+          "// Store session ID for subsequent requests",
+          "if (pm.response.json().success && pm.response.json().data) {",
+          "    const data = pm.response.json().data;",
+          "    if (data.session_id) {",
+          "        pm.environment.set('sessionId', data.session_id);",
+          "    }",
+          "    if (data.challenge_id) {",
+          "        pm.environment.set('challengeId', data.challenge_id);",
+          "    }",
+          "    if (data.team_id) {",
+          "        pm.environment.set('teamId', data.team_id);",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}
