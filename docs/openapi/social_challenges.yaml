@@ -1,0 +1,1292 @@
+# Social Challenges & Friend Interactions API (GOO-13)
+# This module contains social challenge functionality
+
+# Message Constants for Social Challenges Module
+social_challenges_constants: &social_challenges_constants
+  - `CHALLENGE_CREATED_SUCCESS` - Challenge created successfully
+  - `CHALLENGE_JOINED_SUCCESS` - Successfully joined challenge
+  - `CHALLENGE_LEFT_SUCCESS` - Successfully left challenge
+  - `CHALLENGE_STARTED_SUCCESS` - Challenge started successfully
+  - `CHALLENGE_CANCELLED_SUCCESS` - Challenge cancelled successfully
+  - `PROGRESS_UPDATED_SUCCESS` - Progress updated successfully
+  - `CHEER_SENT_SUCCESS` - Cheer sent successfully
+  - `COMMENT_SENT_SUCCESS` - Comment sent successfully
+  - `INTERACTION_LIKED_SUCCESS` - Interaction liked successfully
+  - `REPLY_ADDED_SUCCESS` - Reply added successfully
+  - `CHALLENGES_DISCOVERED_SUCCESS` - Challenges discovered successfully
+  - `RECOMMENDATIONS_GENERATED_SUCCESS` - Challenge recommendations generated
+  - `SEARCH_COMPLETED_SUCCESS` - Challenge search completed
+  - `ACTIVITY_FEED_RETRIEVED_SUCCESS` - Activity feed retrieved successfully
+  - `ACHIEVEMENTS_RETRIEVED_SUCCESS` - Achievements retrieved successfully
+  - `LEADERBOARD_RETRIEVED_SUCCESS` - Leaderboard retrieved successfully
+  - `CHALLENGE_NOT_FOUND` - Challenge not found
+  - `CHALLENGE_FULL` - Challenge is full
+  - `CHALLENGE_EXPIRED` - Challenge has expired
+  - `NOT_PARTICIPANT` - User is not a participant
+  - `ALREADY_JOINED` - User already joined challenge
+  - `CREATOR_CANNOT_LEAVE` - Creator cannot leave challenge
+  - `CHALLENGE_DATA_REQUIRED` - Challenge data required
+  - `TARGET_USER_REQUIRED` - Target user required
+  - `COMMENT_DATA_REQUIRED` - Comment data required
+  - `REPLY_CONTENT_REQUIRED` - Reply content required
+  - `SEARCH_QUERY_REQUIRED` - Search query required
+  - `INTERACTION_NOT_FOUND` - Interaction not found
+  - `NOT_AUTHORIZED` - Not authorized for this action
+
+# API Paths
+paths:
+  # Challenge Management
+  /api/social/challenges:
+    post:
+      tags:
+        - Social Challenges
+      summary: Create new social challenge
+      description: Create a new social challenge with custom configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChallengeRequest'
+            examples:
+              gaming_challenge:
+                summary: Gaming social challenge
+                value:
+                  title: "Speed Run Weekend"
+                  description: "Race to complete your favorite games this weekend!"
+                  challenge_type: "gaming_social"
+                  challenge_category: "speed_run"
+                  rules:
+                    target_metric: "game_completion_time"
+                    target_value: 300
+                    time_limit_hours: 72
+                    max_participants: 8
+                  is_public: false
+                  friends_only: true
+              social_challenge:
+                summary: Social engagement challenge
+                value:
+                  title: "Community Helper Week"
+                  description: "Help fellow community members with questions and support"
+                  challenge_type: "social_engagement"
+                  challenge_category: "community_helper"
+                  rules:
+                    target_metric: "community_helps"
+                    target_value: 10
+                    time_limit_hours: 168
+                    max_participants: 30
+                  is_public: true
+                  friends_only: false
+      responses:
+        '201':
+          description: Challenge created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChallengeCreated'
+              example:
+                success: true
+                message: "CHALLENGE_CREATED_SUCCESS"
+                data:
+                  challenge_id: "chall_12345"
+                  creator_joined: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Social Challenges
+      summary: Get user's challenges
+      description: Get challenges where user is creator or participant
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: include_completed
+          in: query
+          description: Include completed challenges
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          description: Number of challenges to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of challenges to skip
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: User challenges retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          challenges:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SocialChallenge'
+                          count:
+                            type: integer
+
+  /api/social/challenges/templates:
+    get:
+      tags:
+        - Social Challenges
+      summary: Get challenge templates
+      description: Get available challenge templates for quick creation
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChallengeTemplates'
+
+  /api/social/challenges/templates/{template_type}/{template_category}:
+    post:
+      tags:
+        - Social Challenges
+      summary: Create challenge from template
+      description: Create a challenge using a predefined template
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: template_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [gaming_social, social_engagement, impact_challenge]
+        - name: template_category
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCustomization'
+      responses:
+        '201':
+          description: Challenge created from template
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChallengeCreated'
+
+  /api/social/challenges/{challenge_id}:
+    get:
+      tags:
+        - Social Challenges
+      summary: Get challenge details
+      description: Get detailed information about a specific challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Challenge details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChallengeDetails'
+        '404':
+          description: Challenge not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "CHALLENGE_NOT_FOUND"
+
+  /api/social/challenges/{challenge_id}/join:
+    post:
+      tags:
+        - Social Challenges
+      summary: Join challenge
+      description: Join a social challenge as a participant
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully joined challenge
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          participant_id:
+                            type: string
+                          participant_count:
+                            type: integer
+        '400':
+          description: Cannot join challenge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                challenge_full:
+                  value:
+                    success: false
+                    message: "CHALLENGE_FULL"
+                already_joined:
+                  value:
+                    success: false
+                    message: "ALREADY_JOINED"
+
+  /api/social/challenges/{challenge_id}/leave:
+    post:
+      tags:
+        - Social Challenges
+      summary: Leave challenge
+      description: Leave a social challenge (not available for creators)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully left challenge
+        '400':
+          description: Cannot leave challenge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "CREATOR_CANNOT_LEAVE"
+
+  /api/social/challenges/{challenge_id}/invite:
+    post:
+      tags:
+        - Social Challenges
+      summary: Invite users to challenge
+      description: Invite friends to join a challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_ids
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 20
+            example:
+              user_ids: ["user123", "user456", "user789"]
+      responses:
+        '200':
+          description: Invitations sent successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          invited_count:
+                            type: integer
+                          already_invited:
+                            type: array
+                            items:
+                              type: string
+                          total_invited:
+                            type: integer
+
+  /api/social/challenges/{challenge_id}/start:
+    post:
+      tags:
+        - Social Challenges
+      summary: Start challenge
+      description: Start a challenge if conditions are met
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Challenge started successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          start_date:
+                            type: string
+                            format: date-time
+                          participant_count:
+                            type: integer
+
+  /api/social/challenges/{challenge_id}/progress:
+    post:
+      tags:
+        - Social Challenges
+      summary: Update progress
+      description: Update participant's progress in challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressUpdate'
+            examples:
+              gaming_progress:
+                summary: Gaming challenge progress
+                value:
+                  current_value: 250
+                  target_value: 300
+                  additional_data:
+                    game_session_id: "session123"
+                    completion_time: 250
+              social_progress:
+                summary: Social engagement progress
+                value:
+                  current_value: 7
+                  target_value: 10
+                  additional_data:
+                    helps_provided: 7
+                    users_helped: ["user1", "user2", "user3"]
+      responses:
+        '200':
+          description: Progress updated successfully
+
+  # Discovery and Matchmaking
+  /api/social/challenges/discover/public:
+    get:
+      tags:
+        - Challenge Discovery
+      summary: Discover public challenges
+      description: Discover public challenges available for joining
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by challenge type
+          schema:
+            type: string
+            enum: [gaming_social, social_engagement, impact_challenge]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Public challenges discovered
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          challenges:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/DiscoverableChallenge'
+                          count:
+                            type: integer
+
+  /api/social/challenges/discover/friends:
+    get:
+      tags:
+        - Challenge Discovery
+      summary: Discover friend challenges
+      description: Discover challenges created by friends
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friend_ids
+          in: query
+          description: Friend user IDs to check for challenges
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Friend challenges discovered
+
+  /api/social/challenges/discover/recommended:
+    get:
+      tags:
+        - Challenge Discovery
+      summary: Get personalized recommendations
+      description: Get personalized challenge recommendations based on user history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Recommendations generated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          recommendations:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/RecommendedChallenge'
+                          user_preferences:
+                            type: object
+
+  /api/social/challenges/search:
+    get:
+      tags:
+        - Challenge Discovery
+      summary: Search challenges
+      description: Search challenges by text query and filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Search query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - name: type
+          in: query
+          description: Filter by challenge type
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          description: Filter by difficulty level
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+      responses:
+        '200':
+          description: Search completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          results:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SearchResult'
+                          count:
+                            type: integer
+                          query:
+                            type: string
+
+  /api/social/challenges/trending:
+    get:
+      tags:
+        - Challenge Discovery
+      summary: Get trending challenges
+      description: Get currently trending challenges based on activity
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Trending challenges retrieved
+
+  # Social Interactions
+  /api/social/challenges/{challenge_id}/cheer:
+    post:
+      tags:
+        - Social Interactions
+      summary: Send cheer
+      description: Send a cheer to another participant in the challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to_user_id
+              properties:
+                to_user_id:
+                  type: string
+                emoji:
+                  type: string
+                  default: "👏"
+                  enum: ["👏", "🔥", "💪", "🎉", "⭐", "👍"]
+                reaction_type:
+                  type: string
+                  default: "cheer"
+                  enum: ["cheer", "celebrate", "encourage", "wow"]
+            example:
+              to_user_id: "user456"
+              emoji: "🔥"
+              reaction_type: "celebrate"
+      responses:
+        '200':
+          description: Cheer sent successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          interaction_id:
+                            type: string
+                          emoji:
+                            type: string
+                          reaction_type:
+                            type: string
+
+  /api/social/challenges/{challenge_id}/comment:
+    post:
+      tags:
+        - Social Interactions
+      summary: Send comment
+      description: Send a comment to another participant
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to_user_id
+                - content
+              properties:
+                to_user_id:
+                  type: string
+                content:
+                  type: string
+                  maxLength: 500
+                context_type:
+                  type: string
+                  default: "general"
+                  enum: ["general", "progress_update", "milestone", "encouragement"]
+                context_data:
+                  type: object
+            example:
+              to_user_id: "user456"
+              content: "Great progress on the challenge! Keep it up!"
+              context_type: "encouragement"
+      responses:
+        '200':
+          description: Comment sent successfully
+
+  /api/social/challenges/{challenge_id}/activity:
+    get:
+      tags:
+        - Social Interactions
+      summary: Get activity feed
+      description: Get activity feed for challenge showing interactions and updates
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Activity feed retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          challenge_id:
+                            type: string
+                          activity_feed:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ActivityItem'
+                          count:
+                            type: integer
+
+  /api/social/challenges/interactions/{interaction_id}/like:
+    post:
+      tags:
+        - Social Interactions
+      summary: Like interaction
+      description: Like a cheer or comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: interaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Interaction liked successfully
+
+  /api/social/challenges/interactions/{interaction_id}/reply:
+    post:
+      tags:
+        - Social Interactions
+      summary: Reply to interaction
+      description: Reply to a comment or cheer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: interaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  maxLength: 300
+      responses:
+        '200':
+          description: Reply added successfully
+
+  # Achievements and Rewards
+  /api/social/challenges/{challenge_id}/achievements:
+    get:
+      tags:
+        - Achievements & Rewards
+      summary: Get challenge achievements
+      description: Get user's achievements for specific challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Achievements retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChallengeAchievements'
+
+  /api/social/challenges/{challenge_id}/leaderboard:
+    get:
+      tags:
+        - Achievements & Rewards
+      summary: Get challenge leaderboard
+      description: Get challenge leaderboard with rewards information
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Leaderboard retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          leaderboard:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LeaderboardEntry'
+                          count:
+                            type: integer
+
+# Components
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+
+    CreateChallengeRequest:
+      type: object
+      required:
+        - title
+        - challenge_type
+        - challenge_category
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        challenge_type:
+          type: string
+          enum: [gaming_social, social_engagement, impact_challenge]
+        challenge_category:
+          type: string
+        difficulty_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 2
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        rules:
+          $ref: '#/components/schemas/ChallengeRules'
+        rewards:
+          $ref: '#/components/schemas/ChallengeRewards'
+        is_public:
+          type: boolean
+          default: false
+        friends_only:
+          type: boolean
+          default: true
+
+    ChallengeRules:
+      type: object
+      required:
+        - target_metric
+        - target_value
+      properties:
+        target_metric:
+          type: string
+        target_value:
+          type: number
+        time_limit_hours:
+          type: integer
+          minimum: 1
+          maximum: 8760
+        min_participants:
+          type: integer
+          minimum: 1
+          default: 2
+        max_participants:
+          type: integer
+          minimum: 2
+          maximum: 100
+          default: 10
+        requires_friends:
+          type: boolean
+          default: true
+        allow_public_join:
+          type: boolean
+          default: false
+        scoring_method:
+          type: string
+          enum: [highest, lowest, target, collective]
+          default: highest
+
+    ChallengeRewards:
+      type: object
+      properties:
+        winner_credits:
+          type: integer
+          minimum: 0
+          default: 100
+        participant_credits:
+          type: integer
+          minimum: 0
+          default: 25
+        winner_badges:
+          type: array
+          items:
+            type: string
+        participant_badges:
+          type: array
+          items:
+            type: string
+        social_bonus_multiplier:
+          type: number
+          minimum: 1.0
+          maximum: 5.0
+          default: 1.0
+
+    SocialChallenge:
+      type: object
+      properties:
+        id:
+          type: string
+        challenge_id:
+          type: string
+        creator_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        challenge_type:
+          type: string
+        challenge_category:
+          type: string
+        difficulty_level:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        rules:
+          $ref: '#/components/schemas/ChallengeRules'
+        rewards:
+          $ref: '#/components/schemas/ChallengeRewards'
+        max_participants:
+          type: integer
+        current_participants:
+          type: integer
+        participant_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [open, active, completed, cancelled]
+        is_public:
+          type: boolean
+        friends_only:
+          type: boolean
+        social_features:
+          type: object
+          properties:
+            allow_cheering:
+              type: boolean
+            allow_comments:
+              type: boolean
+            allow_spectators:
+              type: boolean
+        completion_percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+        time_remaining_hours:
+          type: number
+        can_join:
+          type: boolean
+        is_active:
+          type: boolean
+        is_expired:
+          type: boolean
+
+    ChallengeCreated:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+        creator_joined:
+          type: boolean
+
+    ChallengeDetails:
+      allOf:
+        - $ref: '#/components/schemas/SocialChallenge'
+        - type: object
+          properties:
+            participants:
+              type: array
+              items:
+                $ref: '#/components/schemas/ChallengeParticipant'
+            user_participation:
+              $ref: '#/components/schemas/UserParticipation'
+
+    ChallengeParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        joined_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, completed, quit, disqualified]
+        progress:
+          type: object
+        social_engagement:
+          type: object
+        achievements:
+          type: object
+        results:
+          type: object
+
+    UserParticipation:
+      allOf:
+        - $ref: '#/components/schemas/ChallengeParticipant'
+        - type: object
+          properties:
+            rewards:
+              type: object
+
+    ProgressUpdate:
+      type: object
+      required:
+        - current_value
+      properties:
+        current_value:
+          type: number
+        target_value:
+          type: number
+        additional_data:
+          type: object
+
+    ChallengeTemplates:
+      type: object
+      properties:
+        gaming_social:
+          $ref: '#/components/schemas/TemplateCategory'
+        social_engagement:
+          $ref: '#/components/schemas/TemplateCategory'
+        impact_challenge:
+          $ref: '#/components/schemas/TemplateCategory'
+
+    TemplateCategory:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        categories:
+          type: object
+
+    TemplateCustomization:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        target_value:
+          type: number
+        duration_hours:
+          type: integer
+        max_participants:
+          type: integer
+        is_public:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+
+    DiscoverableChallenge:
+      allOf:
+        - $ref: '#/components/schemas/SocialChallenge'
+        - type: object
+          properties:
+            match_score:
+              type: number
+
+    RecommendedChallenge:
+      allOf:
+        - $ref: '#/components/schemas/SocialChallenge'
+        - type: object
+          properties:
+            recommendation_score:
+              type: number
+            match_reasons:
+              type: array
+              items:
+                type: string
+
+    SearchResult:
+      allOf:
+        - $ref: '#/components/schemas/SocialChallenge'
+        - type: object
+          properties:
+            search_relevance:
+              type: number
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+        challenge_id:
+          type: string
+        from_user_id:
+          type: string
+        to_user_id:
+          type: string
+        interaction_type:
+          type: string
+        content:
+          type: string
+        emoji:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        created_at_relative:
+          type: string
+        likes_count:
+          type: integer
+        replies_count:
+          type: integer
+
+    ChallengeAchievements:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+        credits_earned:
+          type: integer
+        badges_earned:
+          type: array
+          items:
+            type: string
+        milestones_reached:
+          type: integer
+        social_score:
+          type: number
+        best_rank:
+          type: integer
+        engagement_level:
+          type: string
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        user_id:
+          type: string
+        rank:
+          type: integer
+        score:
+          type: number
+        completion_percentage:
+          type: number
+        social_engagement_level:
+          type: string
+        rewards_summary:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "CHALLENGE_DATA_REQUIRED"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "NOT_AUTHORIZED"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "INTERNAL_SERVER_ERROR"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

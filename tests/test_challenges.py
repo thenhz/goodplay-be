@@ -6,7 +6,7 @@ from app.games.challenges.models.challenge import Challenge
 from app.games.challenges.repositories.challenge_repository import ChallengeRepository
 from app.games.challenges.services.challenge_service import ChallengeService
 from app.games.challenges.services.matchmaking_service import MatchmakingService
-from app.core.models.response import Response
+from app.core.utils.responses import success_response, error_response
 
 
 class TestChallenge:

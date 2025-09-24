@@ -8,7 +8,7 @@ from app.games.teams.repositories.global_team_repository import GlobalTeamReposi
 from app.games.teams.repositories.team_tournament_repository import TeamTournamentRepository
 from app.games.teams.services.team_manager import TeamManager
 from app.games.teams.services.tournament_engine import TournamentEngine
-from app.core.models.response import Response
+from app.core.utils.responses import success_response, error_response
 
 
 class TestGlobalTeam:

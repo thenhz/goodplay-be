@@ -2,6 +2,7 @@ from flask import Blueprint
 from .controllers.social_controller import social_bp
 from .achievements import register_achievement_module
 from .leaderboards import create_leaderboards_blueprint
+from .challenges.controllers import social_challenges_bp
 
 def register_social_module(app):
     """Register social module blueprints and initialize repositories"""
@@ -12,6 +13,9 @@ def register_social_module(app):
     leaderboards_bp = create_leaderboards_blueprint()
     app.register_blueprint(leaderboards_bp, url_prefix='/api/social')
 
+    # Register social challenges blueprint
+    app.register_blueprint(social_challenges_bp, url_prefix='/api/social/challenges')
+
     # Register achievement module
     register_achievement_module(app)
 
@@ -20,6 +24,10 @@ def register_social_module(app):
         from .repositories.relationship_repository import RelationshipRepository
         from .leaderboards.repositories.impact_score_repository import ImpactScoreRepository
         from .leaderboards.repositories.leaderboard_repository import LeaderboardRepository
+        from .challenges.repositories.social_challenge_repository import SocialChallengeRepository
+        from .challenges.repositories.challenge_participant_repository import ChallengeParticipantRepository
+        from .challenges.repositories.challenge_result_repository import ChallengeResultRepository
+        from .challenges.repositories.challenge_interaction_repository import ChallengeInteractionRepository
 
         relationship_repo = RelationshipRepository()
         relationship_repo.create_indexes()
@@ -29,6 +37,19 @@ def register_social_module(app):
 
         leaderboard_repo = LeaderboardRepository()
         leaderboard_repo.create_indexes()
+
+        # Initialize social challenges repositories
+        social_challenge_repo = SocialChallengeRepository()
+        social_challenge_repo.create_indexes()
+
+        challenge_participant_repo = ChallengeParticipantRepository()
+        challenge_participant_repo.create_indexes()
+
+        challenge_result_repo = ChallengeResultRepository()
+        challenge_result_repo.create_indexes()
+
+        challenge_interaction_repo = ChallengeInteractionRepository()
+        challenge_interaction_repo.create_indexes()
 
         app.logger.info("Social module indexes created successfully")
     except Exception as e:

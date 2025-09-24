@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional, Tuple, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import current_app
 import threading
 import time
@@ -30,7 +30,7 @@ class RankingEngine:
         # Threading for background updates
         self._update_thread = None
         self._stop_updates = False
-        self._last_batch_update = datetime.utcnow()
+        self._last_batch_update = datetime.now(timezone.utc)
 
     def trigger_user_score_update(self, user_id: str, activity_type: str,
                                  activity_data: Optional[Dict[str, Any]] = None) -> Tuple[bool, str]:
@@ -116,7 +116,7 @@ class RankingEngine:
         """
         try:
             current_app.logger.info("Starting scheduled ranking updates")
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             # Update all impact score rankings
             ranking_updates = self.impact_score_repo.update_rankings()
@@ -137,7 +137,7 @@ class RankingEngine:
                         leaderboard_updates += 1
 
             # Calculate execution time
-            execution_time = (datetime.utcnow() - start_time).total_seconds()
+            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             stats = {
                 'ranking_updates': ranking_updates,
@@ -237,7 +237,7 @@ class RankingEngine:
                 },
                 'score_statistics': score_stats,
                 'leaderboard_summary': leaderboard_summary,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
 
         except Exception as e:
@@ -246,7 +246,7 @@ class RankingEngine:
                 'status': 'error',
                 'health_score': 0,
                 'error': str(e),
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
 
     def recalculate_all_rankings(self, batch_size: int = 100) -> Tuple[bool, str, Dict[str, Any]]:
@@ -261,7 +261,7 @@ class RankingEngine:
         """
         try:
             current_app.logger.info("Starting full ranking recalculation")
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             # Recalculate all impact scores
             score_success, score_message, score_stats = self.impact_calculator.recalculate_all_scores(
@@ -277,7 +277,7 @@ class RankingEngine:
             # Refresh all leaderboards
             leaderboard_success, leaderboard_message, leaderboard_stats = self.leaderboard_service.refresh_all_leaderboards()
 
-            execution_time = (datetime.utcnow() - start_time).total_seconds()
+            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             combined_stats = {
                 'execution_time_seconds': execution_time,
@@ -346,7 +346,7 @@ class RankingEngine:
         """Calculate user's weekly rank"""
         try:
             # Get active users from last week
-            cutoff_date = datetime.utcnow() - timedelta(weeks=1)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(weeks=1)
 
             # Count active users with higher scores
             higher_score_count = self.impact_score_repo.count({
@@ -427,7 +427,7 @@ class RankingEngine:
                 'history_records_cleaned': cleanup_count,
                 'leaderboards_optimized': optimization_count,
                 'indexes_created': True,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
 
             return True, "Performance optimization completed", stats

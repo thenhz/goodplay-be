@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from app.games.modes.models.game_mode import GameMode
 from app.games.modes.repositories.game_mode_repository import GameModeRepository
 from app.games.modes.services.mode_manager import ModeManager
-from app.core.models.response import Response
+from app.core.utils.responses import success_response, error_response
 
 
 class TestGameMode:
