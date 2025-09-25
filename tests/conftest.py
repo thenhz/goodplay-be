@@ -1,5 +1,7 @@
 """
 Pytest configuration and shared fixtures for GoodPlay test suite
+
+Enhanced configuration with TestConfig integration for enterprise-grade testing.
 """
 import pytest
 import sys
@@ -10,18 +12,20 @@ from unittest.mock import MagicMock, patch
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set testing environment before any imports
-os.environ['TESTING'] = 'true'
-os.environ['MONGO_URI'] = 'mongodb://localhost:27017/goodplay_test'
-os.environ['JWT_SECRET_KEY'] = 'test-jwt-secret'
-os.environ['SECRET_KEY'] = 'test-secret'
+# Import TestConfig before setting environment
+from tests.core.config import TestConfig, get_test_config
 
-# Mock database operations before importing app modules
+# Initialize test configuration
+test_config = get_test_config()
+
+# Set testing environment (now handled by TestConfig, but kept for compatibility)
+os.environ['TESTING'] = 'true'
+
+# Mock database operations before importing app modules (enhanced with TestConfig)
 with patch('pymongo.collection.Collection.create_index'), \
      patch('app.core.repositories.base_repository.get_db') as mock_get_db:
-    mock_collection = MagicMock()
-    mock_db = MagicMock()
-    mock_db.__getitem__ = MagicMock(return_value=mock_collection)
+    # Use TestConfig to create consistent mock database
+    mock_db = test_config.create_mock_db()
     mock_get_db.return_value = mock_db
 
     from app import create_app
@@ -30,16 +34,17 @@ with patch('pymongo.collection.Collection.create_index'), \
 
 @pytest.fixture(scope="session")
 def app():
-    """Create application for testing"""
-    # Create app (env vars already set above)
+    """Create application for testing with TestConfig integration"""
+    # Create app with TestConfig
     app = create_app()
-    app.config.update({
-        'TESTING': True,
-        'MONGO_URI': 'mongodb://localhost:27017/goodplay_test',
-        'JWT_SECRET_KEY': 'test-jwt-secret',
-        'SECRET_KEY': 'test-secret'
-    })
+    app.config.update(test_config.get_flask_config())
     return app
+
+
+@pytest.fixture(scope="session")
+def test_config_instance():
+    """Provide access to test configuration"""
+    return test_config
 
 
 @pytest.fixture(scope="session")
@@ -151,3 +156,62 @@ def mock_bcrypt():
         mock_hash.return_value = b'hashed_password'
         mock_salt.return_value = b'salt'
         yield (mock_check, mock_hash, mock_salt)
+
+
+# Enhanced fixtures with TestConfig integration
+
+@pytest.fixture
+def test_utils():
+    """Test utilities instance with test config"""
+    from tests.core.utils import TestUtils
+    return TestUtils(test_config)
+
+
+@pytest.fixture
+def user_factory(test_utils):
+    """User factory for creating test users"""
+    from tests.factories.user_factory import UserFactory
+    return UserFactory(test_utils)
+
+
+@pytest.fixture
+def game_factory(test_utils):
+    """Game factory for creating test games and sessions"""
+    from tests.factories.game_factory import GameFactory, GameSessionFactory
+    return {
+        'game': GameFactory(test_utils),
+        'session': GameSessionFactory(test_utils)
+    }
+
+
+@pytest.fixture
+def enhanced_mock_db(test_config_instance):
+    """Enhanced mock database with TestConfig"""
+    return test_config_instance.create_mock_db()
+
+
+@pytest.fixture(autouse=True)
+def performance_monitoring(request, test_config_instance):
+    """Automatic performance monitoring for all tests"""
+    test_name = request.node.name
+    test_config_instance.start_test_timing(test_name)
+
+    yield
+
+    duration = test_config_instance.end_test_timing(test_name)
+    if duration > test_config_instance.performance.slow_test_threshold:
+        print(f"\n[PERFORMANCE WARNING] Slow test: {test_name} took {duration:.2f}s")
+
+
+@pytest.fixture
+def performance_config():
+    """Access to performance configuration for tests"""
+    return test_config.performance
+
+
+@pytest.fixture
+def override_test_config():
+    """Factory for creating test config overrides"""
+    def _override(**kwargs):
+        return test_config.override(**kwargs)
+    return _override
