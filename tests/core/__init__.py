@@ -15,8 +15,70 @@ from .config import TestConfig
 from .test_base import TestBase
 from .utils import TestUtils
 
+# Import all interfaces
+from .interfaces import (
+    # Base interfaces
+    IBaseRepository,
+    IRepositoryFactory,
+    IMockRepository,
+
+    # Core repository interfaces
+    IUserRepository,
+    IGameRepository,
+    IGameSessionRepository,
+    IPreferencesRepository,
+    IAchievementRepository,
+    ISocialRepository,
+
+    # Extended repository interfaces
+    IChallengeRepository,
+    ITeamRepository,
+    IGameModeRepository,
+    ILeaderboardRepository,
+    ITournamentRepository,
+
+    # Service interfaces
+    IAuthService,
+    IGameService,
+    ISocialService,
+    IPreferencesService,
+    IChallengeService,
+    ITeamService,
+    INotificationService
+)
+
 __all__ = [
+    # Core test components
     'TestConfig',
     'TestBase',
-    'TestUtils'
+    'TestUtils',
+
+    # Base interfaces
+    'IBaseRepository',
+    'IRepositoryFactory',
+    'IMockRepository',
+
+    # Core repository interfaces
+    'IUserRepository',
+    'IGameRepository',
+    'IGameSessionRepository',
+    'IPreferencesRepository',
+    'IAchievementRepository',
+    'ISocialRepository',
+
+    # Extended repository interfaces
+    'IChallengeRepository',
+    'ITeamRepository',
+    'IGameModeRepository',
+    'ILeaderboardRepository',
+    'ITournamentRepository',
+
+    # Service interfaces
+    'IAuthService',
+    'IGameService',
+    'ISocialService',
+    'IPreferencesService',
+    'IChallengeService',
+    'ITeamService',
+    'INotificationService'
 ]
