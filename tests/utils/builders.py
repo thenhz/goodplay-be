@@ -12,14 +12,84 @@ from copy import deepcopy
 
 
 class BaseBuilder:
-    """Base class for all fluent builders"""
+    """Base class for all fluent builders with Factory-Boy integration"""
 
     def __init__(self):
         self._data = {}
+        self._use_factory = False
+        self._factory_class = None
+        self._factory_traits = []
 
     def build(self) -> Dict[str, Any]:
         """Build and return the final data structure"""
+        if self._use_factory and self._factory_class:
+            try:
+                # Use Factory-Boy to create base data, then apply customizations
+                factory_data = self._factory_class.build(**{
+                    trait: True for trait in self._factory_traits
+                })
+
+                # Convert to dict if it's a model instance
+                if hasattr(factory_data, '__dict__'):
+                    base_data = {k: v for k, v in factory_data.__dict__.items()
+                               if not k.startswith('_')}
+                else:
+                    base_data = factory_data
+
+                # Merge custom data over factory data
+                base_data.update(self._data)
+                return deepcopy(base_data)
+            except Exception as e:
+                # Fallback to manual data if factory fails
+                print(f"Factory-Boy creation failed, using manual data: {e}")
+
         return deepcopy(self._data)
+
+    def build_batch(self, count: int) -> List[Dict[str, Any]]:
+        """Build multiple instances efficiently"""
+        if self._use_factory and self._factory_class and count > 5:
+            try:
+                # Use Factory-Boy for efficient batch creation
+                batch_data = self._factory_class.build_batch(
+                    count,
+                    **{trait: True for trait in self._factory_traits}
+                )
+
+                # Apply customizations to each item
+                result = []
+                for item in batch_data:
+                    if hasattr(item, '__dict__'):
+                        item_data = {k: v for k, v in item.__dict__.items()
+                                   if not k.startswith('_')}
+                    else:
+                        item_data = item
+
+                    item_data.update(self._data)
+                    result.append(item_data)
+
+                return result
+            except Exception as e:
+                print(f"Factory-Boy batch creation failed, using manual method: {e}")
+
+        # Fallback to manual batch creation
+        return [self.build() for _ in range(count)]
+
+    def with_factory(self, factory_class, *traits) -> 'BaseBuilder':
+        """Use Factory-Boy factory as base for data generation"""
+        self._use_factory = True
+        self._factory_class = factory_class
+        self._factory_traits.extend(traits)
+        return self
+
+    def with_factory_trait(self, trait: str) -> 'BaseBuilder':
+        """Add Factory-Boy trait to data generation"""
+        self._factory_traits.append(trait)
+        return self
+
+    def without_factory(self) -> 'BaseBuilder':
+        """Disable Factory-Boy and use only manual data"""
+        self._use_factory = False
+        return self
 
     def with_id(self, obj_id: Union[str, ObjectId] = None) -> 'BaseBuilder':
         """Set the _id field"""
@@ -42,6 +112,14 @@ class BaseBuilder:
         """Merge additional data into the builder"""
         self._data.update(data)
         return self
+
+    def with_data(self, data: Dict[str, Any]) -> 'BaseBuilder':
+        """Alias for merge - useful for Factory-Boy integration"""
+        return self.merge(data)
+
+    def _generate_object_id(self) -> ObjectId:
+        """Generate a new ObjectId for MongoDB"""
+        return ObjectId()
 
 
 class UserBuilder(BaseBuilder):
@@ -79,40 +157,54 @@ class UserBuilder(BaseBuilder):
         self._data['role'] = role
         return self
 
+    def as_type(self, role: str) -> 'UserBuilder':
+        """Set user role/type - generic method for any role"""
+        role_configs = {
+            'user': {
+                'role': 'user',
+                'permissions': ['read', 'write'],
+                'first_name': 'Test',
+                'last_name': 'User'
+            },
+            'admin': {
+                'role': 'admin',
+                'permissions': ['read', 'write', 'admin'],
+                'first_name': 'Admin',
+                'last_name': 'User'
+            },
+            'guest': {
+                'role': 'guest',
+                'permissions': ['read'],
+                'first_name': 'Guest',
+                'last_name': 'User'
+            },
+            'premium': {
+                'role': 'premium',
+                'permissions': ['read', 'write'],
+                'subscription': {
+                    'type': 'premium',
+                    'expires_at': datetime.now(timezone.utc).replace(year=2025)
+                },
+                'first_name': 'Premium',
+                'last_name': 'User'
+            }
+        }
+
+        config = role_configs.get(role, {'role': role, 'permissions': ['read']})
+        self._data.update(config)
+        return self
+
     def as_admin(self) -> 'UserBuilder':
         """Configure as admin user"""
-        self._data.update({
-            'role': 'admin',
-            'permissions': ['read', 'write', 'admin'],
-            'first_name': 'Admin',
-            'last_name': 'User'
-        })
-        return self
+        return self.as_type('admin')
 
     def as_guest(self) -> 'UserBuilder':
         """Configure as guest user"""
-        self._data.update({
-            'role': 'guest',
-            'permissions': ['read'],
-            'first_name': 'Guest',
-            'last_name': 'User'
-        })
-        return self
+        return self.as_type('guest')
 
     def as_premium(self) -> 'UserBuilder':
         """Configure as premium user"""
-        self._data.update({
-            'role': 'premium',
-            'subscription': {
-                'type': 'premium',
-                'expires_at': datetime.now(timezone.utc).replace(year=2025)
-            },
-            'preferences': {
-                **self._data.get('preferences', {}),
-                'gaming': {'difficulty': 'hard', 'premium_features': True}
-            }
-        })
-        return self
+        return self.as_type('premium')
 
     def inactive(self) -> 'UserBuilder':
         """Set user as inactive"""
@@ -656,23 +748,54 @@ class TransactionBuilder(BaseBuilder):
 
 def user() -> UserBuilder:
     """Create a new UserBuilder"""
-    return UserBuilder()
+    builder = UserBuilder()
+    # Try to use Factory-Boy by default if available
+    try:
+        from tests.factories.user_factory import UserFactory
+        builder.with_factory(UserFactory)
+    except ImportError:
+        pass  # Use manual data
+    return builder
 
 def admin_user() -> UserBuilder:
     """Create a new admin UserBuilder"""
-    return UserBuilder().as_admin()
+    builder = UserBuilder().as_admin()
+    try:
+        from tests.factories.user_factory import UserFactory
+        builder.with_factory(UserFactory, 'admin')
+    except ImportError:
+        pass
+    return builder
 
 def game() -> GameBuilder:
     """Create a new GameBuilder"""
-    return GameBuilder()
+    builder = GameBuilder()
+    try:
+        from tests.factories.game_factory import GameFactory
+        builder.with_factory(GameFactory)
+    except ImportError:
+        pass
+    return builder
 
 def puzzle_game() -> GameBuilder:
     """Create a new puzzle GameBuilder"""
-    return GameBuilder().as_puzzle()
+    builder = GameBuilder().as_puzzle()
+    try:
+        from tests.factories.game_factory import GameFactory
+        builder.with_factory(GameFactory, 'puzzle')
+    except ImportError:
+        pass
+    return builder
 
 def session() -> SessionBuilder:
     """Create a new SessionBuilder"""
-    return SessionBuilder()
+    builder = SessionBuilder()
+    try:
+        from tests.factories.game_factory import GameSessionFactory
+        builder.with_factory(GameSessionFactory)
+    except ImportError:
+        pass
+    return builder
 
 def api_request() -> APIRequestBuilder:
     """Create a new APIRequestBuilder"""
@@ -684,34 +807,126 @@ def auth_token() -> AuthTokenBuilder:
 
 def preferences() -> PreferencesBuilder:
     """Create a new PreferencesBuilder"""
-    return PreferencesBuilder()
+    builder = PreferencesBuilder()
+    try:
+        from tests.factories.user_factory import UserPreferencesFactory
+        builder.with_factory(UserPreferencesFactory)
+    except ImportError:
+        pass
+    return builder
 
 def achievement() -> AchievementBuilder:
     """Create a new AchievementBuilder"""
-    return AchievementBuilder()
+    builder = AchievementBuilder()
+    try:
+        from tests.factories.social_factory import AchievementFactory
+        builder.with_factory(AchievementFactory)
+    except ImportError:
+        pass
+    return builder
 
 def transaction() -> TransactionBuilder:
     """Create a new TransactionBuilder"""
-    return TransactionBuilder()
+    builder = TransactionBuilder()
+    try:
+        from tests.factories.financial_factory import TransactionFactory
+        builder.with_factory(TransactionFactory)
+    except ImportError:
+        pass
+    return builder
+
+# Factory-Boy explicit convenience functions
+def user_with_factory(factory_class=None, *traits) -> UserBuilder:
+    """Create UserBuilder explicitly using Factory-Boy"""
+    builder = UserBuilder()
+    if factory_class:
+        builder.with_factory(factory_class, *traits)
+    else:
+        try:
+            from tests.factories.user_factory import UserFactory
+            builder.with_factory(UserFactory, *traits)
+        except ImportError:
+            raise ImportError("UserFactory not available for factory integration")
+    return builder
+
+def game_with_factory(factory_class=None, *traits) -> GameBuilder:
+    """Create GameBuilder explicitly using Factory-Boy"""
+    builder = GameBuilder()
+    if factory_class:
+        builder.with_factory(factory_class, *traits)
+    else:
+        try:
+            from tests.factories.game_factory import GameFactory
+            builder.with_factory(GameFactory, *traits)
+        except ImportError:
+            raise ImportError("GameFactory not available for factory integration")
+    return builder
+
+def session_with_factory(factory_class=None, *traits) -> SessionBuilder:
+    """Create SessionBuilder explicitly using Factory-Boy"""
+    builder = SessionBuilder()
+    if factory_class:
+        builder.with_factory(factory_class, *traits)
+    else:
+        try:
+            from tests.factories.game_factory import GameSessionFactory
+            builder.with_factory(GameSessionFactory, *traits)
+        except ImportError:
+            raise ImportError("GameSessionFactory not available for factory integration")
+    return builder
+
+# Manual-only convenience functions (bypass Factory-Boy)
+def manual_user() -> UserBuilder:
+    """Create UserBuilder using only manual data (no Factory-Boy)"""
+    return UserBuilder().without_factory()
+
+def manual_game() -> GameBuilder:
+    """Create GameBuilder using only manual data (no Factory-Boy)"""
+    return GameBuilder().without_factory()
+
+def manual_session() -> SessionBuilder:
+    """Create SessionBuilder using only manual data (no Factory-Boy)"""
+    return SessionBuilder().without_factory()
 
 
 # Usage Examples:
 """
-# Simple usage
+# Simple usage (auto-uses Factory-Boy if available)
 user_data = user().with_email('test@example.com').build()
 
-# Chained configuration
+# Chained configuration with Factory-Boy integration
 admin_data = user().as_admin().with_name('Admin', 'User').with_timestamps().build()
 
-# Game configuration
+# Game configuration (Factory-Boy + customization)
 puzzle_data = game().as_puzzle().with_difficulty('hard').free().build()
 
-# Session with user and game
+# Session with user and game (Factory-Boy based)
 session_data = session().for_user(user_id).for_game(game_id).completed(500).build()
+
+# Explicit Factory-Boy usage with traits
+premium_user = user_with_factory(UserFactory, 'premium').with_email('premium@example.com').build()
+
+# Manual-only (bypass Factory-Boy)
+manual_user_data = manual_user().with_email('manual@example.com').build()
+
+# Batch creation (uses Factory-Boy for efficiency when count > 5)
+user_batch = user().build_batch(100)  # Uses Factory-Boy for performance
+small_batch = user().build_batch(3)   # Uses manual creation
+
+# Factory integration with custom data
+user_data = user().with_factory(UserFactory, 'admin').with_email('custom@example.com').build()
 
 # API request
 request = api_request().with_auth().for_user_creation().build_request()
 
-# Complex preferences
+# Complex preferences (Factory-Boy + customization)
 prefs = preferences().gaming_hard().notifications_disabled().privacy_public().build()
+
+# Smart Fixtures integration example
+@smart_fixture('admin_user_with_preferences')
+def admin_with_prefs():
+    return {
+        'user': user().as_admin().build(),
+        'preferences': preferences().admin_defaults().build()
+    }
 """
