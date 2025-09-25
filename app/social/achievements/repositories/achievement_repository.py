@@ -11,11 +11,19 @@ class AchievementRepository(BaseRepository):
 
     def __init__(self):
         super().__init__('achievements')
-        self.user_achievements_collection = self.db['user_achievements']
-        self.user_badges_collection = self.db['user_badges']
+        if self.db is not None:
+            self.user_achievements_collection = self.db['user_achievements']
+            self.user_badges_collection = self.db['user_badges']
+        else:
+            self.user_achievements_collection = None
+            self.user_badges_collection = None
 
     def create_indexes(self):
         """Create database indexes for optimal performance"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
         try:
             # Achievement indexes
             self.collection.create_index("achievement_id", unique=True)
@@ -23,20 +31,22 @@ class AchievementRepository(BaseRepository):
             self.collection.create_index("is_active")
             self.collection.create_index([("category", 1), ("is_active", 1)])
 
-            # User achievement indexes
-            self.user_achievements_collection.create_index([("user_id", 1), ("achievement_id", 1)], unique=True)
-            self.user_achievements_collection.create_index("user_id")
-            self.user_achievements_collection.create_index("achievement_id")
-            self.user_achievements_collection.create_index("is_completed")
-            self.user_achievements_collection.create_index("reward_claimed")
-            self.user_achievements_collection.create_index([("user_id", 1), ("is_completed", 1)])
+            # User achievement indexes - only if collection exists
+            if self.user_achievements_collection is not None:
+                self.user_achievements_collection.create_index([("user_id", 1), ("achievement_id", 1)], unique=True)
+                self.user_achievements_collection.create_index("user_id")
+                self.user_achievements_collection.create_index("achievement_id")
+                self.user_achievements_collection.create_index("is_completed")
+                self.user_achievements_collection.create_index("reward_claimed")
+                self.user_achievements_collection.create_index([("user_id", 1), ("is_completed", 1)])
 
-            # User badge indexes
-            self.user_badges_collection.create_index("user_id")
-            self.user_badges_collection.create_index("achievement_id")
-            self.user_badges_collection.create_index("rarity")
-            self.user_badges_collection.create_index("is_visible")
-            self.user_badges_collection.create_index([("user_id", 1), ("is_visible", 1)])
+            # User badge indexes - only if collection exists
+            if self.user_badges_collection is not None:
+                self.user_badges_collection.create_index("user_id")
+                self.user_badges_collection.create_index("achievement_id")
+                self.user_badges_collection.create_index("rarity")
+                self.user_badges_collection.create_index("is_visible")
+                self.user_badges_collection.create_index([("user_id", 1), ("is_visible", 1)])
 
         except Exception as e:
             print(f"Error creating achievement indexes: {str(e)}")

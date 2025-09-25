@@ -13,6 +13,10 @@ class ImpactScoreRepository(BaseRepository):
 
     def create_indexes(self):
         """Create optimized indexes for impact score queries"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
         # Single field indexes
         self.collection.create_index('user_id', unique=True)
         self.collection.create_index([('impact_score', -1)])  # Descending for rankings

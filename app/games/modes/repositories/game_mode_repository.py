@@ -9,6 +9,18 @@ class GameModeRepository(BaseRepository):
     def __init__(self):
         super().__init__("game_modes")
 
+    def create_indexes(self):
+        """Create database indexes for optimal query performance"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        # Create indexes for game modes
+        self.collection.create_index("name", unique=True)
+        self.collection.create_index("type")
+        self.collection.create_index("is_active")
+        self.collection.create_index([("is_active", 1), ("type", 1)])
+
     def create_mode(self, mode: GameMode) -> str:
         """Create a new game mode"""
         return self.create(mode.to_dict())

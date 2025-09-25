@@ -14,6 +14,10 @@ class LeaderboardRepository(BaseRepository):
 
     def create_indexes(self):
         """Create optimized indexes for leaderboard queries"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
         # Compound unique index for leaderboard identification
         self.collection.create_index([
             ('leaderboard_type', 1),

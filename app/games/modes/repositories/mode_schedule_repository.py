@@ -9,6 +9,33 @@ class ModeScheduleRepository(BaseRepository):
     def __init__(self):
         super().__init__("mode_schedules")
 
+    def create_indexes(self):
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        from pymongo import ASCENDING
+        # Index for schedule_id field - used frequently for lookups
+        self.collection.create_index([("schedule_id", ASCENDING)], unique=True)
+        # Index for mode_name - used for finding schedules by mode
+        self.collection.create_index([("mode_name", ASCENDING)])
+        # Index for scheduled_at - used for finding pending and upcoming schedules
+        self.collection.create_index([("scheduled_at", ASCENDING)])
+        # Index for is_executed - used for filtering executed schedules
+        self.collection.create_index([("is_executed", ASCENDING)])
+        # Index for is_cancelled - used for filtering cancelled schedules
+        self.collection.create_index([("is_cancelled", ASCENDING)])
+        # Index for schedule_type - used for filtering recurring vs one-time schedules
+        self.collection.create_index([("schedule_type", ASCENDING)])
+        # Index for created_by - used for getting schedules created by a user
+        self.collection.create_index([("created_by", ASCENDING)])
+        # Index for executed_at - used for cleanup operations
+        self.collection.create_index([("executed_at", ASCENDING)])
+        # Compound index for pending schedules - frequently used query
+        self.collection.create_index([("is_executed", ASCENDING), ("is_cancelled", ASCENDING), ("scheduled_at", ASCENDING)])
+        # Compound index for mode and action - used for conflict checking
+        self.collection.create_index([("mode_name", ASCENDING), ("action", ASCENDING)])
+
     def create_schedule(self, schedule: ModeSchedule) -> str:
         """Create a new mode schedule"""
         return self.create(schedule.to_dict())

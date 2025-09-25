@@ -9,6 +9,23 @@ class TeamTournamentRepository(BaseRepository):
     def __init__(self):
         super().__init__("team_tournaments")
 
+    def create_indexes(self):
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        from pymongo import ASCENDING
+        # Index for tournament_id field - used frequently for lookups
+        self.collection.create_index([("tournament_id", ASCENDING)], unique=True)
+        # Index for status - used for filtering tournaments
+        self.collection.create_index([("status", ASCENDING)])
+        # Index for start_date - used for sorting and filtering upcoming tournaments
+        self.collection.create_index([("start_date", ASCENDING)])
+        # Index for end_date - used for finding expired tournaments
+        self.collection.create_index([("end_date", ASCENDING)])
+        # Compound index for status and start_date - used for querying active tournaments
+        self.collection.create_index([("status", ASCENDING), ("start_date", ASCENDING)])
+
     def create_tournament(self, tournament: TeamTournament) -> str:
         """Create a new team tournament"""
         return self.create(tournament.to_dict())

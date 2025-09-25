@@ -13,7 +13,8 @@ class ChallengeResultRepository(BaseRepository):
 
     def create_indexes(self):
         """Create database indexes for optimal query performance"""
-        if self.collection is None:
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
             return
 
         # Compound indexes for common queries

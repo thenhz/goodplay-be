@@ -9,6 +9,33 @@ class ChallengeRepository(BaseRepository):
     def __init__(self):
         super().__init__("challenges")
 
+    def create_indexes(self):
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        from pymongo import ASCENDING
+        # Index for challenge_id field - used frequently for lookups
+        self.collection.create_index([("challenge_id", ASCENDING)], unique=True)
+        # Index for challenger_id - used for getting challenges created by a user
+        self.collection.create_index([("challenger_id", ASCENDING)])
+        # Index for challenged_ids - used for finding challenges a user is invited to
+        self.collection.create_index([("challenged_ids", ASCENDING)])
+        # Index for status - used for filtering challenges by status
+        self.collection.create_index([("status", ASCENDING)])
+        # Index for game_id - used for filtering challenges by game
+        self.collection.create_index([("game_id", ASCENDING)])
+        # Index for is_public - used for finding public challenges
+        self.collection.create_index([("is_public", ASCENDING)])
+        # Index for expires_at - used for finding expired challenges
+        self.collection.create_index([("expires_at", ASCENDING)])
+        # Index for created_at - used for sorting and date-based queries
+        self.collection.create_index([("created_at", ASCENDING)])
+        # Compound index for public challenges by game and status
+        self.collection.create_index([("is_public", ASCENDING), ("game_id", ASCENDING), ("status", ASCENDING)])
+        # Index for completed_at - used for cleanup operations
+        self.collection.create_index([("completed_at", ASCENDING)])
+
     def create_challenge(self, challenge: Challenge) -> str:
         """Create a new challenge"""
         return self.create(challenge.to_dict())

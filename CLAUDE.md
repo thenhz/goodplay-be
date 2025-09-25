@@ -216,6 +216,19 @@ All API response message constants are documented in:
 - **Integration Tests**: Test full request/response cycles
 - **API Tests**: Test endpoint contracts match Postman collections
 
+#### Test Configuration & Database Mocking (🚨 CRITICAL SETUP):
+- **Environment Variables**: Always set `TESTING=true` in `conftest.py` BEFORE importing app modules
+- **Database Index Creation**: All repository `create_indexes()` methods MUST check for testing mode:
+  ```python
+  def create_indexes(self):
+      import os
+      if self.collection is None or os.getenv('TESTING') == 'true':
+          return
+  ```
+- **BaseRepository Abstract Methods**: ALL repositories extending `BaseRepository` MUST implement `create_indexes()` method
+- **MongoDB Connection Mocking**: Mock `get_db()` and collection operations in `conftest.py` to prevent DB connection attempts during testing
+- **Flask Application Context**: Use `with app.app_context():` for tests that access `current_app.logger` or other Flask globals
+
 #### Test Execution Commands:
 ```bash
 # Run all tests before committing

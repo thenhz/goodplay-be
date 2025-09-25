@@ -9,6 +9,27 @@ class ChallengeParticipantRepository(BaseRepository):
     def __init__(self):
         super().__init__("challenge_participants")
 
+    def create_indexes(self):
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        from pymongo import ASCENDING
+        # Index for challenge_id - used for getting all participants in a challenge
+        self.collection.create_index([("challenge_id", ASCENDING)])
+        # Index for user_id - used for getting user's participations
+        self.collection.create_index([("user_id", ASCENDING)])
+        # Compound index for challenge_id and user_id - used for specific participant lookups
+        self.collection.create_index([("challenge_id", ASCENDING), ("user_id", ASCENDING)], unique=True)
+        # Index for status - used for filtering by participation status
+        self.collection.create_index([("status", ASCENDING)])
+        # Compound index for user_id and status - used for getting user's pending invitations
+        self.collection.create_index([("user_id", ASCENDING), ("status", ASCENDING)])
+        # Index for joined_at - used for sorting participation history
+        self.collection.create_index([("joined_at", ASCENDING)])
+        # Index for completed_at - used for cleanup operations
+        self.collection.create_index([("completed_at", ASCENDING)])
+
     def create_participant(self, participant: ChallengeParticipant) -> str:
         """Create a new challenge participant"""
         return self.create(participant.to_dict())

@@ -13,6 +13,10 @@ class RelationshipRepository(BaseRepository):
 
     def create_indexes(self):
         """Create database indexes for optimal query performance"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
         # Compound index for user_id + relationship_type + status
         self.collection.create_index([
             ("user_id", ASCENDING),

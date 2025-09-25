@@ -9,6 +9,27 @@ class TeamMemberRepository(BaseRepository):
     def __init__(self):
         super().__init__("team_members")
 
+    def create_indexes(self):
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        from pymongo import ASCENDING
+        # Index for user_id - used frequently for user lookups
+        self.collection.create_index([("user_id", ASCENDING)])
+        # Index for team_id - used for team member queries
+        self.collection.create_index([("team_id", ASCENDING)])
+        # Compound index for user_id and team_id - used for specific member lookups
+        self.collection.create_index([("user_id", ASCENDING), ("team_id", ASCENDING)])
+        # Index for active members
+        self.collection.create_index([("is_active", ASCENDING)])
+        # Index for contribution_score - used for leaderboards
+        self.collection.create_index([("contribution_score", -1)])
+        # Compound index for team and role
+        self.collection.create_index([("team_id", ASCENDING), ("team_role", ASCENDING)])
+        # Index for last activity - used for finding inactive members
+        self.collection.create_index([("last_activity_at", ASCENDING)])
+
     def create_member(self, member: TeamMember) -> str:
         """Create a new team member"""
         return self.create(member.to_dict())

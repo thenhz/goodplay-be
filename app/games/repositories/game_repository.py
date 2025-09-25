@@ -13,6 +13,10 @@ class GameRepository(BaseRepository):
 
     def create_indexes(self):
         """Create indexes for the games collection"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
         self.collection.create_index([("name", ASCENDING)], unique=True)
         self.collection.create_index([("plugin_id", ASCENDING)], unique=True)
         self.collection.create_index([("category", ASCENDING)])

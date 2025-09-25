@@ -10,20 +10,28 @@ from unittest.mock import MagicMock, patch
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import create_app
-from app.core.models.user import User
+# Set testing environment before any imports
+os.environ['TESTING'] = 'true'
+os.environ['MONGO_URI'] = 'mongodb://localhost:27017/goodplay_test'
+os.environ['JWT_SECRET_KEY'] = 'test-jwt-secret'
+os.environ['SECRET_KEY'] = 'test-secret'
+
+# Mock database operations before importing app modules
+with patch('pymongo.collection.Collection.create_index'), \
+     patch('app.core.repositories.base_repository.get_db') as mock_get_db:
+    mock_collection = MagicMock()
+    mock_db = MagicMock()
+    mock_db.__getitem__ = MagicMock(return_value=mock_collection)
+    mock_get_db.return_value = mock_db
+
+    from app import create_app
+    from app.core.models.user import User
 
 
 @pytest.fixture(scope="session")
 def app():
     """Create application for testing"""
-    # Mock environment variables for testing
-    os.environ['TESTING'] = 'true'
-    os.environ['MONGO_URI'] = 'mongodb://localhost:27017/goodplay_test'
-    os.environ['JWT_SECRET_KEY'] = 'test-jwt-secret'
-    os.environ['SECRET_KEY'] = 'test-secret'
-
-    # Create app without parameters (uses env vars)
+    # Create app (env vars already set above)
     app = create_app()
     app.config.update({
         'TESTING': True,

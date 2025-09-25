@@ -8,8 +8,11 @@ class UserRepository(BaseRepository):
         super().__init__('users')
     
     def create_indexes(self):
-        if self.collection is not None:
-            self.collection.create_index([("email", ASCENDING)], unique=True)
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        self.collection.create_index([("email", ASCENDING)], unique=True)
     
     def find_by_email(self, email: str) -> Optional[User]:
         user_data = self.find_one({"email": email.lower()})

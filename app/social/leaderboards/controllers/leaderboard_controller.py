@@ -1,7 +1,6 @@
 from flask import Blueprint, request, current_app
-from app.core.decorators.auth import auth_required
-from app.core.decorators.admin import admin_required
-from app.core.utils.response_helpers import success_response, error_response
+from app.core.utils.decorators import auth_required, admin_required
+from app.core.utils.responses import success_response, error_response
 from ..services.impact_calculator import ImpactCalculator
 from ..services.leaderboard_service import LeaderboardService
 from ..services.ranking_engine import RankingEngine

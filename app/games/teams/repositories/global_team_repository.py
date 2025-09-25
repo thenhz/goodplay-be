@@ -9,6 +9,21 @@ class GlobalTeamRepository(BaseRepository):
     def __init__(self):
         super().__init__("global_teams")
 
+    def create_indexes(self):
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
+        from pymongo import ASCENDING
+        # Index for team_id field - used frequently for lookups
+        self.collection.create_index([("team_id", ASCENDING)], unique=True)
+        # Index for tournament_id - used for tournament queries
+        self.collection.create_index([("tournament_id", ASCENDING)])
+        # Index for total_score - used for leaderboards
+        self.collection.create_index([("total_score", -1)])
+        # Index for active teams
+        self.collection.create_index([("is_active", ASCENDING)])
+
     def create_team(self, team: GlobalTeam) -> str:
         """Create a new global team"""
         return self.create(team.to_dict())

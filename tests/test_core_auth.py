@@ -34,24 +34,22 @@ class TestAuthServiceWorking:
         service.user_repository = mock_user_repo
         return service
 
-    def test_register_user_success(self, auth_service, mock_user_repo):
+    def test_register_user_success(self, app, auth_service, mock_user_repo):
         """Test successful user registration"""
-        # Setup mocks
-        mock_user_repo.email_exists.return_value = False
-        mock_user_repo.create_user.return_value = str(ObjectId())
+        with app.app_context():
+            # Setup mocks
+            mock_user_repo.email_exists.return_value = False
+            mock_user_repo.create_user.return_value = str(ObjectId())
 
-        with patch('app.core.services.auth_service.create_access_token', return_value='access_token'), \
-             patch('app.core.services.auth_service.create_refresh_token', return_value='refresh_token'), \
-             patch('app.core.services.auth_service.current_app') as mock_app:
+            with patch('app.core.services.auth_service.create_access_token', return_value='access_token'), \
+                 patch('app.core.services.auth_service.create_refresh_token', return_value='refresh_token'):
 
-            mock_app.logger = Mock()
+                success, message, result = auth_service.register_user(
+                    "test@goodplay.com", "password123", "Test", "User"
+                )
 
-            success, message, result = auth_service.register_user(
-                "test@goodplay.com", "password123", "Test", "User"
-            )
-
-            assert success is True
-            assert message == "Registration completed successfully"
+                assert success is True
+                assert message == "Registration completed successfully"
             assert result is not None
             assert "user" in result
             assert "tokens" in result
@@ -98,29 +96,27 @@ class TestAuthServiceWorking:
         assert "Email and password are required" in message
         assert result is None
 
-    def test_login_user_success(self, auth_service, mock_user_repo):
+    def test_login_user_success(self, app, auth_service, mock_user_repo):
         """Test successful user login"""
-        # Create mock user
-        mock_user = Mock(spec=User)
-        mock_user.check_password.return_value = True
-        mock_user.is_active = True
-        mock_user.get_id.return_value = str(ObjectId())
-        mock_user.to_dict.return_value = {"email": "test@goodplay.com"}
+        with app.app_context():
+            # Create mock user
+            mock_user = Mock(spec=User)
+            mock_user.check_password.return_value = True
+            mock_user.is_active = True
+            mock_user.get_id.return_value = str(ObjectId())
+            mock_user.to_dict.return_value = {"email": "test@goodplay.com"}
 
-        mock_user_repo.find_by_email.return_value = mock_user
+            mock_user_repo.find_by_email.return_value = mock_user
 
-        with patch('app.core.services.auth_service.create_access_token', return_value='access_token'), \
-             patch('app.core.services.auth_service.create_refresh_token', return_value='refresh_token'), \
-             patch('app.core.services.auth_service.current_app') as mock_app:
+            with patch('app.core.services.auth_service.create_access_token', return_value='access_token'), \
+                 patch('app.core.services.auth_service.create_refresh_token', return_value='refresh_token'):
 
-            mock_app.logger = Mock()
+                success, message, result = auth_service.login_user(
+                    "test@goodplay.com", "password123"
+                )
 
-            success, message, result = auth_service.login_user(
-                "test@goodplay.com", "password123"
-            )
-
-            assert success is True
-            assert message == "Login successful"
+                assert success is True
+                assert message == "Login successful"
             assert result is not None
             assert "user" in result
             assert "tokens" in result
@@ -343,11 +339,11 @@ class TestUserModelWorking:
             password_hash="hashed_password"
         )
 
-        with patch('werkzeug.security.check_password_hash', return_value=True):
+        with patch('app.core.models.user.check_password_hash', return_value=True):
             result = user.check_password("correct_password")
             assert result is True
 
-        with patch('werkzeug.security.check_password_hash', return_value=False):
+        with patch('app.core.models.user.check_password_hash', return_value=False):
             result = user.check_password("wrong_password")
             assert result is False
 

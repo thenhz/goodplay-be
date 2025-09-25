@@ -13,6 +13,10 @@ class GameSessionRepository(BaseRepository):
 
     def create_indexes(self):
         """Create indexes for the game_sessions collection"""
+        import os
+        if self.collection is None or os.getenv('TESTING') == 'true':
+            return
+
         self.collection.create_index([("session_id", ASCENDING)], unique=True)
         self.collection.create_index([("user_id", ASCENDING)])
         self.collection.create_index([("game_id", ASCENDING)])
