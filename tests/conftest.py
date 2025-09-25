@@ -6,6 +6,7 @@ Enhanced configuration with TestConfig integration for enterprise-grade testing.
 import pytest
 import sys
 import os
+import random
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -167,21 +168,173 @@ def test_utils():
     return TestUtils(test_config)
 
 
+# Factory-Boy Integration and Registration
+
+# Register all Factory-Boy factories with pytest-factoryboy
+def pytest_configure(config):
+    """Configure pytest with Factory-Boy integration"""
+    # Import and register all factories for pytest-factoryboy
+    try:
+        import pytest_factoryboy
+
+        # Import all our Factory-Boy factories
+        from tests.factories.user_factory import UserFactory, UserPreferencesFactory
+        from tests.factories.game_factory import GameFactory, GameSessionFactory
+        from tests.factories.social_factory import (
+            AchievementFactory, BadgeFactory, UserAchievementFactory,
+            UserRelationshipFactory, LeaderboardFactory, LeaderboardEntryFactory,
+            ImpactScoreFactory
+        )
+        from tests.factories.financial_factory import (
+            WalletFactory, TransactionFactory, DonationFactory
+        )
+        from tests.factories.onlus_factory import (
+            ONLUSFactory, CampaignFactory, ProjectFactory, VolunteerFactory
+        )
+
+        # Register factories with pytest-factoryboy
+        # This makes them available as fixtures automatically
+        pytest_factoryboy.register(UserFactory)
+        pytest_factoryboy.register(UserPreferencesFactory)
+        pytest_factoryboy.register(GameFactory)
+        pytest_factoryboy.register(GameSessionFactory)
+        pytest_factoryboy.register(AchievementFactory)
+        pytest_factoryboy.register(BadgeFactory)
+        pytest_factoryboy.register(UserAchievementFactory)
+        pytest_factoryboy.register(UserRelationshipFactory)
+        pytest_factoryboy.register(LeaderboardFactory)
+        pytest_factoryboy.register(LeaderboardEntryFactory)
+        pytest_factoryboy.register(ImpactScoreFactory)
+        pytest_factoryboy.register(WalletFactory)
+        pytest_factoryboy.register(TransactionFactory)
+        pytest_factoryboy.register(DonationFactory)
+        pytest_factoryboy.register(ONLUSFactory)
+        pytest_factoryboy.register(CampaignFactory)
+        pytest_factoryboy.register(ProjectFactory)
+        pytest_factoryboy.register(VolunteerFactory)
+
+    except ImportError:
+        # pytest-factoryboy not installed, skip registration
+        pass
+
+
+# Direct factory fixtures for manual usage
 @pytest.fixture
-def user_factory(test_utils):
-    """User factory for creating test users"""
+def user_factory():
+    """Factory-Boy UserFactory fixture"""
     from tests.factories.user_factory import UserFactory
-    return UserFactory(test_utils)
+    return UserFactory
+
+@pytest.fixture
+def game_factory():
+    """Factory-Boy GameFactory fixture"""
+    from tests.factories.game_factory import GameFactory
+    return GameFactory
+
+@pytest.fixture
+def game_session_factory():
+    """Factory-Boy GameSessionFactory fixture"""
+    from tests.factories.game_factory import GameSessionFactory
+    return GameSessionFactory
+
+@pytest.fixture
+def achievement_factory():
+    """Factory-Boy AchievementFactory fixture"""
+    from tests.factories.social_factory import AchievementFactory
+    return AchievementFactory
+
+@pytest.fixture
+def wallet_factory():
+    """Factory-Boy WalletFactory fixture"""
+    from tests.factories.financial_factory import WalletFactory
+    return WalletFactory
+
+@pytest.fixture
+def onlus_factory():
+    """Factory-Boy ONLUSFactory fixture"""
+    from tests.factories.onlus_factory import ONLUSFactory
+    return ONLUSFactory
+
+
+# Legacy compatibility fixtures (for backward compatibility with existing tests)
+@pytest.fixture
+def user_factory_legacy(test_utils):
+    """Legacy user factory for backward compatibility"""
+    from tests.factories.user_factory import LegacyUserFactory
+    return LegacyUserFactory(test_utils)
 
 
 @pytest.fixture
-def game_factory(test_utils):
-    """Game factory for creating test games and sessions"""
-    from tests.factories.game_factory import GameFactory, GameSessionFactory
+def game_factory_legacy(test_utils):
+    """Legacy game factory for backward compatibility"""
+    from tests.factories.game_factory import LegacyGameFactory, LegacyGameSessionFactory
     return {
-        'game': GameFactory(test_utils),
-        'session': GameSessionFactory(test_utils)
+        'game': LegacyGameFactory(test_utils),
+        'session': LegacyGameSessionFactory(test_utils)
     }
+
+
+# Factory utility fixtures
+@pytest.fixture
+def factory_utils():
+    """Utility functions for working with factories"""
+    from tests.factories.base import BatchFactoryMixin, FactoryConfig
+
+    class FactoryUtils:
+        @staticmethod
+        def create_test_ecosystem(count: int = 50):
+            """Create a complete test ecosystem with all types of objects"""
+            from tests.factories.user_factory import UserFactory
+            from tests.factories.game_factory import GameFactory, GameSessionFactory
+            from tests.factories.social_factory import AchievementFactory
+            from tests.factories.financial_factory import WalletFactory
+            from tests.factories.onlus_factory import ONLUSFactory
+
+            ecosystem = {
+                'users': UserFactory.create_diverse_group(count // 5),
+                'games': GameFactory.create_game_collection(count // 10),
+                'achievements': AchievementFactory.create_complete_achievement_system(),
+                'onlus_orgs': ONLUSFactory.create_org_ecosystem(count // 20)
+            }
+
+            # Create sessions for users and games
+            ecosystem['sessions'] = []
+            for user in ecosystem['users'][:10]:  # Sessions for first 10 users
+                user_sessions = GameSessionFactory.create_user_sessions(
+                    user['_id'], count=random.randint(2, 8)
+                )
+                ecosystem['sessions'].extend(user_sessions)
+
+            return ecosystem
+
+        @staticmethod
+        def performance_test_factories():
+            """Test factory performance and return timing results"""
+            import time
+            from tests.factories.user_factory import UserFactory
+
+            results = {}
+
+            # Test single object creation speed
+            start_time = time.time()
+            UserFactory.build_batch(1000)
+            single_batch_time = time.time() - start_time
+            results['1000_users'] = single_batch_time
+
+            # Test different factory types
+            for factory_name, factory_class in [
+                ('GameFactory', GameFactory),
+                ('AchievementFactory', AchievementFactory),
+                ('WalletFactory', WalletFactory),
+            ]:
+                start_time = time.time()
+                factory_class.build_batch(100)
+                batch_time = time.time() - start_time
+                results[f'100_{factory_name}'] = batch_time
+
+            return results
+
+    return FactoryUtils()
 
 
 @pytest.fixture

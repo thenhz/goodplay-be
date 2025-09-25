@@ -19,6 +19,7 @@ pytest-html==4.1.1
 
 # Test fixtures and utilities
 factory-boy==3.3.0
+pytest-factoryboy==2.7.0
 freezegun==1.2.2
 
 # Coverage reporting
