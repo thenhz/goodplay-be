@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 
-from app.games.core.game_plugin import GamePlugin
+from app.games.core.game_plugin import GamePlugin, GameRules, GameSession as PluginGameSession, SessionResult
 from app.games.core.plugin_manager import PluginManager
 from app.games.core.plugin_registry import PluginRegistry
 from app.games.models.game_session import GameSession
@@ -35,27 +35,44 @@ class TestGamePlugin:
         def initialize(self) -> bool:
             return True
 
-        def start_session(self, user_id: str) -> dict:
-            return {
-                "session_id": str(ObjectId()),
-                "game_state": {"level": 1, "score": 0}
-            }
+        def start_session(self, user_id: str, session_config=None) -> PluginGameSession:
+            return PluginGameSession(
+                session_id=str(ObjectId()),
+                user_id=user_id,
+                game_id="test_game",
+                status="active",
+                current_state={"level": 1, "score": 0},
+                started_at=datetime.now()
+            )
 
-        def end_session(self, session_id: str) -> dict:
-            return {
-                "session_id": session_id,
-                "final_score": 100,
-                "duration": 300
-            }
+        def end_session(self, session_id: str, reason: str = "completed") -> SessionResult:
+            return SessionResult(
+                session_id=session_id,
+                final_score=100,
+                credits_earned=50,
+                completion_time_seconds=300,
+                achievements_unlocked=[],
+                statistics={"moves": 10}
+            )
 
-        def get_rules(self) -> dict:
-            return {
-                "objective": "Test objective",
-                "controls": ["click", "drag"],
-                "scoring": "Points for completion"
-            }
+        def get_rules(self) -> GameRules:
+            return GameRules(
+                min_players=1,
+                max_players=1,
+                estimated_duration_minutes=5,
+                difficulty_level="easy",
+                requires_internet=False,
+                description="Test objective",
+                instructions="Test game instructions"
+            )
 
         def validate_move(self, session_id: str, move: dict) -> bool:
+            return True
+
+        def get_session_state(self, session_id: str) -> dict:
+            return {"level": 1, "score": 0, "moves": []}
+
+        def update_session_state(self, session_id: str, new_state: dict) -> bool:
             return True
 
     def test_plugin_interface_implementation(self):
@@ -88,10 +105,11 @@ class TestGamePlugin:
 
         result = plugin.start_session(user_id)
 
-        assert "session_id" in result
-        assert "game_state" in result
-        assert result["game_state"]["level"] == 1
-        assert result["game_state"]["score"] == 0
+        assert hasattr(result, 'session_id')
+        assert hasattr(result, 'current_state')
+        assert result.user_id == user_id
+        assert result.status == "active"
+        assert result.current_state["level"] == 1
 
     def test_end_session(self):
         """Test ending game session"""
@@ -100,10 +118,11 @@ class TestGamePlugin:
 
         result = plugin.end_session(session_id)
 
-        assert "session_id" in result
-        assert "final_score" in result
-        assert "duration" in result
-        assert result["session_id"] == session_id
+        assert hasattr(result, 'session_id')
+        assert hasattr(result, 'final_score')
+        assert result.final_score == 100
+        assert result.credits_earned == 50
+        assert result.session_id == session_id
 
     def test_get_rules(self):
         """Test getting game rules"""
@@ -111,9 +130,11 @@ class TestGamePlugin:
 
         rules = plugin.get_rules()
 
-        assert "objective" in rules
-        assert "controls" in rules
-        assert "scoring" in rules
+        assert hasattr(rules, 'description')
+        assert hasattr(rules, 'instructions')
+        assert hasattr(rules, 'min_players')
+        assert rules.min_players == 1
+        assert rules.difficulty_level == "easy"
 
     def test_validate_move(self):
         """Test move validation"""
