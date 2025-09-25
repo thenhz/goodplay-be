@@ -18,284 +18,343 @@ class TestRelationshipService:
     """Test cases for RelationshipService"""
 
     @pytest.fixture
-    def relationship_service(self, mock_db):
+    def mock_relationship_repo(self):
+        """Create mocked RelationshipRepository"""
+        return MagicMock()
+
+    @pytest.fixture
+    def mock_user_repo(self):
+        """Create mocked UserRepository"""
+        return MagicMock()
+
+    @pytest.fixture
+    def relationship_service(self, mock_relationship_repo, mock_user_repo):
         """Create RelationshipService instance with mocked dependencies"""
-        relationship_repo = RelationshipRepository()
-        relationship_repo.collection = mock_db
-        return RelationshipService(relationship_repo)
+        service = RelationshipService()
+        service.relationship_repository = mock_relationship_repo
+        service.user_repository = mock_user_repo
+        return service
 
-    def test_send_friend_request_success(self, relationship_service, mock_db):
+    def test_send_friend_request_success(self, app, relationship_service, mock_relationship_repo, mock_user_repo):
         """Test successful friend request sending"""
-        user_id = str(ObjectId())
-        target_user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
+            target_user_id = str(ObjectId())
 
-        # Mock no existing relationship
-        mock_db.find_one.return_value = None
-        mock_db.insert_one.return_value = MagicMock(inserted_id=ObjectId())
+            # Create mock users
+            sender_user = MagicMock()
+            target_user = MagicMock()
+            target_user.preferences = {"privacy": {"contact_permissions": "friends"}}
 
-        success, message, result = relationship_service.send_friend_request(user_id, target_user_id)
+            # Mock user repository to return appropriate users
+            def mock_find_user_by_id(user_id_param):
+                if user_id_param == user_id:
+                    return sender_user
+                elif user_id_param == target_user_id:
+                    return target_user
+                else:
+                    return None
+
+            mock_user_repo.find_user_by_id.side_effect = mock_find_user_by_id
+
+            # Mock no existing relationship
+            mock_relationship_repo.find_relationship_between_users.return_value = None
+            mock_relationship_repo.is_blocked.return_value = False
+            mock_relationship_repo.create_relationship.return_value = str(ObjectId())
+
+            success, message, result = relationship_service.send_friend_request(user_id, target_user_id)
 
         assert success is True
         assert message == "FRIEND_REQUEST_SENT_SUCCESS"
         assert result is not None
+        assert "relationship_id" in result
+        assert "target_user_id" in result
+        assert result["status"] == "pending"
 
-    def test_send_friend_request_to_self(self, relationship_service):
+    def test_send_friend_request_to_self(self, app, relationship_service):
         """Test sending friend request to self"""
-        user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
 
-        success, message, result = relationship_service.send_friend_request(user_id, user_id)
+            success, message, result = relationship_service.send_friend_request(user_id, user_id)
 
         assert success is False
-        assert message == "CANNOT_BEFRIEND_SELF"
+        assert message == "CANNOT_INTERACT_WITH_SELF"
         assert result is None
 
-    def test_send_friend_request_already_exists(self, relationship_service, mock_db):
+    def test_send_friend_request_already_exists(self, app, relationship_service, mock_relationship_repo, mock_user_repo):
         """Test sending friend request when relationship already exists"""
-        user_id = str(ObjectId())
-        target_user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
+            target_user_id = str(ObjectId())
 
-        # Mock existing relationship
-        existing_relationship = {
-            "_id": ObjectId(),
-            "user_id": ObjectId(user_id),
-            "target_user_id": ObjectId(target_user_id),
-            "relationship_type": "friend",
-            "status": "pending"
-        }
-        mock_db.find_one.return_value = existing_relationship
+            # Create mock users
+            sender_user = MagicMock()
+            target_user = MagicMock()
+            target_user.preferences = {"privacy": {"contact_permissions": "friends"}}
 
-        success, message, result = relationship_service.send_friend_request(user_id, target_user_id)
+            # Mock user repository
+            def mock_find_user_by_id(user_id_param):
+                if user_id_param == user_id:
+                    return sender_user
+                elif user_id_param == target_user_id:
+                    return target_user
+                else:
+                    return None
+
+            mock_user_repo.find_user_by_id.side_effect = mock_find_user_by_id
+
+            # Mock existing pending relationship
+            existing_relationship = MagicMock()
+            existing_relationship.is_accepted.return_value = False
+            existing_relationship.is_pending.return_value = True
+            existing_relationship.is_declined.return_value = False
+            mock_relationship_repo.find_relationship_between_users.return_value = existing_relationship
+
+            success, message, result = relationship_service.send_friend_request(user_id, target_user_id)
 
         assert success is False
-        assert message == "FRIEND_REQUEST_ALREADY_EXISTS"
+        assert message == "FRIEND_REQUEST_ALREADY_SENT"
         assert result is None
 
-    def test_accept_friend_request_success(self, relationship_service, mock_db):
+    def test_accept_friend_request_success(self, app, relationship_service, mock_relationship_repo):
         """Test successful friend request acceptance"""
-        request_id = str(ObjectId())
-        user_id = str(ObjectId())
+        with app.app_context():
+            request_id = str(ObjectId())
+            user_id = str(ObjectId())
+            requester_id = str(ObjectId())
 
-        # Mock pending friend request
-        pending_request = {
-            "_id": ObjectId(request_id),
-            "user_id": ObjectId(),
-            "target_user_id": ObjectId(user_id),
-            "relationship_type": "friend",
-            "status": "pending"
-        }
-        mock_db.find_one.return_value = pending_request
-        mock_db.update_one.return_value = MagicMock(modified_count=1)
-        mock_db.insert_one.return_value = MagicMock(inserted_id=ObjectId())
+            # Mock pending friend request
+            pending_request = MagicMock()
+            pending_request._id = ObjectId(request_id)
+            pending_request.user_id = requester_id
+            pending_request.target_user_id = user_id
+            pending_request.is_pending.return_value = True
+            pending_request.is_targeted_to.return_value = True
 
-        success, message, result = relationship_service.accept_friend_request(request_id, user_id)
+            mock_relationship_repo.find_relationship_by_id.return_value = pending_request
+            mock_relationship_repo.accept_friend_request.return_value = True
+
+            success, message, result = relationship_service.accept_friend_request(user_id, request_id)
 
         assert success is True
         assert message == "FRIEND_REQUEST_ACCEPTED_SUCCESS"
         assert result is not None
 
-    def test_accept_friend_request_not_found(self, relationship_service, mock_db):
+    def test_accept_friend_request_not_found(self, app, relationship_service, mock_relationship_repo):
         """Test accepting non-existent friend request"""
-        request_id = str(ObjectId())
-        user_id = str(ObjectId())
+        with app.app_context():
+            request_id = str(ObjectId())
+            user_id = str(ObjectId())
 
-        mock_db.find_one.return_value = None
+            mock_relationship_repo.find_relationship_by_id.return_value = None
 
-        success, message, result = relationship_service.accept_friend_request(request_id, user_id)
+            success, message, result = relationship_service.accept_friend_request(user_id, request_id)
 
         assert success is False
         assert message == "FRIEND_REQUEST_NOT_FOUND"
         assert result is None
 
-    def test_decline_friend_request_success(self, relationship_service, mock_db):
+    def test_decline_friend_request_success(self, app, relationship_service, mock_relationship_repo):
         """Test successful friend request decline"""
-        request_id = str(ObjectId())
-        user_id = str(ObjectId())
+        with app.app_context():
+            request_id = str(ObjectId())
+            user_id = str(ObjectId())
+            requester_id = str(ObjectId())
 
-        # Mock pending friend request
-        pending_request = {
-            "_id": ObjectId(request_id),
-            "user_id": ObjectId(),
-            "target_user_id": ObjectId(user_id),
-            "relationship_type": "friend",
-            "status": "pending"
-        }
-        mock_db.find_one.return_value = pending_request
-        mock_db.update_one.return_value = MagicMock(modified_count=1)
+            # Mock pending friend request
+            pending_request = MagicMock()
+            pending_request._id = ObjectId(request_id)
+            pending_request.user_id = requester_id
+            pending_request.target_user_id = user_id
+            pending_request.is_pending.return_value = True
+            pending_request.is_targeted_to.return_value = True
 
-        success, message, result = relationship_service.decline_friend_request(request_id, user_id)
+            mock_relationship_repo.find_relationship_by_id.return_value = pending_request
+            mock_relationship_repo.decline_friend_request.return_value = True
+
+            success, message, result = relationship_service.decline_friend_request(user_id, request_id)
 
         assert success is True
         assert message == "FRIEND_REQUEST_DECLINED_SUCCESS"
         assert result is not None
 
-    def test_remove_friend_success(self, relationship_service, mock_db):
+    def test_remove_friend_success(self, app, relationship_service, mock_relationship_repo):
         """Test successful friend removal"""
-        user_id = str(ObjectId())
-        friend_user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
+            friend_user_id = str(ObjectId())
 
-        # Mock existing friendship
-        friendship = {
-            "_id": ObjectId(),
-            "user_id": ObjectId(user_id),
-            "target_user_id": ObjectId(friend_user_id),
-            "relationship_type": "friend",
-            "status": "accepted"
-        }
-        mock_db.find_one.return_value = friendship
-        mock_db.delete_many.return_value = MagicMock(deleted_count=2)
+            # Mock existing friendship
+            friendship = MagicMock()
+            friendship.is_accepted.return_value = True
+            mock_relationship_repo.find_relationship_between_users.return_value = friendship
+            mock_relationship_repo.remove_friendship.return_value = True
 
-        success, message, result = relationship_service.remove_friend(user_id, friend_user_id)
+            success, message, result = relationship_service.remove_friend(user_id, friend_user_id)
 
         assert success is True
         assert message == "FRIEND_REMOVED_SUCCESS"
         assert result is not None
 
-    def test_remove_friend_not_friends(self, relationship_service, mock_db):
+    def test_remove_friend_not_friends(self, app, relationship_service, mock_relationship_repo):
         """Test removing non-existent friend"""
-        user_id = str(ObjectId())
-        friend_user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
+            friend_user_id = str(ObjectId())
 
-        mock_db.find_one.return_value = None
+            mock_relationship_repo.find_relationship_between_users.return_value = None
 
-        success, message, result = relationship_service.remove_friend(user_id, friend_user_id)
+            success, message, result = relationship_service.remove_friend(user_id, friend_user_id)
 
         assert success is False
-        assert message == "FRIENDSHIP_NOT_FOUND"
+        assert message == "FRIEND_RELATIONSHIP_NOT_FOUND"
         assert result is None
 
-    def test_get_friends_list_success(self, relationship_service, mock_db):
+    def test_get_friends_list_success(self, app, relationship_service, mock_relationship_repo):
         """Test getting friends list"""
-        user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
 
-        # Mock friends list
-        friends_data = [
-            {
-                "_id": ObjectId(),
-                "user_id": ObjectId(user_id),
-                "target_user_id": ObjectId(),
-                "relationship_type": "friend",
-                "status": "accepted",
-                "target_user_info": {
+            # Mock friends list
+            friends_data = [
+                {
                     "_id": ObjectId(),
-                    "email": "friend1@example.com",
-                    "first_name": "Friend",
-                    "last_name": "One"
+                    "user_id": ObjectId(user_id),
+                    "target_user_id": ObjectId(),
+                    "relationship_type": "friend",
+                    "status": "accepted",
+                    "target_user_info": {
+                        "_id": ObjectId(),
+                        "email": "friend1@example.com",
+                        "first_name": "Friend",
+                        "last_name": "One"
+                    }
                 }
-            }
-        ]
-        mock_db.aggregate.return_value = friends_data
+            ]
+            mock_relationship_repo.get_friends_list.return_value = friends_data
 
-        success, message, result = relationship_service.get_friends_list(user_id)
+            success, message, result = relationship_service.get_friends_list(user_id)
 
         assert success is True
-        assert message == "FRIENDS_LIST_RETRIEVED_SUCCESS"
+        assert message == "FRIENDS_LIST_SUCCESS"
         assert result is not None
-        assert len(result) == 1
+        assert "friends" in result
+        assert "pagination" in result
+        assert "total" in result
 
-    def test_get_friend_requests_success(self, relationship_service, mock_db):
+    def test_get_friend_requests_success(self, app, relationship_service, mock_relationship_repo):
         """Test getting friend requests"""
-        user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
 
-        # Mock friend requests
-        requests_data = [
-            {
-                "_id": ObjectId(),
-                "user_id": ObjectId(),
-                "target_user_id": ObjectId(user_id),
-                "relationship_type": "friend",
-                "status": "pending",
-                "requester_info": {
+            # Mock friend requests
+            requests_data = [
+                {
                     "_id": ObjectId(),
-                    "email": "requester@example.com",
-                    "first_name": "Request",
-                    "last_name": "User"
+                    "user_id": ObjectId(),
+                    "target_user_id": ObjectId(user_id),
+                    "relationship_type": "friend",
+                    "status": "pending",
+                    "requester_info": {
+                        "_id": ObjectId(),
+                        "email": "requester@example.com",
+                        "first_name": "Request",
+                        "last_name": "User"
+                    }
                 }
-            }
-        ]
-        mock_db.aggregate.return_value = requests_data
+            ]
+            mock_relationship_repo.get_friend_requests.return_value = requests_data
 
-        success, message, result = relationship_service.get_friend_requests(user_id, "received")
+            success, message, result = relationship_service.get_friend_requests(user_id, "received")
 
         assert success is True
-        assert message == "FRIEND_REQUESTS_RETRIEVED_SUCCESS"
+        assert message == "FRIEND_REQUESTS_SUCCESS"
         assert result is not None
-        assert len(result) == 1
+        assert "requests" in result
+        assert "pagination" in result
+        assert "total" in result
+        assert "type" in result
 
-    def test_block_user_success(self, relationship_service, mock_db):
+    def test_block_user_success(self, app, relationship_service, mock_relationship_repo, mock_user_repo):
         """Test successful user blocking"""
-        user_id = str(ObjectId())
-        target_user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
+            target_user_id = str(ObjectId())
 
-        # Mock no existing relationship
-        mock_db.find_one.return_value = None
-        mock_db.insert_one.return_value = MagicMock(inserted_id=ObjectId())
+            # Create mock users
+            blocker_user = MagicMock()
+            target_user = MagicMock()
 
-        success, message, result = relationship_service.block_user(user_id, target_user_id)
+            # Mock user repository
+            def mock_find_user_by_id(user_id_param):
+                if user_id_param == user_id:
+                    return blocker_user
+                elif user_id_param == target_user_id:
+                    return target_user
+                else:
+                    return None
+
+            mock_user_repo.find_user_by_id.side_effect = mock_find_user_by_id
+
+            # Mock relationship repository methods
+            mock_relationship_repo.is_blocked.return_value = False  # Not already blocked
+            mock_relationship_repo.find_relationship_between_users.return_value = None  # No existing friendship
+            mock_relationship_repo.create_relationship.return_value = str(ObjectId())
+
+            success, message, result = relationship_service.block_user(user_id, target_user_id)
 
         assert success is True
         assert message == "USER_BLOCKED_SUCCESS"
         assert result is not None
 
-    def test_unblock_user_success(self, relationship_service, mock_db):
+    def test_unblock_user_success(self, app, relationship_service, mock_relationship_repo):
         """Test successful user unblocking"""
-        user_id = str(ObjectId())
-        target_user_id = str(ObjectId())
+        with app.app_context():
+            user_id = str(ObjectId())
+            target_user_id = str(ObjectId())
 
-        # Mock existing block relationship
-        block_relationship = {
-            "_id": ObjectId(),
-            "user_id": ObjectId(user_id),
-            "target_user_id": ObjectId(target_user_id),
-            "relationship_type": "blocked",
-            "status": "active"
-        }
-        mock_db.find_one.return_value = block_relationship
-        mock_db.delete_one.return_value = MagicMock(deleted_count=1)
+            # Mock existing block relationship
+            block_relationship = MagicMock()
+            block_relationship.user_id = user_id  # Make sure user_id matches
+            mock_relationship_repo.find_relationship_between_users.return_value = block_relationship
+            mock_relationship_repo.delete_relationship.return_value = True
 
-        success, message, result = relationship_service.unblock_user(user_id, target_user_id)
+            success, message, result = relationship_service.unblock_user(user_id, target_user_id)
 
         assert success is True
         assert message == "USER_UNBLOCKED_SUCCESS"
         assert result is not None
 
-    def test_get_relationship_status_friends(self, relationship_service, mock_db):
-        """Test getting relationship status between friends"""
-        user_id = str(ObjectId())
-        target_user_id = str(ObjectId())
-
-        # Mock friendship
-        friendship = {
-            "_id": ObjectId(),
-            "user_id": ObjectId(user_id),
-            "target_user_id": ObjectId(target_user_id),
-            "relationship_type": "friend",
-            "status": "accepted"
-        }
-        mock_db.find_one.return_value = friendship
-
-        success, message, result = relationship_service.get_relationship_status(user_id, target_user_id)
-
-        assert success is True
-        assert message == "RELATIONSHIP_STATUS_RETRIEVED_SUCCESS"
-        assert result["status"] == "friends"
+    # Removed test_get_relationship_status_friends - method doesn't exist in RelationshipService
 
 
 class TestSocialDiscoveryService:
     """Test cases for SocialDiscoveryService"""
 
     @pytest.fixture
-    def discovery_service(self, mock_db):
-        """Create SocialDiscoveryService instance"""
-        return SocialDiscoveryService()
+    def mock_user_repo(self):
+        """Create mocked UserRepository"""
+        return MagicMock()
 
-    def test_search_users_success(self, discovery_service, mock_db):
+    @pytest.fixture
+    def mock_relationship_repo(self):
+        """Create mocked RelationshipRepository"""
+        return MagicMock()
+
+    @pytest.fixture
+    def discovery_service(self, mock_user_repo, mock_relationship_repo):
+        """Create SocialDiscoveryService instance with mocked dependencies"""
+        service = SocialDiscoveryService()
+        service.user_repository = mock_user_repo
+        service.relationship_repository = mock_relationship_repo
+        return service
+
+    def test_search_users_success(self, app, discovery_service, mock_user_repo, mock_relationship_repo):
         """Test successful user search"""
-        user_id = str(ObjectId())
-        search_query = "john"
-
-        with patch('app.core.repositories.user_repository.UserRepository') as mock_repo:
-            mock_repo_instance = mock_repo.return_value
-            mock_repo_instance.collection = mock_db
+        with app.app_context():
+            user_id = str(ObjectId())
+            search_query = "john"
 
             # Mock search results
             search_results = [
@@ -306,27 +365,21 @@ class TestSocialDiscoveryService:
                     "last_name": "Doe"
                 }
             ]
-            mock_db.find.return_value = search_results
+            mock_user_repo.search_users_by_name_or_email.return_value = search_results
+            mock_relationship_repo.get_user_relationships.return_value = []
 
             success, message, result = discovery_service.search_users(
-                user_id, search_query, privacy_level="public"
+                user_id, search_query
             )
 
-            assert success is True
-            assert message == "USER_SEARCH_SUCCESS"
-            assert result is not None
+        assert success is True
+        assert message == "SEARCH_USERS_SUCCESS"
+        assert result is not None
 
-    def test_get_friend_suggestions_success(self, discovery_service, mock_db):
+    def test_get_friend_suggestions_success(self, app, discovery_service, mock_user_repo, mock_relationship_repo):
         """Test getting friend suggestions"""
-        user_id = str(ObjectId())
-
-        with patch('app.core.repositories.user_repository.UserRepository') as mock_repo, \
-             patch('app.social.repositories.relationship_repository.RelationshipRepository') as mock_rel_repo:
-
-            mock_repo_instance = mock_repo.return_value
-            mock_rel_repo_instance = mock_rel_repo.return_value
-            mock_repo_instance.collection = mock_db
-            mock_rel_repo_instance.collection = mock_db
+        with app.app_context():
+            user_id = str(ObjectId())
 
             # Mock suggestions
             suggestions = [
@@ -337,13 +390,13 @@ class TestSocialDiscoveryService:
                     "last_name": "User"
                 }
             ]
-            mock_db.aggregate.return_value = suggestions
+            mock_relationship_repo.get_friend_suggestions.return_value = suggestions
 
             success, message, result = discovery_service.get_friend_suggestions(user_id)
 
-            assert success is True
-            assert message == "FRIEND_SUGGESTIONS_RETRIEVED_SUCCESS"
-            assert result is not None
+        assert success is True
+        assert message == "FRIEND_SUGGESTIONS_SUCCESS"
+        assert result is not None
 
 
 class TestSocialController:
@@ -528,6 +581,7 @@ class TestUserRelationshipModel:
             user_id=user_id,
             target_user_id=target_user_id,
             relationship_type="friend",
+            initiated_by=str(user_id),
             status="pending"
         )
 
@@ -541,10 +595,12 @@ class TestUserRelationshipModel:
 
     def test_relationship_to_dict(self):
         """Test relationship serialization"""
+        user_id = ObjectId()
         relationship = UserRelationship(
-            user_id=ObjectId(),
+            user_id=user_id,
             target_user_id=ObjectId(),
             relationship_type="friend",
+            initiated_by=str(user_id),
             status="accepted"
         )
 
