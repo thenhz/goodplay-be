@@ -253,7 +253,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
         def login_test():
             return self.service.login_user('test@example.com', 'password')
 
-        results = self.test_auth_scenarios(login_test, [
+        results = self.run_auth_scenarios(login_test, [
             'success',
             'fail_wrong_password',
             'fail_user_not_found',

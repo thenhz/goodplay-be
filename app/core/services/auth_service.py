@@ -59,6 +59,9 @@ class AuthService:
         
         if not user.is_active:
             return False, "ACCOUNT_DISABLED", None
+
+        if not user.is_verified:
+            return False, "ACCOUNT_NOT_VERIFIED", None
         
         try:
             tokens = self._generate_tokens(user)

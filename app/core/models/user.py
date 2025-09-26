@@ -229,7 +229,9 @@ class User:
             if not isinstance(gaming, dict):
                 return "GAMING_PREFERENCES_INVALID"
 
-            if 'difficulty_level' in gaming and gaming['difficulty_level'] not in ['easy', 'medium', 'hard']:
+            if 'difficulty_level' in gaming and gaming['difficulty_level'] not in ['easy', 'medium', 'hard', 'expert']:
+                return "GAMING_DIFFICULTY_INVALID"
+            if 'difficulty' in gaming and gaming['difficulty'] not in ['easy', 'medium', 'hard', 'expert']:
                 return "GAMING_DIFFICULTY_INVALID"
 
             if 'preferred_categories' in gaming and not isinstance(gaming['preferred_categories'], list):

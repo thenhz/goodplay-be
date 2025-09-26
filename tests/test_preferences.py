@@ -58,8 +58,16 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         # Mock user without preferences
         user_data = self.create_test_user_data()
         user_data['_id'] = 'test_user_id'  # Add missing _id
-        mock_user = self._create_mock_user_with_preferences(user_data, preferences={})
-        self.mock_preferences_repository.get_user_preferences.return_value = mock_user
+        mock_user_empty = self._create_mock_user_with_preferences(user_data, preferences={})
+
+        # Mock user with full preferences after defaults are created
+        user_with_defaults = self.create_test_user_with_preferences()
+        user_with_defaults['_id'] = 'test_user_id'
+        mock_user_with_defaults = self._create_mock_user_with_preferences(user_with_defaults)
+
+        # First call returns user without preferences, second call returns user with defaults
+        self.mock_preferences_repository.get_user_preferences.side_effect = [mock_user_empty, mock_user_with_defaults]
+        self.mock_preferences_repository.create_default_preferences.return_value = True
 
         success, message, result = self.service.get_user_preferences(user_data['_id'])
 
@@ -68,9 +76,11 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         assert result is not None
         assert "preferences" in result
 
-        # Should have default preferences
-        default_prefs = result["preferences"]
-        self.assert_preferences_valid(default_prefs)
+        # Should have default preferences - result already contains the preferences structure
+        self.assert_preferences_valid(result)
+
+        # Verify that create_default_preferences was called
+        self.mock_preferences_repository.create_default_preferences.assert_called_once_with('test_user_id')
 
     def test_update_preferences_success(self):
         """Test successful preferences update"""
@@ -128,7 +138,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         )
 
         assert success is False
-        assert "VALIDATION_ERROR" in message
+        assert message == "GAMING_DIFFICULTY_INVALID"
         assert result is None
 
     def test_update_preferences_partial_update(self):
@@ -163,8 +173,10 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         """Test resetting preferences to default values"""
         user_data = self.create_test_user_with_preferences()
         mock_user = self._create_mock_user_with_preferences(user_data)
+
+        # Mock the reset call and the user retrieval after reset
+        self.mock_preferences_repository.reset_to_defaults.return_value = True
         self.mock_preferences_repository.get_user_preferences.return_value = mock_user
-        self.mock_preferences_repository.update_preferences.return_value = True
 
         success, message, result = self.service.reset_user_preferences(user_data['_id'])
 
@@ -172,10 +184,12 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         assert message == "PREFERENCES_RESET_SUCCESS"
         assert result is not None
 
-        # Verify default preferences were applied
-        call_args = self.mock_preferences_repository.update_preferences.call_args[0]
-        reset_prefs = call_args[1]
-        self.assert_preferences_valid(reset_prefs)
+        # Verify reset_to_defaults was called
+        self.mock_preferences_repository.reset_to_defaults.assert_called_once_with(user_data['_id'])
+
+        # Verify result has preferences
+        assert "preferences" in result
+        self.assert_preferences_valid(result)
 
     def test_get_preferences_by_category_success(self):
         """Test retrieving preferences by specific category"""
@@ -280,7 +294,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
 
         # Test different preference configurations
         scenarios = {
-            'default_user': lambda: self.create_test_user(),
+            'default_user': lambda: self.create_test_user_data(),
             'gaming_user': lambda: self.create_test_user_with_preferences(gaming_focused=True),
             'privacy_user': lambda: self.create_test_user_with_preferences(privacy_focused=True)
         }
@@ -289,7 +303,10 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         for scenario_name, setup_func in scenarios.items():
             # Setup scenario
             user_data = setup_func()
-            self.mock_preferences_repository.get_user_preferences.return_value = user_data
+
+            # Create proper User object mock for the repository to return
+            mock_user = self._create_mock_user_with_preferences(user_data)
+            self.mock_preferences_repository.get_user_preferences.return_value = mock_user
 
             # Execute test
             results[scenario_name] = self.service.get_user_preferences(user_data.get('_id', 'test_id'))
