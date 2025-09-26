@@ -29,6 +29,25 @@ core_constants: &core_constants
   - `TOKEN_VALIDATION_FAILED` - Token validation failed
   - `ACCOUNT_DELETION_FAILED` - Failed to delete account
 
+  # User Profile and Stats
+  - `SOCIAL_PROFILE_UPDATED_SUCCESS` - Social profile updated successfully
+  - `GAMING_STATS_RETRIEVED_SUCCESS` - Gaming stats retrieved successfully
+  - `WALLET_RETRIEVED_SUCCESS` - Wallet information retrieved successfully
+  - `GAMING_STATS_UPDATED_SUCCESS` - Gaming stats updated successfully
+  - `CREDITS_ADDED_SUCCESS` - Credits added successfully
+  - `DONATION_SUCCESS` - Donation successful
+  - `AMOUNT_MUST_BE_POSITIVE` - Amount must be positive
+  - `INSUFFICIENT_CREDITS` - Insufficient credits
+  - `DONATION_FAILED` - Donation failed
+  - `UPDATE_FAILED` - User not found or update failed
+  - `PROFILE_UPDATE_ERROR` - Error updating profile
+  - `SOCIAL_PROFILE_UPDATE_ERROR` - Error updating social profile
+  - `GAMING_STATS_UPDATE_ERROR` - Error updating gaming stats
+  - `CREDITS_ADD_ERROR` - Error adding credits
+  - `DONATION_ERROR` - Error processing donation
+  - `INVALID_PRIVACY_LEVEL` - Invalid privacy level
+  - `DISPLAY_NAME_LENGTH_INVALID` - Display name must be between 2 and 50 characters
+
   # Preferences
   - `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
   - `PREFERENCES_UPDATED_SUCCESS` - Preferences updated successfully

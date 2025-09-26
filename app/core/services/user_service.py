@@ -13,9 +13,9 @@ class UserService:
         user = self.user_repository.find_user_by_id(user_id)
 
         if not user:
-            return False, "User not found", None
+            return False, "USER_NOT_FOUND", None
 
-        return True, "Profile retrieved successfully", {
+        return True, "PROFILE_RETRIEVED_SUCCESS", {
             "user": user.to_dict()
         }
 
@@ -24,7 +24,7 @@ class UserService:
         user = self.user_repository.find_user_by_id(user_id)
 
         if not user:
-            return False, "User not found", None
+            return False, "USER_NOT_FOUND", None
 
         try:
             # Update basic fields
@@ -44,13 +44,13 @@ class UserService:
 
             if success:
                 current_app.logger.info(f"Profile updated for user: {user.email}")
-                return True, "Profile updated successfully", {"user": user.to_dict()}
+                return True, "PROFILE_UPDATED_SUCCESS", {"user": user.to_dict()}
             else:
-                return False, "Failed to update profile", None
+                return False, "UPDATE_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Profile update error: {str(e)}")
-            return False, "Error updating profile", None
+            return False, "PROFILE_UPDATE_ERROR", None
 
 
     def update_social_profile(self, user_id: str, profile_data: Dict) -> Tuple[bool, str, Optional[Dict]]:
@@ -65,22 +65,22 @@ class UserService:
             if success:
                 user = self.user_repository.find_user_by_id(user_id)
                 current_app.logger.info(f"Social profile updated for user: {user_id}")
-                return True, "Social profile updated successfully", {"user": user.to_dict()}
+                return True, "SOCIAL_PROFILE_UPDATED_SUCCESS", {"user": user.to_dict()}
             else:
-                return False, "User not found or update failed", None
+                return False, "UPDATE_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Social profile update error: {str(e)}")
-            return False, "Error updating social profile", None
+            return False, "SOCIAL_PROFILE_UPDATE_ERROR", None
 
     def get_user_gaming_stats(self, user_id: str) -> Tuple[bool, str, Optional[Dict]]:
         """Get user gaming statistics"""
         user = self.user_repository.find_user_by_id(user_id)
 
         if not user:
-            return False, "User not found", None
+            return False, "USER_NOT_FOUND", None
 
-        return True, "Gaming stats retrieved successfully", {
+        return True, "GAMING_STATS_RETRIEVED_SUCCESS", {
             "gaming_stats": user.gaming_stats,
             "impact_score": user.impact_score
         }
@@ -90,9 +90,9 @@ class UserService:
         user = self.user_repository.find_user_by_id(user_id)
 
         if not user:
-            return False, "User not found", None
+            return False, "USER_NOT_FOUND", None
 
-        return True, "Wallet information retrieved successfully", {
+        return True, "WALLET_RETRIEVED_SUCCESS", {
             "wallet_credits": user.wallet_credits
         }
 
@@ -104,18 +104,18 @@ class UserService:
             if success:
                 user = self.user_repository.find_user_by_id(user_id)
                 current_app.logger.info(f"Gaming stats updated for user: {user_id}")
-                return True, "Gaming stats updated successfully", {"user": user.to_dict()}
+                return True, "GAMING_STATS_UPDATED_SUCCESS", {"user": user.to_dict()}
             else:
-                return False, "User not found or update failed", None
+                return False, "UPDATE_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Gaming stats update error: {str(e)}")
-            return False, "Error updating gaming stats", None
+            return False, "GAMING_STATS_UPDATE_ERROR", None
 
     def add_user_credits(self, user_id: str, amount: float, transaction_type: str = 'earned') -> Tuple[bool, str, Optional[Dict]]:
         """Add credits to user wallet"""
         if amount <= 0:
-            return False, "Amount must be positive", None
+            return False, "AMOUNT_MUST_BE_POSITIVE", None
 
         try:
             success = self.user_repository.update_wallet_credits(user_id, amount, transaction_type)
@@ -123,27 +123,27 @@ class UserService:
             if success:
                 user = self.user_repository.find_user_by_id(user_id)
                 current_app.logger.info(f"Credits added to user: {user_id}, amount: {amount}")
-                return True, f"Credits added successfully", {"user": user.to_dict()}
+                return True, "CREDITS_ADDED_SUCCESS", {"user": user.to_dict()}
             else:
-                return False, "User not found or update failed", None
+                return False, "UPDATE_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Add credits error: {str(e)}")
-            return False, "Error adding credits", None
+            return False, "CREDITS_ADD_ERROR", None
 
     def donate_user_credits(self, user_id: str, amount: float, onlus_id: str = None) -> Tuple[bool, str, Optional[Dict]]:
         """Donate user credits to ONLUS"""
         if amount <= 0:
-            return False, "Amount must be positive", None
+            return False, "AMOUNT_MUST_BE_POSITIVE", None
 
         try:
             user = self.user_repository.find_user_by_id(user_id)
 
             if not user:
-                return False, "User not found", None
+                return False, "USER_NOT_FOUND", None
 
             if user.wallet_credits['current_balance'] < amount:
-                return False, "Insufficient credits", None
+                return False, "INSUFFICIENT_CREDITS", None
 
             # Deduct from current balance and update donated total
             balance_success = self.user_repository.update_wallet_credits(user_id, -amount, 'balance_only')
@@ -153,13 +153,13 @@ class UserService:
             if success:
                 updated_user = self.user_repository.find_user_by_id(user_id)
                 current_app.logger.info(f"Credits donated by user: {user_id}, amount: {amount}")
-                return True, "Donation successful", {"user": updated_user.to_dict()}
+                return True, "DONATION_SUCCESS", {"user": updated_user.to_dict()}
             else:
-                return False, "Donation failed", None
+                return False, "DONATION_FAILED", None
 
         except Exception as e:
             current_app.logger.error(f"Donation error: {str(e)}")
-            return False, "Error processing donation", None
+            return False, "DONATION_ERROR", None
 
 
     def _validate_social_profile(self, profile_data: Dict) -> Optional[str]:
@@ -168,11 +168,11 @@ class UserService:
 
         if 'privacy_level' in profile_data:
             if profile_data['privacy_level'] not in valid_privacy_levels:
-                return f"Invalid privacy level. Must be one of: {', '.join(valid_privacy_levels)}"
+                return "INVALID_PRIVACY_LEVEL"
 
         if 'display_name' in profile_data:
             display_name = profile_data['display_name'].strip()
             if len(display_name) < 2 or len(display_name) > 50:
-                return "Display name must be between 2 and 50 characters"
+                return "DISPLAY_NAME_LENGTH_INVALID"
 
         return None
