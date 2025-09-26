@@ -77,7 +77,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         user_data = self.create_test_user_with_preferences()
         mock_user = self._create_mock_user_with_preferences(user_data)
         self.mock_preferences_repository.get_user_preferences.return_value = mock_user
-        self.mock_preferences_repository.update_user_preferences.return_value = True
+        self.mock_preferences_repository.update_preferences.return_value = True
 
         # Create update data using GOO-35 builder
         update_data = self.create_test_preferences(
@@ -94,7 +94,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         assert result is not None
 
         # Verify repository was called with correct data
-        self.mock_preferences_repository.update_user_preferences.assert_called_once()
+        self.mock_preferences_repository.update_preferences.assert_called_once()
 
     def test_update_preferences_user_not_found(self):
         """Test preferences update for non-existent user"""
@@ -136,7 +136,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         user_data = self.create_test_user_with_preferences()
         mock_user = self._create_mock_user_with_preferences(user_data)
         self.mock_preferences_repository.get_user_preferences.return_value = mock_user
-        self.mock_preferences_repository.update_user_preferences.return_value = True
+        self.mock_preferences_repository.update_preferences.return_value = True
 
         # Partial update - only gaming preferences
         partial_update = {
@@ -154,7 +154,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         assert message == "PREFERENCES_UPDATED_SUCCESS"
 
         # Verify merge happened correctly
-        call_args = self.mock_preferences_repository.update_user_preferences.call_args[0]
+        call_args = self.mock_preferences_repository.update_preferences.call_args[0]
         updated_prefs = call_args[1]
         assert updated_prefs['gaming']['difficulty'] == 'expert'
         assert updated_prefs['gaming']['auto_play'] is False
@@ -164,7 +164,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         user_data = self.create_test_user_with_preferences()
         mock_user = self._create_mock_user_with_preferences(user_data)
         self.mock_preferences_repository.get_user_preferences.return_value = mock_user
-        self.mock_preferences_repository.update_user_preferences.return_value = True
+        self.mock_preferences_repository.update_preferences.return_value = True
 
         success, message, result = self.service.reset_user_preferences(user_data['_id'])
 
@@ -173,7 +173,7 @@ class TestPreferencesServiceGOO35(BasePreferencesTest):
         assert result is not None
 
         # Verify default preferences were applied
-        call_args = self.mock_preferences_repository.update_user_preferences.call_args[0]
+        call_args = self.mock_preferences_repository.update_preferences.call_args[0]
         reset_prefs = call_args[1]
         self.assert_preferences_valid(reset_prefs)
 

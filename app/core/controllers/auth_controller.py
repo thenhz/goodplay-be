@@ -14,7 +14,7 @@ def register():
         data = request.get_json()
         
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
         
         email = data.get('email', '').strip()
         password = data.get('password', '').strip()
@@ -32,7 +32,7 @@ def register():
             
     except Exception as e:
         current_app.logger.error(f"Registration endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -40,7 +40,7 @@ def login():
         data = request.get_json()
         
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
         
         email = data.get('email', '').strip()
         password = data.get('password', '').strip()
@@ -54,7 +54,7 @@ def login():
             
     except Exception as e:
         current_app.logger.error(f"Login endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
@@ -71,16 +71,77 @@ def refresh():
             
     except Exception as e:
         current_app.logger.error(f"Token refresh endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 
 @auth_bp.route('/logout', methods=['POST'])
 @auth_required
 def logout(current_user):
     try:
-        return success_response("Logout successful")
+        return success_response("USER_LOGOUT_SUCCESS")
 
     except Exception as e:
         current_app.logger.error(f"Logout endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@auth_bp.route('/change-password', methods=['PUT'])
+@auth_required
+def change_password(current_user):
+    try:
+        data = request.get_json()
+
+        if not data:
+            return error_response("DATA_REQUIRED")
+
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not current_password or not new_password:
+            return error_response("CREDENTIALS_REQUIRED")
+
+        success, message, result = auth_service.change_password(
+            current_user.get_id(), current_password, new_password
+        )
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Change password endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@auth_bp.route('/validate-token', methods=['GET'])
+@auth_required
+def validate_token(current_user):
+    try:
+        success, message, result = auth_service.validate_token()
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message, status_code=401)
+
+    except Exception as e:
+        current_app.logger.error(f"Validate token endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@auth_bp.route('/delete-account', methods=['DELETE'])
+@auth_required
+def delete_account(current_user):
+    try:
+        success, message, result = auth_service.delete_account(current_user.get_id())
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Delete account endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 

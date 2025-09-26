@@ -142,11 +142,33 @@ Database entities and schemas are defined in each module's `models/` directory:
 - **Donations models**: `app/donations/models/` (Wallet, Transaction, etc.)
 - **ONLUS models**: `app/onlus/models/` (ONLUS, Campaign, etc.)
 
-### API Endpoints Documentation
-API endpoints and their descriptions are documented in:
-- **OpenAPI Specification**: `openapi.yaml` - Complete API documentation with schemas
-- **Controller modules**: Each feature's `controllers/` directory contains route implementations
-- **Postman Collection**: `GoodPlay_API.postman_collection.json` - API testing collection
+### API Documentation & Testing
+
+#### OpenAPI Specification (`docs/openapi/`)
+- **Main file**: `docs/openapi.yaml` - Complete API documentation with schemas and examples
+- **Module files**:
+  - `docs/openapi/core.yaml` - Authentication, user management, preferences
+  - `docs/openapi/games.yaml` - Game engine, sessions, challenges, teams
+  - `docs/openapi/social.yaml` - Social features, achievements, leaderboards
+- **Usage**:
+  - Import into Swagger UI for interactive documentation
+  - Use for frontend API client generation
+  - Reference for all endpoint contracts and response constants
+  - All possible response message constants are documented per endpoint
+
+#### Postman Collections (`docs/postman/`)
+- **Core Collection**: `docs/postman/core_collection.json` - Auth, users, preferences
+- **Games Collection**: `docs/postman/games_collection.json` - Game engine APIs
+- **Social Collection**: `docs/postman/social_collection.json` - Social features
+- **Environment Files**:
+  - `docs/postman/GoodPlay_Local.postman_environment.json` - Local development
+  - `docs/postman/GoodPlay_Production.postman_environment.json` - Production
+- **Usage**:
+  1. Import collections and environment into Postman
+  2. Set environment variables (`baseUrl`, `access_token`, etc.)
+  3. Use for manual API testing and development
+  4. Run collection tests for API validation
+  5. Export new requests when adding endpoints
 
 #### Game Engine APIs (50+ endpoints)
 - **Game Management**: `/api/games/*` - Core game and session management
@@ -163,7 +185,14 @@ API endpoints and their descriptions are documented in:
 4. **Create Service** in `app/{module}/services/` with business logic
 5. **Create Controller** in `app/{module}/controllers/` with route handlers
 6. **Register Blueprint** in module's `__init__.py` and main `app/__init__.py`
-7. **Update OpenAPI spec** in `openapi.yaml`
+7. **Update Documentation**:
+   - Add endpoint to appropriate `docs/openapi/{module}.yaml` file
+   - Add request to appropriate `docs/postman/{module}_collection.json`
+   - Include all possible response constants in OpenAPI examples
+8. **Test Implementation**:
+   - Write unit tests for new service methods
+   - Test endpoints using Postman collection
+   - Verify OpenAPI documentation matches implementation
 
 
 ### Code Standards
@@ -175,24 +204,81 @@ API endpoints and their descriptions are documented in:
 - Validate input data in services layer
 
 ### API Response Standards (🚨 CRITICAL FOR UI LOCALIZATION)
-- **ALL API responses MUST use constant message keys**: Never return dynamic text messages
-- **Message constants**: Use specific constant strings as documented in OpenAPI spec
-- **UI Localization**: Frontend will localize these constant keys to user's language
-- **OpenAPI Documentation**: All possible response constants are documented for each endpoint
-- **Examples**:
-  ```python
-  # ❌ WRONG - Dynamic message
-  return success_response("User John created successfully")
 
-  # ✅ CORRECT - Constant string matching OpenAPI documentation
-  return success_response("Registration completed successfully", {"user_id": user_id})
-  ```
+#### Mandatory Constant Message Usage
+- **🚨 ALL API responses MUST use constant message keys**: Never return dynamic text messages
+- **No Dynamic Content**: Messages must be static constants defined in OpenAPI specification
+- **UI Localization**: Frontend will translate these constant keys to user's preferred language
+- **Consistency**: Same constant must be used across all similar operations
+
+#### Message Constant Examples
+```python
+# ❌ WRONG - Dynamic/custom messages
+return success_response("User John created successfully")
+return error_response("Password must be longer")
+return success_response("Profile updated successfully")
+
+# ✅ CORRECT - Constants from OpenAPI spec
+return success_response("USER_REGISTRATION_SUCCESS", {"user_id": user_id})
+return error_response("PASSWORD_TOO_WEAK")
+return success_response("PROFILE_UPDATED_SUCCESS", user_data)
+```
+
+#### Available Constant Categories
+- **Authentication**: `USER_LOGIN_SUCCESS`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, etc.
+- **Profile Management**: `PROFILE_RETRIEVED_SUCCESS`, `PROFILE_UPDATED_SUCCESS`, etc.
+- **Password Management**: `PASSWORD_CHANGED_SUCCESS`, `CURRENT_PASSWORD_INCORRECT`, etc.
+- **System Errors**: `DATA_REQUIRED`, `INTERNAL_SERVER_ERROR`, `VALIDATION_ERROR`, etc.
+- **Account Management**: `ACCOUNT_DELETED_SUCCESS`, `ACCOUNT_DISABLED`, etc.
 
 ### Response Message Constants
 All API response message constants are documented in:
-- **OpenAPI specification**: `openapi.yaml` - Each endpoint lists all possible response messages
-- **Endpoint-specific**: Constants are documented per endpoint with examples
+- **OpenAPI specification**: `docs/openapi/core.yaml` - Complete list in `core_constants` section
+- **Endpoint-specific**: Each endpoint documents all possible response messages with examples
 - **UI Development**: Frontend developers can see exactly what messages each API call can return
+
+## API Documentation Usage Guide
+
+### Using OpenAPI Specification
+1. **For Frontend Development**:
+   ```bash
+   # Generate TypeScript client from OpenAPI spec
+   npx @openapitools/openapi-generator-cli generate \
+     -i docs/openapi.yaml \
+     -g typescript-axios \
+     -o frontend/src/api
+   ```
+
+2. **For Documentation**:
+   - Import `docs/openapi.yaml` into Swagger UI
+   - Use Redoc for API documentation websites
+   - Reference for all endpoint contracts and response constants
+
+3. **For Testing**:
+   - Validate API responses match documented schemas
+   - Ensure all response constants are documented
+   - Check endpoint parameters and request bodies
+
+### Using Postman Collections
+1. **Setup Environment**:
+   - Import environment file for your target (Local/Production)
+   - Set required variables: `baseUrl`, `test_email`, `test_password`
+   - After login, set `access_token` and `refresh_token`
+
+2. **Testing Workflow**:
+   ```
+   1. Health Check → Verify API is running
+   2. Register User → Create test account
+   3. Login User → Get authentication tokens
+   4. Test Protected Endpoints → Use with Bearer token
+   5. Run Collection → Automated testing
+   ```
+
+3. **Adding New Endpoints**:
+   - Create request in appropriate collection (core/games/social)
+   - Use environment variables for dynamic values
+   - Add tests for response validation
+   - Export and commit updated collection
 
 ### Security Best Practices
 - Never log sensitive data (passwords, tokens)
@@ -362,9 +448,14 @@ git push heroku main
 
 ## Notes for AI Assistant
 - **🚨 CRITICAL**: NEVER commit changes without explicit user instruction. Always wait for user to say "commit" or "committa"
-- **🚨 CRITICAL**: When adding/modifying/moving endpoints, ALWAYS update BOTH:
-  - OpenAPI spec in `openapi.yaml`
-  - Postman collection in `GoodPlay_API.postman_collection.json`
+- **🚨 CRITICAL**: ALL API responses MUST use constant message keys (never dynamic text):
+  - Use constants from `docs/openapi/core.yaml` core_constants section
+  - Examples: `USER_LOGIN_SUCCESS`, `INVALID_CREDENTIALS`, `DATA_REQUIRED`
+  - NEVER use dynamic messages like "User John created successfully"
+- **🚨 CRITICAL**: When adding/modifying/moving endpoints, ALWAYS update ALL documentation:
+  - OpenAPI spec in appropriate `docs/openapi/{module}.yaml` file
+  - Postman collection in appropriate `docs/postman/{module}_collection.json`
+  - Include all possible response constants in OpenAPI examples
 - **🚨 MANDATORY TESTING WORKFLOW**: After ANY code modification, you MUST:
   1. Create/update unit tests for the changed functionality
   2. Run `make test` to verify all tests pass

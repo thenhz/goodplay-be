@@ -185,3 +185,25 @@ class UserRepository(BaseRepository):
             migrated_count += 1
 
         return migrated_count
+
+    def update_password(self, user_id: str, password_hash: str) -> bool:
+        """Update user password hash"""
+        update_data = {
+            "$set": {
+                "password_hash": password_hash,
+                "updated_at": self._get_current_time()
+            }
+        }
+        return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
+
+    def delete_user(self, user_id: str) -> bool:
+        """Delete a user account (soft delete by setting is_active to False)"""
+        # For safety, we do soft delete instead of hard delete
+        update_data = {
+            "$set": {
+                "is_active": False,
+                "deleted_at": self._get_current_time(),
+                "updated_at": self._get_current_time()
+            }
+        }
+        return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0

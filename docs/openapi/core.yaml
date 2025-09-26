@@ -8,6 +8,9 @@ core_constants: &core_constants
   - `USER_LOGIN_SUCCESS` - User login success
   - `USER_LOGOUT_SUCCESS` - User logout success
   - `TOKEN_REFRESH_SUCCESS` - Token refresh success
+  - `PASSWORD_CHANGED_SUCCESS` - Password changed successfully
+  - `TOKEN_VALID` - Token validation successful
+  - `ACCOUNT_DELETED_SUCCESS` - Account deleted successfully
   - `PROFILE_RETRIEVED_SUCCESS` - Profile retrieved success
   - `PROFILE_UPDATED_SUCCESS` - Profile updated success
   - `EMAIL_ALREADY_REGISTERED` - Email already registered
@@ -16,9 +19,15 @@ core_constants: &core_constants
   - `CREDENTIALS_REQUIRED` - Email and password required
   - `INVALID_CREDENTIALS` - Invalid login credentials
   - `ACCOUNT_DISABLED` - Account disabled
+  - `ACCOUNT_NOT_VERIFIED` - Account not verified
   - `USER_NOT_FOUND` - User not found
   - `TOKEN_INVALID` - Invalid token
   - `TOKEN_EXPIRED` - Token expired
+  - `CURRENT_PASSWORD_INCORRECT` - Current password is incorrect
+  - `NEW_PASSWORD_TOO_WEAK` - New password must be at least 6 characters long
+  - `PASSWORD_CHANGE_FAILED` - Failed to update password
+  - `TOKEN_VALIDATION_FAILED` - Token validation failed
+  - `ACCOUNT_DELETION_FAILED` - Failed to delete account
 
   # Preferences
   - `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
@@ -168,6 +177,129 @@ paths:
               example:
                 success: true
                 message: "USER_LOGOUT_SUCCESS"
+
+  /api/auth/change-password:
+    put:
+      tags:
+        - Authentication
+      summary: Change password
+      description: Change user password with current password verification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - new_password
+              properties:
+                current_password:
+                  type: string
+                  description: Current password
+                new_password:
+                  type: string
+                  minLength: 6
+                  description: New password (minimum 6 characters)
+            example:
+              current_password: "oldpassword123"
+              new_password: "newpassword456"
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "PASSWORD_CHANGED_SUCCESS"
+        '400':
+          description: Password change failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                current_incorrect:
+                  value:
+                    success: false
+                    message: "CURRENT_PASSWORD_INCORRECT"
+                weak_password:
+                  value:
+                    success: false
+                    message: "NEW_PASSWORD_TOO_WEAK"
+
+  /api/auth/validate-token:
+    get:
+      tags:
+        - Authentication
+      summary: Validate token
+      description: Validate current JWT token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                          email:
+                            type: string
+              example:
+                success: true
+                message: "TOKEN_VALID"
+                data:
+                  user_id: "64f8b2c1234567890abcdef1"
+                  email: "user@example.com"
+        '401':
+          description: Token is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "TOKEN_INVALID"
+
+  /api/auth/delete-account:
+    delete:
+      tags:
+        - Authentication
+      summary: Delete account
+      description: Delete user account (soft delete)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "ACCOUNT_DELETED_SUCCESS"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "USER_NOT_FOUND"
 
   /api/auth/refresh:
     post:

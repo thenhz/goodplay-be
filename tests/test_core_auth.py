@@ -56,7 +56,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
         )
 
         # Assert failure response
-        self.assert_auth_response_failure((success, message, result), "Email already registered")
+        self.assert_auth_response_failure((success, message, result), "EMAIL_ALREADY_REGISTERED")
 
     def test_register_user_invalid_email(self):
         """Test registration with invalid email"""
@@ -64,7 +64,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "invalid-email", "password123", "Test", "User"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Invalid email format")
+        self.assert_auth_response_failure((success, message, result), "INVALID_EMAIL_FORMAT")
 
     def test_register_user_weak_password(self):
         """Test registration with weak password"""
@@ -72,7 +72,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "test@goodplay.com", "123", "Test", "User"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Password too short")
+        self.assert_auth_response_failure((success, message, result), "PASSWORD_TOO_WEAK")
 
     def test_register_user_creation_failed(self):
         """Test registration when user creation fails"""
@@ -82,7 +82,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "test@goodplay.com", "password123", "Test", "User"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Registration failed")
+        self.assert_auth_response_failure((success, message, result), "INTERNAL_SERVER_ERROR")
 
     def test_login_user_success(self):
         """Test successful user login"""
@@ -104,7 +104,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "test@goodplay.com", "wrongpassword"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Invalid credentials")
+        self.assert_auth_response_failure((success, message, result), "INVALID_CREDENTIALS")
 
     def test_login_user_not_found(self):
         """Test login with non-existent user"""
@@ -114,7 +114,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "notfound@goodplay.com", "password123"
         )
 
-        self.assert_auth_response_failure((success, message, result), "User not found")
+        self.assert_auth_response_failure((success, message, result), "INVALID_CREDENTIALS")
 
     def test_login_user_not_verified(self):
         """Test login with unverified user"""
@@ -124,7 +124,7 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "unverified@goodplay.com", "password123"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Account not verified")
+        self.assert_auth_response_failure((success, message, result), "ACCOUNT_NOT_VERIFIED")
 
     def test_login_user_inactive(self):
         """Test login with inactive user"""
@@ -134,85 +134,57 @@ class TestAuthServiceGOO35(BaseAuthTest):
             "inactive@goodplay.com", "password123"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Account suspended")
+        self.assert_auth_response_failure((success, message, result), "ACCOUNT_DISABLED")
 
     def test_refresh_token_success(self):
         """Test successful token refresh"""
         user_data = self.create_test_user()
-        self.mock_user_repository.find_by_id.return_value = user_data
+        mock_user = self._create_mock_user_object(user_data)
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
 
-        # Mock JWT identity to return user ID
-        self.mock_jwt_identity.return_value = user_data['_id']
+        success, message, result = self.service.refresh_token(user_data['_id'])
 
-        success, message, result = self.service.refresh_token()
-
-        self.assert_auth_response_success((success, message, result), expected_tokens=True)
+        assert success is True
+        assert message == "TOKEN_REFRESH_SUCCESS"
+        assert result is not None
+        assert 'access_token' in result
 
     def test_refresh_token_user_not_found(self):
         """Test token refresh with non-existent user"""
-        self.mock_jwt_identity.return_value = "nonexistent_id"
-        self.mock_user_repository.find_by_id.return_value = None
+        self.mock_user_repository.find_user_by_id.return_value = None
 
-        success, message, result = self.service.refresh_token()
+        success, message, result = self.service.refresh_token("nonexistent_id")
 
-        self.assert_auth_response_failure((success, message, result), "User not found")
+        self.assert_auth_response_failure((success, message, result), "USER_NOT_FOUND")
 
     def test_get_user_profile_success(self):
         """Test successful user profile retrieval"""
         user_data = self.create_test_user()
-        self.mock_user_repository.find_by_id.return_value = user_data
+        mock_user = self._create_mock_user_object(user_data)
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
 
         success, message, result = self.service.get_user_profile(user_data['_id'])
 
         assert success is True
-        assert message == "User profile retrieved successfully"
+        assert message == "PROFILE_RETRIEVED_SUCCESS"
         assert result is not None
-        assert result['_id'] == user_data['_id']
+        assert result['user']['_id'] == user_data['_id']
 
     def test_get_user_profile_not_found(self):
         """Test profile retrieval for non-existent user"""
-        self.mock_user_repository.find_by_id.return_value = None
+        self.mock_user_repository.find_user_by_id.return_value = None
 
         success, message, result = self.service.get_user_profile("nonexistent_id")
 
-        self.assert_auth_response_failure((success, message, result), "User not found")
+        self.assert_auth_response_failure((success, message, result), "USER_NOT_FOUND")
 
-    def test_update_user_profile_success(self):
-        """Test successful user profile update"""
-        user_data = self.create_test_user()
-        self.mock_user_repository.find_by_id.return_value = user_data
-        self.mock_user_repository.update_user_profile.return_value = True
-
-        update_data = {
-            "first_name": "Updated",
-            "last_name": "Name"
-        }
-
-        success, message, result = self.service.update_user_profile(
-            user_data['_id'], update_data
-        )
-
-        assert success is True
-        assert message == "Profile updated successfully"
-        assert result is not None
-
-    def test_update_user_profile_not_found(self):
-        """Test profile update for non-existent user"""
-        self.mock_user_repository.find_by_id.return_value = None
-
-        update_data = {"first_name": "Updated"}
-
-        success, message, result = self.service.update_user_profile(
-            "nonexistent_id", update_data
-        )
-
-        self.assert_auth_response_failure((success, message, result), "User not found")
 
     def test_change_password_success(self):
         """Test successful password change"""
         user_data = self.create_test_user()
-        self.mock_user_repository.find_by_id.return_value = user_data
-        self.mock_bcrypt_check.return_value = True  # Current password is correct
+        mock_user = self._create_mock_user_object(user_data)
+        mock_user.check_password.return_value = True  # Current password is correct
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
         self.mock_user_repository.update_password.return_value = True
 
         success, message, result = self.service.change_password(
@@ -220,60 +192,61 @@ class TestAuthServiceGOO35(BaseAuthTest):
         )
 
         assert success is True
-        assert message == "Password changed successfully"
+        assert message == "PASSWORD_CHANGED_SUCCESS"
 
     def test_change_password_wrong_current(self):
         """Test password change with wrong current password"""
         user_data = self.create_test_user()
-        self.mock_user_repository.find_by_id.return_value = user_data
-        self.mock_bcrypt_check.return_value = False  # Current password is wrong
+        mock_user = self._create_mock_user_object(user_data)
+        mock_user.check_password.return_value = False  # Current password is wrong
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
 
         success, message, result = self.service.change_password(
             user_data['_id'], "wrongpassword", "newpassword123"
         )
 
-        self.assert_auth_response_failure((success, message, result), "Current password incorrect")
+        self.assert_auth_response_failure((success, message, result), "CURRENT_PASSWORD_INCORRECT")
 
     def test_validate_token_success(self):
         """Test successful token validation"""
         user_data = self.create_test_user()
-        self.mock_jwt_identity.return_value = user_data['_id']
-        self.mock_user_repository.find_by_id.return_value = user_data
+        mock_user = self._create_mock_user_object(user_data)
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
 
-        success, message, result = self.service.validate_token()
+        success, message, result = self.service.validate_token(user_data['_id'])
 
         assert success is True
-        assert message == "Token valid"
+        assert message == "TOKEN_VALID"
         assert result is not None
-        assert result['user_id'] == user_data['_id']
+        assert result['user_id'] == str(user_data['_id'])
 
     def test_validate_token_invalid_user(self):
         """Test token validation with invalid user"""
-        self.mock_jwt_identity.return_value = "invalid_user_id"
-        self.mock_user_repository.find_by_id.return_value = None
+        self.mock_user_repository.find_user_by_id.return_value = None
 
-        success, message, result = self.service.validate_token()
+        success, message, result = self.service.validate_token("invalid_user_id")
 
-        self.assert_auth_response_failure((success, message, result), "Invalid token")
+        self.assert_auth_response_failure((success, message, result), "TOKEN_INVALID")
 
     def test_delete_account_success(self):
         """Test successful account deletion"""
         user_data = self.create_test_user()
-        self.mock_user_repository.find_by_id.return_value = user_data
+        mock_user = self._create_mock_user_object(user_data)
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
         self.mock_user_repository.delete_user.return_value = True
 
         success, message, result = self.service.delete_account(user_data['_id'])
 
         assert success is True
-        assert message == "Account deleted successfully"
+        assert message == "ACCOUNT_DELETED_SUCCESS"
 
     def test_delete_account_not_found(self):
         """Test account deletion for non-existent user"""
-        self.mock_user_repository.find_by_id.return_value = None
+        self.mock_user_repository.find_user_by_id.return_value = None
 
         success, message, result = self.service.delete_account("nonexistent_id")
 
-        self.assert_auth_response_failure((success, message, result), "User not found")
+        self.assert_auth_response_failure((success, message, result), "USER_NOT_FOUND")
 
     def test_multiple_auth_scenarios(self):
         """Test multiple authentication scenarios using batch testing"""

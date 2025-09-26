@@ -18,7 +18,7 @@ def get_profile(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Get profile endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @user_bp.route('/profile', methods=['PUT'])
 @auth_required
@@ -27,7 +27,7 @@ def update_profile(current_user):
         data = request.get_json()
 
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
 
         success, message, result = user_service.update_user_profile(
             current_user.get_id(), data
@@ -40,7 +40,7 @@ def update_profile(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Update profile endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 
 @user_bp.route('/social-profile', methods=['PUT'])
@@ -50,7 +50,7 @@ def update_social_profile(current_user):
         data = request.get_json()
 
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
 
         success, message, result = user_service.update_social_profile(
             current_user.get_id(), data
@@ -63,7 +63,7 @@ def update_social_profile(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Update social profile endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @user_bp.route('/gaming-stats', methods=['GET'])
 @auth_required
@@ -80,7 +80,7 @@ def get_gaming_stats(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Get gaming stats endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @user_bp.route('/wallet', methods=['GET'])
 @auth_required
@@ -97,7 +97,7 @@ def get_wallet(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Get wallet endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @user_bp.route('/gaming-stats', methods=['PUT'])
 @auth_required
@@ -106,7 +106,7 @@ def update_gaming_stats(current_user):
         data = request.get_json()
 
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
 
         play_time = data.get('play_time', 0)
         game_category = data.get('game_category')
@@ -122,7 +122,7 @@ def update_gaming_stats(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Update gaming stats endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @user_bp.route('/credits', methods=['POST'])
 @auth_required
@@ -131,7 +131,7 @@ def add_credits(current_user):
         data = request.get_json()
 
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
 
         amount = data.get('amount', 0)
         transaction_type = data.get('transaction_type', 'earned')
@@ -147,7 +147,7 @@ def add_credits(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Add credits endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 @user_bp.route('/donate', methods=['POST'])
 @auth_required
@@ -156,7 +156,7 @@ def donate_credits(current_user):
         data = request.get_json()
 
         if not data:
-            return error_response("Data required")
+            return error_response("DATA_REQUIRED")
 
         amount = data.get('amount', 0)
         onlus_id = data.get('onlus_id')
@@ -172,4 +172,4 @@ def donate_credits(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Donate credits endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
