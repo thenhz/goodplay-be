@@ -3,6 +3,7 @@ from app.core.utils.decorators import auth_required
 from app.core.utils.responses import success_response, error_response
 from app.social.services.relationship_service import RelationshipService
 from app.social.services.social_discovery_service import SocialDiscoveryService
+from app.social.leaderboards.integration.hooks import trigger_social_activity
 
 social_bp = Blueprint('social', __name__)
 relationship_service = RelationshipService()
@@ -49,6 +50,17 @@ def accept_friend_request(current_user, relationship_id):
         )
 
         if success:
+            # Trigger Impact Score update via hook
+            try:
+                trigger_social_activity(
+                    current_user.get_id(),
+                    'friend_request_accepted',
+                    {'relationship_id': relationship_id}
+                )
+            except Exception as e:
+                # Log but don't fail the main operation
+                current_app.logger.warning(f"Failed to trigger social activity hook: {str(e)}")
+
             return success_response(message, result)
         else:
             return error_response(message)

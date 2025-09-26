@@ -57,13 +57,13 @@ def register_social_module(app):
 
     # Initialize impact score integration hooks
     try:
-        from .leaderboards.integration.hooks import setup_all_integrations
+        from .leaderboards.integration.hooks import register_integration_hooks
 
-        # Set up integrations immediately since all modules should be loaded by now
+        # Register event hooks for impact score integration
         with app.app_context():
-            setup_all_integrations()
+            register_integration_hooks()
 
     except Exception as e:
-        app.logger.error(f"Error setting up impact score integrations: {str(e)}")
+        app.logger.error(f"Error registering impact score integration hooks: {str(e)}")
 
 __all__ = ['register_social_module']

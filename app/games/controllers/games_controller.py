@@ -6,6 +6,7 @@ from app.core.utils.responses import success_response, error_response
 from ..services.game_service import GameService
 from ..services.game_session_service import GameSessionService
 from ..services.state_synchronizer import StateSynchronizer
+from app.social.leaderboards.integration.hooks import trigger_game_session_complete
 
 games_bp = Blueprint('games', __name__, url_prefix='/api/games')
 
@@ -282,6 +283,18 @@ def end_game_session(current_user, session_id):
         success, message, result = session_service.end_game_session(session_id, reason)
 
         if success:
+            # Trigger Impact Score update via hook
+            try:
+                session_data = result.get('session', {}) if result else {}
+                if session_data.get('user_id'):
+                    trigger_game_session_complete(
+                        str(session_data['user_id']),
+                        session_data
+                    )
+            except Exception as e:
+                # Log but don't fail the main operation
+                current_app.logger.warning(f"Failed to trigger impact score update: {str(e)}")
+
             return success_response(message, result)
         else:
             return error_response(message)

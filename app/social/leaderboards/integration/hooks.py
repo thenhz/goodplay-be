@@ -200,126 +200,22 @@ def trigger_tournament_complete(tournament_data: Dict[str, Any]) -> bool:
     return all(results)
 
 
-# Convenience functions for integration with existing services
-
-def integrate_with_game_service():
-    """
-    Integrate impact score updates with game service.
-    This should be called from the game service module.
-    """
-    try:
-        from app.games.services.game_session_service import GameSessionService
-
-        # Monkey patch the game session service to trigger impact score updates
-        original_end_session = GameSessionService.end_game_session
-
-        def end_session_with_impact_update(self, session_id: str, reason: str = "completed"):
-            # Call original method
-            result = original_end_session(self, session_id, reason)
-
-            # If successful, trigger impact score update
-            if result[0]:  # Assuming result is (success, message, data)
-                session_data = result[2] if len(result) > 2 else {}
-                if 'user_id' in session_data:
-                    trigger_game_session_complete(
-                        str(session_data['user_id']),
-                        session_data
-                    )
-
-            return result
-
-        # Replace the method
-        GameSessionService.end_game_session = end_session_with_impact_update
-
-        current_app.logger.info("Game service integration completed")
-        return True
-
-    except Exception as e:
-        current_app.logger.error(f"Error integrating with game service: {str(e)}")
-        return False
-
-
-def integrate_with_social_service():
-    """
-    Integrate impact score updates with social service.
-    This should be called from the social service module.
-    """
-    try:
-        from app.social.services.relationship_service import RelationshipService
-
-        # Monkey patch relationship service for friend activities
-        original_accept_request = RelationshipService.accept_friend_request
-
-        def accept_request_with_impact_update(self, current_user_id: str, request_id: str):
-            result = original_accept_request(self, current_user_id, request_id)
-
-            # Trigger impact score update for both users
-            if result[0]:  # Success
-                activity_data = {'request_id': request_id}
-
-                # Update for user who accepted
-                trigger_social_activity(
-                    current_user_id,
-                    'friend_request_accepted',
-                    activity_data
-                )
-
-                # Update for user who sent request (if we can determine it)
-                # This would require additional logic to find the requester
-
-            return result
-
-        RelationshipService.accept_friend_request = accept_request_with_impact_update
-
-        current_app.logger.info("Social service integration completed")
-        return True
-
-    except Exception as e:
-        current_app.logger.error(f"Error integrating with social service: {str(e)}")
-        return False
-
-
-def integrate_with_achievement_service():
-    """
-    Integrate impact score updates with achievement service.
-    Note: Disabled due to private method access issues.
-    """
-    try:
-        # Achievement integration disabled - the unlock_achievement method is private
-        # and should not be monkey-patched. Consider using event-based integration instead.
-        current_app.logger.info("Achievement service integration skipped (method is private)")
-        return False
-
-    except Exception as e:
-        current_app.logger.error(f"Error integrating with achievement service: {str(e)}")
-        return False
-
+# Setup function for event-based integrations only
 
 def setup_all_integrations():
     """
-    Set up all service integrations.
-    Call this during application initialization after all modules are loaded.
+    Set up event-based integration system.
+    Call this during application initialization.
     """
     try:
-        success_count = 0
-
-        # Register hooks first
+        # Register hooks for event-based integration
         if register_integration_hooks():
-            success_count += 1
-
-        # Integrate with services
-        if integrate_with_game_service():
-            success_count += 1
-
-        if integrate_with_social_service():
-            success_count += 1
-
-        if integrate_with_achievement_service():
-            success_count += 1
-
-        current_app.logger.info(f"Impact score integrations completed: {success_count}/3 successful")
-        return success_count == 3
+            current_app.logger.info("Event-based impact score integration completed successfully")
+            return True
+        else:
+            current_app.logger.error("Failed to register integration hooks")
+            return False
 
     except Exception as e:
-        current_app.logger.error(f"Error setting up integrations: {str(e)}")
+        current_app.logger.error(f"Error setting up event-based integrations: {str(e)}")
         return False
