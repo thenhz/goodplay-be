@@ -1,78 +1,72 @@
 {
   "info": {
-    "name": "GoodPlay Social API (GOO-7)",
-    "description": "Social features and relationships API endpoints\n\nThis collection covers:\n- Friend request management\n- Friends list and relationships\n- User blocking/unblocking\n- User discovery and search\n- Social statistics\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{token}}` - JWT access token\n- `{{targetUserId}}` - Target user ID for testing",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "social-api-collection"
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000",
-      "type": "string"
-    },
-    {
-      "key": "targetUserId",
-      "value": "64f8b2c1234567890abcdef2",
-      "type": "string"
-    }
-  ],
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{token}}",
-        "type": "string"
-      }
-    ]
+    "_postman_id": "e2dca6d5-3776-438b-b7c8-12285de0ab22",
+    "name": "GoodPlay Social API",
+    "description": "Social features and relationships API endpoints\n\nThis collection covers:\n- Friend management and requests\n- User blocking and privacy\n- Social search and suggestions\n- Relationship status tracking\n- Social statistics\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{friend_user_id}}` - Friend user ID\n- `{{relationship_id}}` - Relationship ID",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Friend Requests",
+      "name": "Friend Management",
       "item": [
         {
+          "name": "Get Friends List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/friends?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "friends"],
+              "query": [
+                {"key": "limit", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
           "name": "Send Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.relationship_id) {",
+                  "        pm.environment.set('relationship_id', responseJson.data.relationship_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"target_user_id\": \"{{targetUserId}}\"\n}"
+              "raw": "{\n    \"target_user_id\": \"{{friend_user_id}}\",\n    \"message\": \"Hi! Let's be friends and play together!\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/social/friends/request",
+              "raw": "{{baseUrl}}/api/social/friend-request",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "friends", "request"]
-            }
-          }
-        },
-        {
-          "name": "Accept Friend Request",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/social/friends/request/{{requestId}}/accept",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "friends", "request", "{{requestId}}", "accept"]
-            }
-          }
-        },
-        {
-          "name": "Decline Friend Request",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/social/friends/request/{{requestId}}/decline",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "friends", "request", "{{requestId}}", "decline"]
+              "path": ["api", "social", "friend-request"]
             }
           }
         },
@@ -80,45 +74,54 @@
           "name": "Get Friend Requests",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/social/friends/requests?type=received",
+              "raw": "{{baseUrl}}/api/social/friend-requests?type=received&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "friends", "requests"],
+              "path": ["api", "social", "friend-requests"],
               "query": [
-                {
-                  "key": "type",
-                  "value": "received",
-                  "description": "received, sent, or all"
-                }
+                {"key": "type", "value": "received"},
+                {"key": "limit", "value": "10"}
               ]
             }
           }
-        }
-      ]
-    },
-    {
-      "name": "Friends Management",
-      "item": [
+        },
         {
-          "name": "Get Friends List",
+          "name": "Accept Friend Request",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/social/friends?page=1&per_page=50",
+              "raw": "{{baseUrl}}/api/social/friend-request/{{relationship_id}}/accept",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "friends"],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "per_page",
-                  "value": "50"
-                }
-              ]
+              "path": ["api", "social", "friend-request", "{{relationship_id}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Decline Friend Request",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/friend-request/{{relationship_id}}/decline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "friend-request", "{{relationship_id}}", "decline"]
             }
           }
         },
@@ -126,18 +129,23 @@
           "name": "Remove Friend",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/social/friends/{{targetUserId}}",
+              "raw": "{{baseUrl}}/api/social/friends/{{friend_user_id}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "friends", "{{targetUserId}}"]
+              "path": ["api", "social", "friends", "{{friend_user_id}}"]
             }
           }
         }
       ]
     },
     {
-      "name": "User Blocking",
+      "name": "User Blocking & Privacy",
       "item": [
         {
           "name": "Block User",
@@ -147,37 +155,37 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"target_user_id\": \"{{targetUserId}}\"\n}"
+              "raw": "{\n    \"reason\": \"inappropriate_behavior\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/social/block",
+              "raw": "{{baseUrl}}/api/social/users/{{friend_user_id}}/block",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "block"]
+              "path": ["api", "social", "users", "{{friend_user_id}}", "block"]
             }
           }
         },
         {
           "name": "Unblock User",
           "request": {
-            "method": "POST",
+            "method": "DELETE",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"target_user_id\": \"{{targetUserId}}\"\n}"
-            },
             "url": {
-              "raw": "{{baseUrl}}/api/social/unblock",
+              "raw": "{{baseUrl}}/api/social/users/{{friend_user_id}}/unblock",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "unblock"]
+              "path": ["api", "social", "users", "{{friend_user_id}}", "unblock"]
             }
           }
         },
@@ -185,40 +193,49 @@
           "name": "Get Blocked Users",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/social/blocked",
+              "raw": "{{baseUrl}}/api/social/blocked-users?limit=20",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "blocked"]
+              "path": ["api", "social", "blocked-users"],
+              "query": [
+                {"key": "limit", "value": "20"}
+              ]
             }
           }
         }
       ]
     },
     {
-      "name": "User Discovery",
+      "name": "Social Search & Discovery",
       "item": [
         {
           "name": "Search Users",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"query\": \"john\",\n    \"filters\": {\n        \"location\": \"US\",\n        \"interests\": [\"gaming\", \"puzzles\"]\n    },\n    \"limit\": 15\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/social/search?query=john&limit=20",
+              "raw": "{{baseUrl}}/api/social/users/search",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "search"],
-              "query": [
-                {
-                  "key": "query",
-                  "value": "john",
-                  "description": "Search query (min 2 characters)"
-                },
-                {
-                  "key": "limit",
-                  "value": "20",
-                  "description": "Max results (1-50)"
-                }
-              ]
+              "path": ["api", "social", "users", "search"]
             }
           }
         },
@@ -226,17 +243,19 @@
           "name": "Get Friend Suggestions",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/social/suggestions?limit=10",
+              "raw": "{{baseUrl}}/api/social/users/suggestions?limit=10&type=mutual_friends",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "suggestions"],
+              "path": ["api", "social", "users", "suggestions"],
               "query": [
-                {
-                  "key": "limit",
-                  "value": "10",
-                  "description": "Max suggestions (1-20)"
-                }
+                {"key": "limit", "value": "10"},
+                {"key": "type", "value": "mutual_friends"}
               ]
             }
           }
@@ -250,11 +269,16 @@
           "name": "Get Relationship Status",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/social/relationship/{{targetUserId}}",
+              "raw": "{{baseUrl}}/api/social/relationship-status/{{friend_user_id}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "social", "relationship", "{{targetUserId}}"]
+              "path": ["api", "social", "relationship-status", "{{friend_user_id}}"]
             }
           }
         }
@@ -267,7 +291,12 @@
           "name": "Get Social Stats",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/social/stats",
               "host": ["{{baseUrl}}"],
@@ -283,37 +312,32 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [
-          "// Set default target user ID if not exists",
-          "if (!pm.environment.get('targetUserId')) {",
-          "    pm.environment.set('targetUserId', '64f8b2c1234567890abcdef2');",
-          "}"
-        ]
+        "exec": [""]
       }
     },
     {
       "listen": "test",
       "script": {
         "type": "text/javascript",
-        "exec": [
-          "pm.test('Status code is successful', function () {",
-          "    pm.response.to.have.status.oneOf([200, 201, 204]);",
-          "});",
-          "",
-          "pm.test('Response has success field', function () {",
-          "    const responseJson = pm.response.json();",
-          "    pm.expect(responseJson).to.have.property('success');",
-          "});",
-          "",
-          "// Store request ID for subsequent requests",
-          "if (pm.response.json().success && pm.response.json().data) {",
-          "    const data = pm.response.json().data;",
-          "    if (data.request_id) {",
-          "        pm.environment.set('requestId', data.request_id);",
-          "    }",
-          "}"
-        ]
+        "exec": [""]
       }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "friend_user_id",
+      "value": "friend-user-id-123",
+      "type": "string"
+    },
+    {
+      "key": "relationship_id",
+      "value": "",
+      "type": "string"
     }
   ]
 }

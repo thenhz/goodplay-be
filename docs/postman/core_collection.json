@@ -1,18 +1,24 @@
 {
   "info": {
+    "_postman_id": "62f8be36-f1d3-4a29-a6cf-e22263a1092c",
     "name": "GoodPlay Core API",
-    "description": "Core authentication, user management, and preferences API endpoints\n\nThis collection covers:\n- User registration and authentication\n- Profile management\n- Preferences and settings\n- Health checks\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{token}}` - JWT access token\n- `{{refreshToken}}` - JWT refresh token",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "core-api-collection"
+    "description": "Core authentication, user management, and preferences API endpoints\n\nThis collection covers:\n- User registration and authentication\n- Profile management\n- Preferences and settings\n- Health checks\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{refresh_token}}` - JWT refresh token\n- `{{test_email}}` - Test user email\n- `{{test_password}}` - Test user password",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000",
-      "type": "string"
-    }
-  ],
   "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      },
+      "response": []
+    },
     {
       "name": "Authentication",
       "item": [
@@ -26,10 +32,15 @@
                   "if (pm.response.code === 201) {",
                   "    const responseJson = pm.response.json();",
                   "    if (responseJson.data && responseJson.data.user_id) {",
-                  "        pm.environment.set('userId', responseJson.data.user_id);",
+                  "        pm.environment.set('user_id', responseJson.data.user_id);",
+                  "    }",
+                  "    if (responseJson.data && responseJson.data.tokens) {",
+                  "        pm.environment.set('access_token', responseJson.data.tokens.access_token);",
+                  "        pm.environment.set('refresh_token', responseJson.data.tokens.refresh_token);",
                   "    }",
                   "}"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -43,7 +54,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\"\n}"
+              "raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\",\n    \"first_name\": \"Test\",\n    \"last_name\": \"User\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
@@ -61,12 +72,16 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "    const responseJson = pm.response.json();",
-                  "    if (responseJson.data) {",
-                  "        pm.environment.set('token', responseJson.data.access_token);",
-                  "        pm.environment.set('refreshToken', responseJson.data.refresh_token);",
+                  "    if (responseJson.data && responseJson.data.tokens) {",
+                  "        pm.environment.set('access_token', responseJson.data.tokens.access_token);",
+                  "        pm.environment.set('refresh_token', responseJson.data.tokens.refresh_token);",
+                  "    }",
+                  "    if (responseJson.data && responseJson.data.user && responseJson.data.user.id) {",
+                  "        pm.environment.set('user_id', responseJson.data.user.id);",
                   "    }",
                   "}"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -80,7 +95,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -91,18 +106,30 @@
         },
         {
           "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.access_token) {",
+                  "        pm.environment.set('access_token', responseJson.data.access_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "Authorization",
+                "value": "Bearer {{refresh_token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/api/auth/refresh",
               "host": ["{{baseUrl}}"],
@@ -117,7 +144,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
@@ -133,44 +160,153 @@
       "name": "User Management",
       "item": [
         {
-          "name": "Get User Profile",
+          "name": "Get Profile",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/users/profile",
+              "raw": "{{baseUrl}}/api/user/profile",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "profile"]
+              "path": ["api", "user", "profile"]
             }
           }
         },
         {
-          "name": "Update User Profile",
+          "name": "Update Profile",
           "request": {
             "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Updated\",\n  \"last_name\": \"Name\"\n}"
+              "raw": "{\n    \"first_name\": \"Updated\",\n    \"last_name\": \"Name\",\n    \"display_name\": \"UpdatedUser\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/users/profile",
+              "raw": "{{baseUrl}}/api/user/profile",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "profile"]
+              "path": ["api", "user", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get Gaming Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/gaming-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "gaming-stats"]
+            }
+          }
+        },
+        {
+          "name": "Update Gaming Stats",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"total_play_time\": 1200,\n    \"games_played\": 5,\n    \"favorite_category\": \"puzzle\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/gaming-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "gaming-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/wallet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "wallet"]
+            }
+          }
+        },
+        {
+          "name": "Add Credits",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amount\": 100,\n    \"source\": \"game_completion\",\n    \"description\": \"Completed puzzle game\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/credits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "credits"]
+            }
+          }
+        },
+        {
+          "name": "Donate Credits",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amount\": 50,\n    \"onlus_id\": \"save_the_trees_2024\",\n    \"message\": \"Supporting environmental causes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/donate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "donate"]
             }
           }
         }
@@ -186,7 +322,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
@@ -202,17 +338,17 @@
             "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"gaming\": {\n    \"difficulty_level\": \"hard\",\n    \"sound_enabled\": false\n  },\n  \"notifications\": {\n    \"frequency\": \"weekly\"\n  }\n}"
+              "raw": "{\n    \"notification_enabled\": true,\n    \"preferred_game_categories\": [\"puzzle\", \"strategy\"],\n    \"donation_frequency\": \"weekly\",\n    \"privacy_level\": \"friends\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/preferences",
@@ -222,13 +358,13 @@
           }
         },
         {
-          "name": "Get Gaming Preferences",
+          "name": "Get Category Preferences",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}"
+                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
@@ -239,22 +375,22 @@
           }
         },
         {
-          "name": "Update Gaming Preferences",
+          "name": "Update Category Preferences",
           "request": {
             "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"difficulty_level\": \"hard\",\n  \"sound_enabled\": true,\n  \"music_enabled\": false\n}"
+              "raw": "{\n    \"difficulty_level\": \"intermediate\",\n    \"sound_enabled\": true,\n    \"auto_save\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/preferences/gaming",
@@ -262,21 +398,92 @@
               "path": ["api", "preferences", "gaming"]
             }
           }
-        }
-      ]
-    },
-    {
-      "name": "Health Check",
-      "item": [
+        },
         {
-          "name": "API Health Check",
+          "name": "Reset Preferences",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/preferences/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "preferences", "reset"]
+            }
+          }
+        },
+        {
+          "name": "Get Default Preferences",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/health",
+              "raw": "{{baseUrl}}/api/preferences/defaults",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "health"]
+              "path": ["api", "preferences", "defaults"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Test Cases",
+      "item": [
+        {
+          "name": "Register - Invalid Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login - Wrong Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Access Protected Route - No Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "profile"]
             }
           }
         }
@@ -285,25 +492,25 @@
   ],
   "event": [
     {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
       "listen": "test",
       "script": {
         "type": "text/javascript",
-        "exec": [
-          "pm.test('Status code is successful', function () {",
-          "    pm.response.to.have.status.oneOf([200, 201, 204]);",
-          "});",
-          "",
-          "pm.test('Response has success field', function () {",
-          "    const responseJson = pm.response.json();",
-          "    pm.expect(responseJson).to.have.property('success');",
-          "});",
-          "",
-          "pm.test('Response has message field', function () {",
-          "    const responseJson = pm.response.json();",
-          "    pm.expect(responseJson).to.have.property('message');",
-          "});"
-        ]
+        "exec": [""]
       }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
     }
   ]
 }

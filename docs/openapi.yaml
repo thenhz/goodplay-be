@@ -34,7 +34,7 @@ info:
     ## Module Documentation
     - **Core Module**: [core.yaml](./core.yaml) - Authentication & user management
     - **Social Module**: [social.yaml](./social.yaml) - Social features & relationships
-    - **Games Module**: [games.yaml](./games.yaml) - Game engine & session management
+    - **Games Module**: [games.yaml](./games.yaml) - Game engine, sessions, modes, challenges & teams
     - **Leaderboards Module**: [leaderboards.yaml](./leaderboards.yaml) - Impact scores & rankings
 
   version: 1.0.0
@@ -62,13 +62,19 @@ tags:
   - name: Social
     description: Social features, friends, and relationships
 
-  # Games Module Tags (GOO-8, GOO-9)
+  # Games Module Tags (GOO-8, GOO-9, GOO-10)
   - name: Games
     description: Game engine, plugins, and sessions
   - name: Game Sessions
     description: Game session management and state
   - name: Session Sync
     description: Cross-device session synchronization
+  - name: Game Modes
+    description: Temporary game modes with scheduling
+  - name: Game Challenges
+    description: Direct player challenges and matchmaking
+  - name: Game Teams
+    description: Global teams and tournaments
   - name: Tournaments
     description: Tournament and competition management
   - name: Challenges
@@ -170,6 +176,54 @@ paths:
   /api/games/sessions/conflicts:
     $ref: './games.yaml#/paths/~1api~1games~1sessions~1conflicts'
 
+  # Import Game Modes paths
+  /api/modes/current:
+    $ref: './games.yaml#/paths/~1api~1modes~1current'
+  /api/modes/active:
+    $ref: './games.yaml#/paths/~1api~1modes~1active'
+  /api/modes/schedule:
+    $ref: './games.yaml#/paths/~1api~1modes~1schedule'
+  /api/modes/{mode_name}/activate:
+    $ref: './games.yaml#/paths/~1api~1modes~1{mode_name}~1activate'
+  /api/modes/{mode_name}/deactivate:
+    $ref: './games.yaml#/paths/~1api~1modes~1{mode_name}~1deactivate'
+  /api/modes/statistics:
+    $ref: './games.yaml#/paths/~1api~1modes~1statistics'
+
+  # Import Game Challenges paths
+  /api/challenges:
+    $ref: './games.yaml#/paths/~1api~1challenges'
+  /api/challenges/public:
+    $ref: './games.yaml#/paths/~1api~1challenges~1public'
+  /api/challenges/{challenge_id}/join:
+    $ref: './games.yaml#/paths/~1api~1challenges~1{challenge_id}~1join'
+  /api/challenges/{challenge_id}/accept:
+    $ref: './games.yaml#/paths/~1api~1challenges~1{challenge_id}~1accept'
+  /api/challenges/{challenge_id}/decline:
+    $ref: './games.yaml#/paths/~1api~1challenges~1{challenge_id}~1decline'
+  /api/challenges/my:
+    $ref: './games.yaml#/paths/~1api~1challenges~1my'
+  /api/challenges/matchmaking/find-opponent:
+    $ref: './games.yaml#/paths/~1api~1challenges~1matchmaking~1find-opponent'
+  /api/challenges/matchmaking/quick-match:
+    $ref: './games.yaml#/paths/~1api~1challenges~1matchmaking~1quick-match'
+
+  # Import Game Teams paths
+  /api/teams:
+    $ref: './games.yaml#/paths/~1api~1teams'
+  /api/teams/my-team:
+    $ref: './games.yaml#/paths/~1api~1teams~1my-team'
+  /api/teams/join:
+    $ref: './games.yaml#/paths/~1api~1teams~1join'
+  /api/teams/leave:
+    $ref: './games.yaml#/paths/~1api~1teams~1leave'
+  /api/teams/{team_id}/members:
+    $ref: './games.yaml#/paths/~1api~1teams~1{team_id}~1members'
+  /api/teams/leaderboard:
+    $ref: './games.yaml#/paths/~1api~1teams~1leaderboard'
+  /api/teams/record-contribution:
+    $ref: './games.yaml#/paths/~1api~1teams~1record-contribution'
+
   # Import Leaderboards module paths
   /api/social/impact-score/me:
     $ref: './leaderboards.yaml#/paths/~1api~1social~1impact-score~1me'
@@ -242,6 +296,12 @@ components:
       $ref: './games.yaml#/components/schemas/SessionSyncRequest'
     SessionSyncResponse:
       $ref: './games.yaml#/components/schemas/SessionSyncResponse'
+    GameMode:
+      $ref: './games.yaml#/components/schemas/GameMode'
+    Challenge:
+      $ref: './games.yaml#/components/schemas/Challenge'
+    GlobalTeam:
+      $ref: './games.yaml#/components/schemas/GlobalTeam'
 
     # Leaderboards schemas
     ImpactScoreResponse:

@@ -52,25 +52,6 @@ class UserService:
             current_app.logger.error(f"Profile update error: {str(e)}")
             return False, "Error updating profile", None
 
-    def update_user_preferences(self, user_id: str, preferences: Dict) -> Tuple[bool, str, Optional[Dict]]:
-        """Update user preferences only"""
-        validation_error = self._validate_preferences(preferences)
-        if validation_error:
-            return False, validation_error, None
-
-        try:
-            success = self.user_repository.update_preferences(user_id, preferences)
-
-            if success:
-                user = self.user_repository.find_user_by_id(user_id)
-                current_app.logger.info(f"Preferences updated for user: {user_id}")
-                return True, "Preferences updated successfully", {"user": user.to_dict()}
-            else:
-                return False, "User not found or update failed", None
-
-        except Exception as e:
-            current_app.logger.error(f"Preferences update error: {str(e)}")
-            return False, "Error updating preferences", None
 
     def update_social_profile(self, user_id: str, profile_data: Dict) -> Tuple[bool, str, Optional[Dict]]:
         """Update user social profile only"""
@@ -180,23 +161,6 @@ class UserService:
             current_app.logger.error(f"Donation error: {str(e)}")
             return False, "Error processing donation", None
 
-    def _validate_preferences(self, preferences: Dict) -> Optional[str]:
-        """Validate preferences data"""
-        valid_frequencies = ['daily', 'weekly', 'monthly', 'never']
-
-        if 'donation_frequency' in preferences:
-            if preferences['donation_frequency'] not in valid_frequencies:
-                return f"Invalid donation frequency. Must be one of: {', '.join(valid_frequencies)}"
-
-        if 'notification_enabled' in preferences:
-            if not isinstance(preferences['notification_enabled'], bool):
-                return "notification_enabled must be a boolean"
-
-        if 'preferred_game_categories' in preferences:
-            if not isinstance(preferences['preferred_game_categories'], list):
-                return "preferred_game_categories must be a list"
-
-        return None
 
     def _validate_social_profile(self, profile_data: Dict) -> Optional[str]:
         """Validate social profile data"""

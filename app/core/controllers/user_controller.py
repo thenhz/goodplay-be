@@ -42,27 +42,6 @@ def update_profile(current_user):
         current_app.logger.error(f"Update profile endpoint error: {str(e)}")
         return error_response("Internal server error", status_code=500)
 
-@user_bp.route('/preferences', methods=['PUT'])
-@auth_required
-def update_preferences(current_user):
-    try:
-        data = request.get_json()
-
-        if not data:
-            return error_response("Data required")
-
-        success, message, result = user_service.update_user_preferences(
-            current_user.get_id(), data
-        )
-
-        if success:
-            return success_response(message, result)
-        else:
-            return error_response(message)
-
-    except Exception as e:
-        current_app.logger.error(f"Update preferences endpoint error: {str(e)}")
-        return error_response("Internal server error", status_code=500)
 
 @user_bp.route('/social-profile', methods=['PUT'])
 @auth_required

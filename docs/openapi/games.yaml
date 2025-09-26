@@ -740,3 +740,638 @@ components:
           type: integer
         total_sessions:
           type: integer
+
+  # Game Modes Endpoints
+  /api/modes/current:
+    get:
+      tags:
+        - Game Modes
+      summary: Get current available game modes
+      description: Retrieve currently available game modes for users
+      responses:
+        '200':
+          description: Current modes retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available_modes:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/GameMode'
+
+  /api/modes/active:
+    get:
+      tags:
+        - Game Modes
+      summary: Get active modes (Admin only)
+      description: Get all currently active modes - admin access required
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active modes retrieved successfully
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Admin access required
+
+  /api/modes/schedule:
+    get:
+      tags:
+        - Game Modes
+      summary: Get mode schedule information
+      description: Get schedule information for game modes
+      parameters:
+        - name: mode_name
+          in: query
+          schema:
+            type: string
+          description: Specific mode name to get schedule for
+      responses:
+        '200':
+          description: Mode schedule retrieved successfully
+
+    post:
+      tags:
+        - Game Modes
+      summary: Schedule mode activation (Admin only)
+      description: Schedule a mode activation for future execution
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mode_name
+                - scheduled_at
+              properties:
+                mode_name:
+                  type: string
+                scheduled_at:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                config_override:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Mode activation scheduled successfully
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Admin access required
+
+  /api/modes/{mode_name}/activate:
+    post:
+      tags:
+        - Game Modes
+      summary: Activate game mode (Admin only)
+      description: Manually activate a specific game mode
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: mode_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the mode to activate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Mode activated successfully
+        '400':
+          description: Invalid mode name or date format
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Admin access required
+
+  /api/modes/{mode_name}/deactivate:
+    post:
+      tags:
+        - Game Modes
+      summary: Deactivate game mode (Admin only)
+      description: Manually deactivate a specific game mode
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: mode_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the mode to deactivate
+      responses:
+        '200':
+          description: Mode deactivated successfully
+        '400':
+          description: Invalid mode name
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Admin access required
+
+  /api/modes/statistics:
+    get:
+      tags:
+        - Game Modes
+      summary: Get mode statistics (Admin only)
+      description: Get detailed statistics about game modes usage
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Mode statistics retrieved successfully
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Admin access required
+
+  # Game Challenges Endpoints
+  /api/challenges:
+    post:
+      tags:
+        - Game Challenges
+      summary: Create a new challenge
+      description: Create a 1v1 or NvN challenge between players
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - challenge_type
+                - game_id
+              properties:
+                challenge_type:
+                  type: string
+                  enum: ['1v1', 'NvN']
+                game_id:
+                  type: string
+                challenged_id:
+                  type: string
+                  description: Required for 1v1 challenges
+                max_participants:
+                  type: integer
+                  description: Required for NvN challenges
+                  minimum: 3
+                  maximum: 20
+                min_participants:
+                  type: integer
+                  minimum: 2
+                timeout_minutes:
+                  type: integer
+                  default: 60
+                game_config:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Challenge created successfully
+        '400':
+          description: Invalid challenge data
+        '401':
+          description: Authentication required
+
+  /api/challenges/public:
+    get:
+      tags:
+        - Game Challenges
+      summary: Get public challenges
+      description: Retrieve available public challenges that players can join
+      parameters:
+        - name: game_id
+          in: query
+          schema:
+            type: string
+          description: Filter by specific game
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: Public challenges retrieved successfully
+
+  /api/challenges/{challenge_id}/join:
+    post:
+      tags:
+        - Game Challenges
+      summary: Join a challenge
+      description: Join an existing public challenge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully joined challenge
+        '400':
+          description: Cannot join challenge (full, ended, etc.)
+        '401':
+          description: Authentication required
+        '404':
+          description: Challenge not found
+
+  /api/challenges/{challenge_id}/accept:
+    post:
+      tags:
+        - Game Challenges
+      summary: Accept a challenge
+      description: Accept a direct challenge invitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Challenge accepted successfully
+        '400':
+          description: Cannot accept challenge
+        '401':
+          description: Authentication required
+        '404':
+          description: Challenge not found
+
+  /api/challenges/{challenge_id}/decline:
+    post:
+      tags:
+        - Game Challenges
+      summary: Decline a challenge
+      description: Decline a direct challenge invitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Challenge declined successfully
+        '401':
+          description: Authentication required
+        '404':
+          description: Challenge not found
+
+  /api/challenges/my:
+    get:
+      tags:
+        - Game Challenges
+      summary: Get user's challenges
+      description: Get challenges created by or involving the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, completed, cancelled]
+          description: Filter by challenge status
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: User challenges retrieved successfully
+        '401':
+          description: Authentication required
+
+  /api/challenges/matchmaking/find-opponent:
+    post:
+      tags:
+        - Game Challenges
+        - Matchmaking
+      summary: Find an opponent for matchmaking
+      description: Find a suitable opponent based on skill level and preferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - game_id
+              properties:
+                game_id:
+                  type: string
+                challenge_type:
+                  type: string
+                  enum: ['1v1', 'NvN']
+                  default: '1v1'
+                skill_range:
+                  type: integer
+                  default: 100
+                  description: Acceptable skill level difference
+      responses:
+        '200':
+          description: Opponent found successfully
+        '404':
+          description: No suitable opponent found
+        '401':
+          description: Authentication required
+
+  /api/challenges/matchmaking/quick-match:
+    post:
+      tags:
+        - Game Challenges
+        - Matchmaking
+      summary: Find a quick match
+      description: Quickly find any available opponent for immediate play
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - game_id
+              properties:
+                game_id:
+                  type: string
+      responses:
+        '200':
+          description: Quick match found successfully
+        '404':
+          description: No matches available
+        '401':
+          description: Authentication required
+
+  # Game Teams Endpoints
+  /api/teams:
+    get:
+      tags:
+        - Game Teams
+      summary: Get all global teams
+      description: Retrieve list of all available global teams
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Only return active teams
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          teams:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/GlobalTeam'
+
+  /api/teams/my-team:
+    get:
+      tags:
+        - Game Teams
+      summary: Get user's current team
+      description: Get the team that the current user belongs to
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User team retrieved successfully
+        '404':
+          description: User not assigned to any team
+        '401':
+          description: Authentication required
+
+  /api/teams/join:
+    post:
+      tags:
+        - Game Teams
+      summary: Join or auto-assign to team
+      description: Join a specific team or get auto-assigned to a team
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team_id:
+                  type: string
+                  description: Specific team to join (optional - will auto-assign if not provided)
+      responses:
+        '200':
+          description: Successfully joined team
+        '400':
+          description: Cannot join team (full, user already in team, etc.)
+        '401':
+          description: Authentication required
+
+  /api/teams/leave:
+    post:
+      tags:
+        - Game Teams
+      summary: Leave current team
+      description: Leave the user's current team
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully left team
+        '400':
+          description: User not in any team
+        '401':
+          description: Authentication required
+
+  /api/teams/{team_id}/members:
+    get:
+      tags:
+        - Game Teams
+      summary: Get team members
+      description: Get list of members in a specific team
+      parameters:
+        - name: team_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Team members retrieved successfully
+        '404':
+          description: Team not found
+
+  /api/teams/leaderboard:
+    get:
+      tags:
+        - Game Teams
+      summary: Get team leaderboard
+      description: Get ranking of all teams based on their scores and contributions
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        '200':
+          description: Team leaderboard retrieved successfully
+
+  /api/teams/record-contribution:
+    post:
+      tags:
+        - Game Teams
+      summary: Record game contribution
+      description: Record a game score contribution for the user's team
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - score
+              properties:
+                score:
+                  type: number
+                  format: float
+                game_type:
+                  type: string
+                  default: 'individual'
+      responses:
+        '200':
+          description: Contribution recorded successfully
+        '400':
+          description: Invalid score or user not in team
+        '401':
+          description: Authentication required
+
+    GameMode:
+      type: object
+      properties:
+        mode_name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        config:
+          type: object
+          additionalProperties: true
+
+    Challenge:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+        challenge_type:
+          type: string
+          enum: ['1v1', 'NvN']
+        game_id:
+          type: string
+        challenger_id:
+          type: string
+        challenged_id:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, active, completed, cancelled]
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        game_config:
+          type: object
+          additionalProperties: true
+
+    GlobalTeam:
+      type: object
+      properties:
+        team_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        icon_url:
+          type: string
+        member_count:
+          type: integer
+        total_score:
+          type: number
+          format: float
+        rank:
+          type: integer
+        is_active:
+          type: boolean

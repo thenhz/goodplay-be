@@ -1,0 +1,679 @@
+{
+  "info": {
+    "_postman_id": "51e1695c-50f7-4c76-a238-4b0a10d25aa4",
+    "name": "GoodPlay Social Challenges API",
+    "description": "Social challenges and interactions API endpoints\n\nThis collection covers:\n- Challenge creation and management\n- Challenge discovery and search\n- Challenge participation and progress\n- Social interactions (cheers, comments, reactions)\n- Challenge templates and customization\n- Activity feeds and notifications\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{challenge_id}}` - Current challenge ID\n- `{{interaction_id}}` - Interaction ID\n- `{{template_type}}` - Template type",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Challenge Management",
+      "item": [
+        {
+          "name": "Create Gaming Challenge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.challenge_id) {",
+                  "        pm.environment.set('challenge_id', responseJson.data.challenge_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Speed Run Challenge\",\n    \"description\": \"Complete any puzzle game as fast as possible!\",\n    \"challenge_type\": \"gaming_social\",\n    \"category\": \"speed_run\",\n    \"game_id\": \"puzzle_master_v1\",\n    \"target_metric\": \"completion_time\",\n    \"target_value\": 300,\n    \"max_participants\": 8,\n    \"duration_hours\": 48,\n    \"is_public\": true,\n    \"friends_only\": false,\n    \"allow_cheering\": true,\n    \"allow_comments\": true,\n    \"rewards\": {\n        \"winner_credits\": 150,\n        \"participant_credits\": 30,\n        \"winner_badges\": [\"speed_demon\"],\n        \"participant_badges\": [\"challenger\"]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges"]
+            }
+          }
+        },
+        {
+          "name": "Create Social Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Friend Referral Challenge\",\n    \"description\": \"Invite 3 new friends to join GoodPlay!\",\n    \"challenge_type\": \"social_engagement\",\n    \"category\": \"friend_referral\",\n    \"target_metric\": \"friends_invited\",\n    \"target_value\": 3,\n    \"max_participants\": 15,\n    \"duration_hours\": 168,\n    \"is_public\": true,\n    \"allow_cheering\": true,\n    \"allow_comments\": true,\n    \"rewards\": {\n        \"winner_credits\": 200,\n        \"participant_credits\": 50,\n        \"winner_badges\": [\"social_butterfly\"],\n        \"participant_badges\": [\"networker\"]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges"]
+            }
+          }
+        },
+        {
+          "name": "Create Impact Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Donation Race Challenge\",\n    \"description\": \"Help reach our community donation goal of $1000!\",\n    \"challenge_type\": \"impact_challenge\",\n    \"category\": \"donation_race\",\n    \"onlus_id\": \"save_the_trees_2024\",\n    \"target_metric\": \"donation_amount\",\n    \"target_value\": 1000.0,\n    \"max_participants\": 25,\n    \"duration_hours\": 168,\n    \"is_public\": true,\n    \"allow_cheering\": true,\n    \"allow_comments\": true,\n    \"rewards\": {\n        \"winner_credits\": 300,\n        \"participant_credits\": 75,\n        \"winner_badges\": [\"champion_donor\"],\n        \"participant_badges\": [\"earth_protector\"]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges"]
+            }
+          }
+        },
+        {
+          "name": "Get Challenge Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get My Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/my?status=active&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "my"],
+              "query": [
+                {"key": "status", "value": "active"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challenge Discovery",
+      "item": [
+        {
+          "name": "Discover Public Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/discover/public?limit=15&category=gaming_social",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "discover", "public"],
+              "query": [
+                {"key": "limit", "value": "15"},
+                {"key": "category", "value": "gaming_social"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Discover Friend Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/discover/friends?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "discover", "friends"],
+              "query": [
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Recommended Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/discover/recommended?limit=8",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "discover", "recommended"],
+              "query": [
+                {"key": "limit", "value": "8"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/search?query=speed&category=gaming_social&limit=12",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "search"],
+              "query": [
+                {"key": "query", "value": "speed"},
+                {"key": "category", "value": "gaming_social"},
+                {"key": "limit", "value": "12"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trending Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/trending?limit=8",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "trending"],
+              "query": [
+                {"key": "limit", "value": "8"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challenge Participation",
+      "item": [
+        {
+          "name": "Join Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"player_name\": \"SpeedRunner123\",\n    \"message\": \"Ready to break some records!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "join"]
+            }
+          }
+        },
+        {
+          "name": "Leave Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "leave"]
+            }
+          }
+        },
+        {
+          "name": "Start Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "start"]
+            }
+          }
+        },
+        {
+          "name": "Update Progress",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"score\": 1250.5,\n    \"completion_time_ms\": 185000,\n    \"completion_percentage\": 75.0,\n    \"game_data\": {\n        \"level_reached\": 12,\n        \"accuracy\": 0.89,\n        \"power_ups_used\": 3\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "progress"]
+            }
+          }
+        },
+        {
+          "name": "Get Challenge Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/leaderboard?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "leaderboard"],
+              "query": [
+                {"key": "limit", "value": "20"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social Interactions",
+      "item": [
+        {
+          "name": "Add Cheer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"target_user_id\": \"{{friend_user_id}}\",\n    \"message\": \"Great job! Keep it up! 🎉\",\n    \"cheer_type\": \"encouragement\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/cheer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "cheer"]
+            }
+          }
+        },
+        {
+          "name": "Add Comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.interaction_id) {",
+                  "        pm.environment.set('interaction_id', responseJson.data.interaction_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"This challenge looks amazing! Can't wait to participate 🚀\",\n    \"reply_to\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/comment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "comment"]
+            }
+          }
+        },
+        {
+          "name": "Like Interaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/interactions/{{interaction_id}}/like",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "interactions", "{{interaction_id}}", "like"]
+            }
+          }
+        },
+        {
+          "name": "Reply to Interaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"I totally agree! This is going to be fun!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/interactions/{{interaction_id}}/reply",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "interactions", "{{interaction_id}}", "reply"]
+            }
+          }
+        },
+        {
+          "name": "Get Challenge Activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/activity?limit=20&type=all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "activity"],
+              "query": [
+                {"key": "limit", "value": "20"},
+                {"key": "type", "value": "all"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challenge Templates",
+      "item": [
+        {
+          "name": "Get Available Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/templates?category=gaming",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "templates"],
+              "query": [
+                {"key": "category", "value": "gaming"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create from Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"template_id\": \"speed_run_template\",\n    \"customizations\": {\n        \"name\": \"My Custom Speed Run\",\n        \"game_id\": \"my_favorite_game\",\n        \"target_value\": 180,\n        \"max_participants\": 8,\n        \"duration_hours\": 48\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/templates/{{template_type}}/speed_run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "templates", "{{template_type}}", "speed_run"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challenge Invitations",
+      "item": [
+        {
+          "name": "Invite Friends to Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"friend_ids\": [\"{{friend_user_id}}\", \"friend-2-id\"],\n    \"personal_message\": \"Hey! Check out this awesome challenge I created!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/invite",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "invite"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challenge Achievements",
+      "item": [
+        {
+          "name": "Get Challenge Achievements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/{{challenge_id}}/achievements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "{{challenge_id}}", "achievements"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Operations",
+      "item": [
+        {
+          "name": "Cleanup Expired Challenges (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/social/challenges/cleanup/expired",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "social", "challenges", "cleanup", "expired"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "challenge_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "interaction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "template_type",
+      "value": "gaming",
+      "type": "string"
+    },
+    {
+      "key": "friend_user_id",
+      "value": "friend-user-id-123",
+      "type": "string"
+    }
+  ]
+}
