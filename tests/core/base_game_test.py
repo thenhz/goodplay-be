@@ -165,6 +165,23 @@ class BaseGameTest(BaseServiceTest):
 
     # Game-specific utility methods
 
+    def create_test_user(self, email: str = None, role: str = 'user', **kwargs) -> Dict[str, Any]:
+        """Create test user data for game scenarios"""
+        from tests.utils import user
+
+        # Generate unique email if not provided
+        if email is None:
+            import time
+            email = f"gameuser_{int(time.time() * 1000)}@test.com"
+
+        return (user()
+                .with_email(email)
+                .as_type(role)
+                .with_field('is_active', True)
+                .with_field('is_verified', True)
+                .merge(kwargs)
+                .build())
+
     def create_test_game(self, category: str = 'puzzle', difficulty: str = 'medium', **kwargs) -> Dict[str, Any]:
         """Create test game data with game-specific defaults"""
         from tests.utils import game

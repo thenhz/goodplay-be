@@ -148,6 +148,139 @@ class BaseAuthTest(BaseServiceTest):
         else:
             raise ValueError(f"Unknown failure type: {failure_type}")
 
+    def assert_user_valid(self, user_data: Dict[str, Any], expected_role: str = 'user'):
+        """Assert user data is valid with expected properties"""
+        assert user_data is not None, "User data should not be None"
+        assert '_id' in user_data, "User should have an ID"
+        assert 'email' in user_data, "User should have an email"
+        assert 'role' in user_data, "User should have a role"
+        assert user_data['role'] == expected_role, f"Expected role {expected_role}, got {user_data['role']}"
+        assert 'is_active' in user_data, "User should have is_active field"
+        assert 'created_at' in user_data, "User should have created_at field"
+
+    def create_test_auth_data(self, email: str = "test@example.com", verified: bool = True, **kwargs) -> Dict[str, Any]:
+        """Create authentication-specific test data"""
+        auth_data = self.create_test_user(email=email, verified=verified, **kwargs)
+        auth_data.update({
+            'password_hash': 'hashed_password_example',
+            'is_verified': verified
+        })
+        return auth_data
+
+    def create_verified_user_scenario(self) -> Dict[str, Any]:
+        """Create a verified user test scenario"""
+        user = self.create_test_user(verified=True, is_active=True)
+        return {
+            'user': user,
+            'scenario_type': 'verified_user',
+            'expected_auth': True
+        }
+
+    def create_test_user_with_preferences(self, **kwargs) -> Dict[str, Any]:
+        """Create test user with preferences structure"""
+        user = self.create_test_user(**kwargs)
+        user['preferences'] = {
+            'gaming': {
+                'difficulty_level': 'medium',
+                'tutorial_enabled': True,
+                'preferred_categories': ['puzzle', 'strategy'],
+                'sound_enabled': True,
+                'music_enabled': True
+            },
+            'notifications': {
+                'push_enabled': True,
+                'email_enabled': False,
+                'frequency': 'daily',
+                'achievement_alerts': True
+            },
+            'privacy': {
+                'profile_visibility': 'public',
+                'stats_sharing': True,
+                'activity_visibility': 'friends'
+            },
+            'donations': {
+                'auto_donate_enabled': False,
+                'auto_donate_percentage': 0.0,
+                'preferred_causes': ['education', 'health']
+            },
+            'accessibility': {
+                'high_contrast': False,
+                'large_text': False,
+                'screen_reader': False
+            },
+            'meta': {
+                'version': '1.0',
+                'last_updated': user.get('updated_at')
+            }
+        }
+        return user
+
+    def create_custom_gaming_preferences(self, difficulty_level: str = "medium", tutorial_enabled: bool = True, sound_enabled: bool = True) -> Dict[str, Any]:
+        """Create user with custom gaming preferences"""
+        user = self.create_test_user()
+        user['preferences'] = {
+            'gaming': {
+                'difficulty_level': difficulty_level,
+                'tutorial_enabled': tutorial_enabled,
+                'preferred_categories': ['puzzle', 'strategy', 'action'],
+                'sound_enabled': sound_enabled,
+                'music_enabled': True
+            },
+            'notifications': {},
+            'privacy': {},
+            'donations': {},
+            'accessibility': {},
+            'meta': {'version': '1.0'}
+        }
+        return user
+
+    def create_custom_notification_preferences(self, push_enabled: bool = True, email_enabled: bool = False, frequency: str = "daily") -> Dict[str, Any]:
+        """Create user with custom notification preferences"""
+        user = self.create_test_user()
+        user['preferences'] = {
+            'gaming': {},
+            'notifications': {
+                'push_enabled': push_enabled,
+                'email_enabled': email_enabled,
+                'frequency': frequency,
+                'achievement_alerts': True
+            },
+            'privacy': {},
+            'donations': {},
+            'accessibility': {},
+            'meta': {'version': '1.0'}
+        }
+        return user
+
+    def create_privacy_preferences(self, privacy_level: str = 'medium') -> Dict[str, Any]:
+        """Create user with privacy preferences"""
+        privacy_settings = {
+            'low': {'profile_visibility': 'public', 'stats_sharing': True, 'activity_visibility': 'public'},
+            'medium': {'profile_visibility': 'friends', 'stats_sharing': True, 'activity_visibility': 'friends'},
+            'high': {'profile_visibility': 'private', 'stats_sharing': False, 'activity_visibility': 'private'}
+        }
+
+        user = self.create_test_user()
+        user['preferences'] = {
+            'gaming': {},
+            'notifications': {},
+            'privacy': privacy_settings.get(privacy_level, privacy_settings['medium']),
+            'donations': {},
+            'accessibility': {},
+            'meta': {'version': '1.0'}
+        }
+        return user
+
+    def assert_auth_response_success(self, response_tuple, expected_tokens: bool = False):
+        """Assert that an auth service response indicates success"""
+        success, message, result = response_tuple
+        assert success is True, f"Expected success, but got failure: {message}"
+        assert message is not None, "Message should not be None"
+        assert result is not None, "Result should not be None for successful auth"
+
+        if expected_tokens:
+            assert 'tokens' in result or 'access_token' in result, "Expected tokens in successful auth response"
+
     def mock_registration_scenario(self, scenario: str = 'success'):
         """Mock user registration scenarios"""
         if scenario == 'success':
@@ -237,7 +370,7 @@ class BaseAuthTest(BaseServiceTest):
 
     # Batch testing utilities
 
-    def test_auth_scenarios(self, test_func, scenarios: List[str]):
+    def run_auth_scenarios(self, test_func, scenarios: List[str]):
         """Test multiple authentication scenarios"""
         results = {}
 

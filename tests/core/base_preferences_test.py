@@ -217,6 +217,33 @@ class BasePreferencesTest(BaseServiceTest):
         }
         return self.create_test_preferences(**accessibility_overrides)
 
+    def create_custom_gaming_preferences(self, difficulty_level: str = "medium", tutorial_enabled: bool = True, sound_enabled: bool = True, **kwargs) -> Dict[str, Any]:
+        """Create user with custom gaming preferences"""
+        gaming_overrides = {
+            'gaming': {
+                'difficulty_level': difficulty_level,
+                'tutorial_enabled': tutorial_enabled,
+                'preferred_categories': ['puzzle', 'strategy', 'action'],
+                'sound_enabled': sound_enabled,
+                'music_enabled': True,
+                **kwargs
+            }
+        }
+        return self.create_test_preferences(**gaming_overrides)
+
+    def create_custom_notification_preferences(self, push_enabled: bool = True, email_enabled: bool = False, frequency: str = "daily", **kwargs) -> Dict[str, Any]:
+        """Create user with custom notification preferences"""
+        notification_overrides = {
+            'notifications': {
+                'push_enabled': push_enabled,
+                'email_enabled': email_enabled,
+                'frequency': frequency,
+                'achievement_alerts': True,
+                **kwargs
+            }
+        }
+        return self.create_test_preferences(**notification_overrides)
+
     # Preference validation utilities
 
     def assert_preferences_valid(self, preferences: Dict[str, Any], category: str = None):
@@ -362,7 +389,7 @@ class BasePreferencesTest(BaseServiceTest):
 
     # Preference testing utilities
 
-    def test_preference_category_combinations(self, test_func, categories: List[str] = None):
+    def run_preference_category_combinations(self, test_func, categories: List[str] = None):
         """Test function with different preference category combinations"""
         categories = categories or ['gaming', 'notifications', 'privacy', 'donations']
         results = {}

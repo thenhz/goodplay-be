@@ -138,7 +138,7 @@ class TestAchievementSystemGOO35(BaseSocialTest):
             }
         )
 
-        self.assertEqual(notification['notification_type'], 'achievement')
+        self.assertEqual(notification['type'], 'achievement')
         self.assertEqual(notification['content']['progress'], 5)
         self.assertEqual(notification['content']['target'], 7)
 
