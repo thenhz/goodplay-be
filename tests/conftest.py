@@ -35,6 +35,17 @@ except ImportError as e:
     user = game = session = achievement = None
     assert_user_valid = assert_service_response_pattern = None
 
+# Import GOO-35 Base Test Classes for test classification
+try:
+    from tests.core.base_unit_test import BaseUnitTest
+    from tests.core.base_service_test import BaseServiceTest
+    from tests.core.base_controller_test import BaseControllerTest
+    from tests.core.base_integration_test import BaseIntegrationTest
+except ImportError as e:
+    # Fallback if some base classes not available yet
+    print(f"⚠️ Some GOO-35 base classes not available: {e}")
+    BaseUnitTest = BaseServiceTest = BaseControllerTest = BaseIntegrationTest = object
+
 # Set testing environment (now handled by TestConfig, but kept for compatibility)
 os.environ['TESTING'] = 'true'
 
@@ -704,7 +715,10 @@ def enhanced_performance_monitoring(request, test_config_instance, performance_c
     yield
 
     duration = test_config_instance.end_test_timing(test_name)
-    threshold = performance_config.goo35_test_threshold if uses_goo35 else performance_config.slow_test_threshold
+    # Safely access thresholds with fallbacks
+    goo35_threshold = getattr(performance_config, 'goo35_test_threshold', 0.5)
+    legacy_threshold = getattr(performance_config, 'slow_test_threshold', 2.0)
+    threshold = goo35_threshold if uses_goo35 else legacy_threshold
 
     if duration > threshold:
         test_type = "GOO-35" if uses_goo35 else "Legacy"

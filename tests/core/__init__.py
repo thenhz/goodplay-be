@@ -12,8 +12,8 @@ Components:
 """
 
 from .config import TestConfig
-from .test_base import TestBase
 from .utils import TestUtils
+from .test_base import TestBase
 
 # Import all interfaces
 from .interfaces import (
