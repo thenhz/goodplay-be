@@ -10,6 +10,7 @@ import logging
 from typing import Dict, Any, Callable, Optional, Type
 from unittest.mock import MagicMock, patch, Mock
 from abc import ABC
+from flask import Flask
 
 # Import configuration
 from .config import TestConfig
@@ -66,6 +67,9 @@ class BaseServiceTest(unittest.TestCase):
         """Enhanced setup for service layer testing"""
         super().setUp()
 
+        # Setup Flask application context
+        self._setup_flask_context()
+
         # Initialize Smart Fixture integration
         self._setup_smart_fixture_integration()
 
@@ -79,13 +83,17 @@ class BaseServiceTest(unittest.TestCase):
 
     def tearDown(self):
         """Enhanced teardown with Smart Fixture cleanup"""
+        # Cleanup Flask context
+        if hasattr(self, 'app_context'):
+            self.app_context.pop()
+
         # Cleanup Smart Fixtures for this test
         if SMART_FIXTURES_AVAILABLE and cleanup_manager:
             try:
                 if hasattr(cleanup_manager, 'cleanup_fixture_scope'):
                     cleanup_manager.cleanup_fixture_scope('function')
-                elif hasattr(cleanup_manager, 'cleanup_fixture'):
-                    cleanup_manager.cleanup_fixture()
+                # Skip cleanup_fixture() call since it requires fixture_name parameter
+                # and we're not tracking individual fixture names in this context
             except Exception as e:
                 print(f"Warning: Smart Fixture cleanup failed: {e}")
 
@@ -94,6 +102,31 @@ class BaseServiceTest(unittest.TestCase):
 
         # Parent teardown
         super().tearDown()
+
+    def _setup_flask_context(self):
+        """Setup Flask application context for services that use current_app"""
+        # Create minimal Flask app for testing if none exists
+        if not hasattr(self, 'app'):
+            from flask import Flask
+            self.app = Flask(__name__)
+            self.app.config['TESTING'] = True
+            self.app.config['SECRET_KEY'] = 'test-secret-key'
+            self.app.config['JWT_SECRET_KEY'] = 'jwt-test-secret-key'
+
+        # Setup application context
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+
+        # Mock current_app.logger to prevent Flask context errors
+        self.current_app_patcher = patch('flask.current_app')
+        mock_current_app = self.current_app_patcher.start()
+        mock_logger = MagicMock()
+        mock_current_app.logger = mock_logger
+        self.mock_current_app = mock_current_app
+        self.mock_logger = mock_logger
+
+        # Ensure cleanup
+        self.addCleanup(self.current_app_patcher.stop)
 
     def _setup_smart_fixture_integration(self):
         """Initialize Smart Fixture system for service testing"""

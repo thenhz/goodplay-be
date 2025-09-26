@@ -27,18 +27,18 @@ class BaseSocialTest(BaseServiceTest):
     """
 
     # Default dependencies for social tests
-    default_dependencies = [
+    repository_dependencies = [
         'user_repository',
         'achievement_repository',
         'leaderboard_repository',
-        'social_graph_service',
-        'achievement_service',
-        'team_service',
-        'notification_service'
     ]
 
     # External dependencies for social features
-    default_external_dependencies = [
+    external_dependencies = [
+        'social_graph_service',
+        'achievement_service',
+        'team_service',
+        'notification_service',
         'redis',
         'websocket',
         'push_notifications'
@@ -54,7 +54,9 @@ class BaseSocialTest(BaseServiceTest):
 
     def _setup_social_mocks(self):
         """Setup social graph related mocks"""
-        if hasattr(self, 'mock_social_graph_service'):
+        # Get external mocks from the external_mocks dict created by BaseServiceTest
+        if hasattr(self, 'external_mocks') and 'social_graph_service' in self.external_mocks:
+            self.mock_social_graph_service = self.external_mocks['social_graph_service']
             # Default social graph behavior
             self.mock_social_graph_service.add_relationship.return_value = (True, "Relationship added", {})
             self.mock_social_graph_service.remove_relationship.return_value = (True, "Relationship removed", {})
@@ -63,12 +65,16 @@ class BaseSocialTest(BaseServiceTest):
 
     def _setup_achievement_mocks(self):
         """Setup achievement system mocks"""
-        if hasattr(self, 'mock_achievement_repository'):
+        # Get repository mocks from the repository_mocks dict created by BaseServiceTest
+        if hasattr(self, 'repository_mocks') and 'achievement_repository' in self.repository_mocks:
+            self.mock_achievement_repository = self.repository_mocks['achievement_repository']
             self.mock_achievement_repository.find_by_id.return_value = None
             self.mock_achievement_repository.find_by_user.return_value = []
             self.mock_achievement_repository.create_user_achievement.return_value = str(ObjectId())
 
-        if hasattr(self, 'mock_achievement_service'):
+        # Get external mocks from the external_mocks dict created by BaseServiceTest
+        if hasattr(self, 'external_mocks') and 'achievement_service' in self.external_mocks:
+            self.mock_achievement_service = self.external_mocks['achievement_service']
             self.mock_achievement_service.unlock_achievement.return_value = (True, "Achievement unlocked", {})
             self.mock_achievement_service.check_achievement_criteria.return_value = (True, "Criteria met", [])
             self.mock_achievement_service.get_user_achievements.return_value = (True, "Achievements retrieved", [])

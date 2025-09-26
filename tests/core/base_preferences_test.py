@@ -26,15 +26,15 @@ class BasePreferencesTest(BaseServiceTest):
     """
 
     # Default dependencies for preferences tests
-    default_dependencies = [
+    repository_dependencies = [
         'user_repository',
         'preferences_repository',
-        'preferences_service',
-        'validation_service'
     ]
 
     # External dependencies for preferences
-    default_external_dependencies = [
+    external_dependencies = [
+        'preferences_service',
+        'validation_service',
         'redis',  # For preference caching
         'config_service'  # For default preferences
     ]
@@ -42,20 +42,27 @@ class BasePreferencesTest(BaseServiceTest):
     def setUp(self):
         """Enhanced setup for preferences testing"""
         super().setUp()
+        self._setup_default_preferences()
         self._setup_preferences_mocks()
         self._setup_validation_mocks()
-        self._setup_default_preferences()
 
     def _setup_preferences_mocks(self):
         """Setup preferences-related mocks"""
-        if hasattr(self, 'mock_preferences_repository'):
-            # Default preferences repository behavior
-            self.mock_preferences_repository.find_by_user_id.return_value = None
+        # Get repository mocks from the repository_mocks dict created by BaseServiceTest
+        if hasattr(self, 'repository_mocks') and 'preferences_repository' in self.repository_mocks:
+            self.mock_preferences_repository = self.repository_mocks['preferences_repository']
+            # Default preferences repository behavior with User objects
+            user_with_prefs = self._create_mock_user_with_preferences()
+            self.mock_preferences_repository.get_user_preferences.return_value = user_with_prefs
+            self.mock_preferences_repository.find_by_user_id.return_value = user_with_prefs
             self.mock_preferences_repository.create.return_value = str(ObjectId())
             self.mock_preferences_repository.update.return_value = True
             self.mock_preferences_repository.delete.return_value = True
+            self.mock_preferences_repository.create_default_preferences.return_value = True
 
-        if hasattr(self, 'mock_preferences_service'):
+        # Get external mocks from the external_mocks dict created by BaseServiceTest
+        if hasattr(self, 'external_mocks') and 'preferences_service' in self.external_mocks:
+            self.mock_preferences_service = self.external_mocks['preferences_service']
             # Default preferences service behavior
             self.mock_preferences_service.get_user_preferences.return_value = (True, "Preferences retrieved", {})
             self.mock_preferences_service.update_user_preferences.return_value = (True, "Preferences updated", {})
@@ -132,6 +139,48 @@ class BasePreferencesTest(BaseServiceTest):
                 'synchronized': True
             }
         }
+
+    # User Mock Factory for Preferences
+
+    def _create_mock_user_with_preferences(self, user_data: Dict[str, Any] = None, preferences: Dict[str, Any] = None):
+        """Create a proper User object mock with preferences for testing"""
+        from app.core.models.user import User
+
+        # Use provided data or default
+        if user_data is None:
+            user_data = self.create_test_user_with_preferences()
+
+        if preferences is None:
+            preferences_data = user_data.get('preferences', self.create_default_preferences())
+            # Extract the actual preferences dictionary from the nested structure
+            if isinstance(preferences_data, dict) and 'preferences' in preferences_data:
+                preferences = preferences_data['preferences']
+            else:
+                preferences = preferences_data
+
+        # Create a mock that mimics a real User object
+        mock_user = MagicMock(spec=User)
+
+        # Set up all the attributes that User objects have
+        for key, value in user_data.items():
+            if key != 'preferences':  # Handle preferences separately
+                setattr(mock_user, key, value)
+
+        # Set up the methods that services call
+        mock_user.to_dict = MagicMock(return_value=user_data)
+        mock_user.get_id = MagicMock(return_value=str(user_data.get('_id', 'mock_user_id')))
+
+        # Ensure preferences attribute contains the actual preferences dict
+        # The service expects user.preferences to be the preferences dict directly
+        mock_user.preferences = preferences
+
+        # Add method for category-specific preference access
+        def get_category_preferences(category):
+            return preferences.get(category, {})
+
+        mock_user.get_category_preferences = MagicMock(side_effect=get_category_preferences)
+
+        return mock_user
 
     # Preference creation utilities
 

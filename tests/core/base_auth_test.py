@@ -62,9 +62,9 @@ class BaseAuthTest(BaseServiceTest):
 
     def _setup_jwt_mocks(self):
         """Setup JWT-related mocks"""
-        # Mock JWT token creation
-        self.jwt_access_patcher = patch('flask_jwt_extended.create_access_token')
-        self.jwt_refresh_patcher = patch('flask_jwt_extended.create_refresh_token')
+        # Mock JWT token creation at the service module level
+        self.jwt_access_patcher = patch('app.core.services.auth_service.create_access_token')
+        self.jwt_refresh_patcher = patch('app.core.services.auth_service.create_refresh_token')
         self.jwt_get_identity_patcher = patch('flask_jwt_extended.get_jwt_identity')
 
         self.mock_jwt_access = self.jwt_access_patcher.start()
@@ -122,7 +122,11 @@ class BaseAuthTest(BaseServiceTest):
         if user_data is None:
             user_data = self.create_test_user()
 
-        self.mock_user_repository.find_by_email.return_value = user_data
+        # Create proper User object mock
+        mock_user = self._create_mock_user_object(user_data)
+        self.mock_user_repository.find_by_email.return_value = mock_user
+        self.mock_user_repository.find_user_by_id.return_value = mock_user
+
         self.mock_bcrypt_check.return_value = True
         self.mock_jwt_access.return_value = f"access_token_for_{user_data.get('email', 'test')}"
         self.mock_jwt_refresh.return_value = f"refresh_token_for_{user_data.get('email', 'test')}"
@@ -131,20 +135,28 @@ class BaseAuthTest(BaseServiceTest):
 
     def mock_failed_login(self, failure_type: str = 'wrong_password'):
         """Mock failed login scenarios"""
-        failure_scenarios = {
-            'wrong_password': lambda: self.mock_bcrypt_check.__setattr__('return_value', False),
-            'user_not_found': lambda: self.mock_user_repository.find_by_email.__setattr__('return_value', None),
-            'user_not_verified': lambda: self.mock_user_repository.find_by_email.__setattr__(
-                'return_value', self.create_test_user(verified=False)
-            ),
-            'user_inactive': lambda: self.mock_user_repository.find_by_email.__setattr__(
-                'return_value', self.create_test_user(is_active=False)
-            )
-        }
+        if failure_type == 'wrong_password':
+            # User exists but password is wrong
+            user_data = self.create_test_user()
+            mock_user = self._create_mock_user_object(user_data)
+            mock_user.check_password.return_value = False
+            self.mock_user_repository.find_by_email.return_value = mock_user
+            self.mock_bcrypt_check.return_value = False
 
-        scenario_func = failure_scenarios.get(failure_type)
-        if scenario_func:
-            scenario_func()
+        elif failure_type == 'user_not_found':
+            # No user found
+            self.mock_user_repository.find_by_email.return_value = None
+
+        elif failure_type == 'user_not_verified':
+            # User exists but not verified
+            mock_user = self._create_mock_user_unverified()
+            self.mock_user_repository.find_by_email.return_value = mock_user
+
+        elif failure_type == 'user_inactive':
+            # User exists but is inactive
+            mock_user = self._create_mock_user_inactive()
+            self.mock_user_repository.find_by_email.return_value = mock_user
+
         else:
             raise ValueError(f"Unknown failure type: {failure_type}")
 
@@ -367,6 +379,48 @@ class BaseAuthTest(BaseServiceTest):
 
             result = test_func()
             self.assert_auth_response_failure(result, 'permission')
+
+    # User Mock Factory
+
+    def _create_mock_user_object(self, user_data: Dict[str, Any] = None):
+        """Create a proper User object mock for testing"""
+        from app.core.models.user import User
+
+        # Use provided data or default
+        if user_data is None:
+            user_data = self.create_test_user()
+
+        # Create a mock that mimics a real User object
+        mock_user = MagicMock(spec=User)
+
+        # Set up all the attributes that User objects have
+        for key, value in user_data.items():
+            setattr(mock_user, key, value)
+
+        # Set up the methods that services call
+        mock_user.check_password = MagicMock(return_value=True)
+        mock_user.set_password = MagicMock()
+        mock_user.to_dict = MagicMock(return_value=user_data)
+        mock_user.get_id = MagicMock(return_value=str(user_data.get('_id', 'mock_user_id')))
+
+        # Ensure critical attributes exist
+        mock_user.is_active = user_data.get('is_active', True)
+        mock_user.is_verified = user_data.get('is_verified', True)
+        mock_user.role = user_data.get('role', 'user')
+        mock_user.email = user_data.get('email', 'test@example.com')
+        mock_user.preferences = user_data.get('preferences', {})
+
+        return mock_user
+
+    def _create_mock_user_inactive(self):
+        """Create mock for inactive user"""
+        user_data = self.create_test_user(is_active=False)
+        return self._create_mock_user_object(user_data)
+
+    def _create_mock_user_unverified(self):
+        """Create mock for unverified user"""
+        user_data = self.create_test_user(verified=False)
+        return self._create_mock_user_object(user_data)
 
     # Batch testing utilities
 
