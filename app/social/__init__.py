@@ -59,13 +59,9 @@ def register_social_module(app):
     try:
         from .leaderboards.integration.hooks import setup_all_integrations
 
-        # Set up integrations after a delay to ensure all modules are loaded
-        def setup_integrations():
-            setup_all_integrations()
-
-        # Use app context to delay integration setup
+        # Set up integrations immediately since all modules should be loaded by now
         with app.app_context():
-            app.after_first_request(setup_integrations)
+            setup_all_integrations()
 
     except Exception as e:
         app.logger.error(f"Error setting up impact score integrations: {str(e)}")
