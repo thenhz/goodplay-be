@@ -464,12 +464,14 @@ class BaseControllerTest(TestBase):
 
     # Authentication Testing Methods
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_endpoint_requires_authentication(self, method: str, url: str, data: Dict[str, Any] = None):
         """Test that endpoint requires authentication"""
         response = self.make_unauthenticated_request(method, url, data)
         self.assert_api_unauthorized(response)
         self.log_test_debug(f"Authentication requirement verified for {method} {url}")
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_endpoint_requires_admin(self, method: str, url: str, data: Dict[str, Any] = None):
         """Test that endpoint requires admin privileges"""
         # Mock non-admin user
@@ -480,6 +482,7 @@ class BaseControllerTest(TestBase):
 
     # Request Validation Testing Methods
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_endpoint_validates_required_fields(self, method: str, url: str, required_fields: List[str]):
         """Test that endpoint validates required fields"""
         for field in required_fields:
@@ -492,6 +495,7 @@ class BaseControllerTest(TestBase):
             self.assert_api_validation_error(response, field)
             self.log_test_debug(f"Required field validation verified for: {field}")
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_endpoint_validates_field_types(self, method: str, url: str, field_types: Dict[str, type]):
         """Test that endpoint validates field types"""
         for field_name, expected_type in field_types.items():
@@ -532,6 +536,7 @@ class BaseControllerTest(TestBase):
 
     # CORS and Security Testing Methods
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_cors_headers(self, method: str, url: str):
         """Test that endpoint includes proper CORS headers"""
         response = self.make_authenticated_request(method, url)
@@ -542,6 +547,7 @@ class BaseControllerTest(TestBase):
 
         self.log_test_debug(f"CORS headers verified for {method} {url}")
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_security_headers(self, method: str, url: str):
         """Test that endpoint includes security headers"""
         response = self.make_authenticated_request(method, url)

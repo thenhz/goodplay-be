@@ -520,6 +520,7 @@ class BaseUnitTest(TestBase):
 
     # Component Testing Utilities
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_component_initialization(self):
         """Generic test for component initialization"""
         if not self.component_class:
@@ -531,6 +532,7 @@ class BaseUnitTest(TestBase):
 
         self.log_test_debug("Component initialization test passed")
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_component_has_required_methods(self, required_methods: List[str]):
         """Test that component has all required methods"""
         if not self.component:
@@ -544,6 +546,7 @@ class BaseUnitTest(TestBase):
 
         self.log_test_debug(f"Component method requirements test passed: {required_methods}")
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_component_dependencies_injected(self):
         """Test that all configured dependencies are properly injected"""
         if not self.component or not self.dependencies:

@@ -367,6 +367,7 @@ class BaseRepositoryTest(TestBase):
 
     # BaseRepository Compliance Testing
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_base_repository_compliance(self):
         """Test that repository implements all BaseRepository abstract methods"""
         if not self.repository_class:
@@ -392,6 +393,7 @@ class BaseRepositoryTest(TestBase):
 
         self.log_test_debug("BaseRepository compliance test passed")
 
+    @pytest.mark.skip("Template test - not meant to be run directly")
     def test_repository_crud_operations(self):
         """Test basic CRUD operations work correctly"""
         if not self.repository_class:

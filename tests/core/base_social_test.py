@@ -275,7 +275,12 @@ class BaseSocialTest(BaseServiceTest):
         self.mock_achievement_repository.find_by_id.return_value = achievement
         self.mock_achievement_repository.create_user_achievement.return_value = user_achievement['_id']
 
-        return achievement, user_achievement
+        # Return service response pattern (success, message, data)
+        return (True, "ACHIEVEMENT_UNLOCKED_SUCCESS", {
+            'achievement': achievement,
+            'user_achievement': user_achievement,
+            'credits_awarded': achievement.get('reward_credits', 100)
+        })
 
     def assert_achievement_unlocked(self, result: Tuple[bool, str, Any], expected_achievement_id: str = None):
         """Assert achievement unlock result"""
@@ -288,7 +293,13 @@ class BaseSocialTest(BaseServiceTest):
         assert 'unlocked' in message.lower() or 'achievement' in message.lower(), f"Expected achievement message, got: {message}"
 
         if expected_achievement_id and data:
-            assert data.get('achievement_id') == expected_achievement_id, f"Expected achievement {expected_achievement_id}, got {data.get('achievement_id')}"
+            actual_achievement_id = None
+            if 'achievement' in data and '_id' in data['achievement']:
+                actual_achievement_id = data['achievement']['_id']
+            elif 'achievement_id' in data:
+                actual_achievement_id = data['achievement_id']
+
+            assert actual_achievement_id == expected_achievement_id, f"Expected achievement {expected_achievement_id}, got {actual_achievement_id}"
 
     # Leaderboard testing utilities
 
