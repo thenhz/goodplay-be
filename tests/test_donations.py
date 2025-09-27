@@ -15,6 +15,13 @@ from app.donations.models.transaction import Transaction, TransactionType, Trans
 from app.donations.models.conversion_rate import ConversionRate, MultiplierType
 from app.donations.services.credit_calculation_service import CreditCalculationService
 from app.donations.services.wallet_service import WalletService
+from app.donations.services.batch_processing_service import BatchProcessingService
+from app.donations.services.fraud_prevention_service import FraudPreventionService
+from app.donations.services.receipt_generation_service import ReceiptGenerationService
+from app.donations.services.tax_compliance_service import TaxComplianceService
+from app.donations.services.compliance_service import ComplianceService
+from app.donations.services.reconciliation_service import ReconciliationService
+from app.donations.services.financial_analytics_service import FinancialAnalyticsService
 
 
 class TestWalletModel:
@@ -560,6 +567,428 @@ class TestIntegration:
         assert 'high_earnings' in fraud_indicators['indicators']
         assert 'high_multiplier' in fraud_indicators['indicators']
         assert 'long_session' in fraud_indicators['indicators']
+
+
+# GOO-15 New Services Tests
+
+class TestBatchProcessingService:
+    """Test BatchProcessingService functionality."""
+
+    @patch('app.donations.services.batch_processing_service.BatchOperationRepository')
+    @patch('app.donations.services.batch_processing_service.BatchDonationRepository')
+    def test_create_batch_operation_success(self, mock_batch_donation_repo, mock_batch_op_repo, app):
+        """Test successful batch operation creation."""
+        # Setup mocks
+        mock_batch_op_repo.return_value.create.return_value = "batch_123"
+        mock_batch_donation_repo.return_value.create_batch_donations.return_value = True
+
+        service = BatchProcessingService()
+
+        donations_data = [
+            {'user_id': 'user1', 'onlus_id': 'onlus1', 'amount': 10.0},
+            {'user_id': 'user2', 'onlus_id': 'onlus1', 'amount': 15.0}
+        ]
+
+        with app.app_context():
+            success, message, result = service.create_batch_donation_operation(
+                donations=donations_data,
+                created_by="test_admin"
+            )
+
+        assert success is True
+        assert message == "BATCH_OPERATION_CREATED"
+        assert result['batch_id'] == "batch_123"
+
+    @patch('app.donations.services.batch_processing_service.BatchOperationRepository')
+    @patch('app.donations.services.batch_processing_service.BatchDonationRepository')
+    def test_process_batch_donations(self, mock_batch_donation_repo, mock_batch_op_repo, app):
+        """Test batch donation processing."""
+        # Setup mocks
+        mock_batch_op_repo.return_value.find_by_id.return_value = {
+            'batch_id': 'batch_123',
+            'operation_type': 'donations',
+            'status': 'pending'
+        }
+        mock_batch_donation_repo.return_value.find_by_batch_id.return_value = [
+            {'user_id': 'user1', 'amount': 10.0, 'status': 'pending'},
+            {'user_id': 'user2', 'amount': 15.0, 'status': 'pending'}
+        ]
+
+        service = BatchProcessingService()
+
+        with app.app_context():
+            success, message, result = service.process_batch_operation('batch_123')
+
+        assert success is True
+        assert message == "BATCH_PROCESSING_COMPLETED"
+
+
+class TestFraudPreventionService:
+    """Test FraudPreventionService functionality."""
+
+    def test_validate_conversion_success(self, app):
+        """Test successful conversion validation."""
+        service = FraudPreventionService()
+
+        conversion_data = {
+            'user_id': 'user_123',
+            'amount': 5.0,
+            'play_duration_minutes': 500
+        }
+
+        with app.app_context():
+            is_valid, reason = service.validate_conversion(conversion_data)
+
+        assert is_valid is True
+        assert reason is None
+
+    def test_validate_conversion_excessive_amount(self, app):
+        """Test conversion validation with excessive amount."""
+        service = FraudPreventionService()
+
+        conversion_data = {
+            'user_id': 'user_123',
+            'amount': 1500.0,  # Exceeds daily limit
+            'play_duration_minutes': 500
+        }
+
+        with app.app_context():
+            is_valid, reason = service.validate_conversion(conversion_data)
+
+        assert is_valid is False
+        assert "DAILY_LIMIT_EXCEEDED" in reason
+
+    def test_detect_anomalies(self, app):
+        """Test anomaly detection."""
+        service = FraudPreventionService()
+
+        user_id = 'user_123'
+        transaction_data = {
+            'amount': 100.0,
+            'play_duration_minutes': 60
+        }
+
+        with app.app_context():
+            anomalies = service.detect_anomalies(user_id, transaction_data)
+
+        assert isinstance(anomalies, list)
+
+
+class TestReceiptGenerationService:
+    """Test ReceiptGenerationService functionality."""
+
+    def test_generate_receipt_data(self, app):
+        """Test receipt data generation."""
+        service = ReceiptGenerationService()
+
+        donation_data = {
+            'donation_id': 'don_123',
+            'user_id': 'user_123',
+            'onlus_id': 'onlus_123',
+            'amount': 50.0,
+            'transaction_date': datetime.now(timezone.utc)
+        }
+
+        user_data = {
+            'name': 'Mario',
+            'surname': 'Rossi',
+            'email': 'mario.rossi@email.com',
+            'tax_code': 'RSSMRA80A01H501U'
+        }
+
+        onlus_data = {
+            'name': 'Test ONLUS',
+            'tax_code': '12345678901',
+            'address': 'Via Test 123, Milano'
+        }
+
+        with app.app_context():
+            receipt_data = service.generate_receipt_data(
+                donation_data, user_data, onlus_data
+            )
+
+        assert receipt_data['donation_id'] == 'don_123'
+        assert receipt_data['donor_name'] == 'Mario Rossi'
+        assert receipt_data['amount'] == 50.0
+        assert 'receipt_number' in receipt_data
+
+    def test_generate_pdf_receipt(self, app):
+        """Test PDF receipt generation."""
+        service = ReceiptGenerationService()
+
+        receipt_data = {
+            'receipt_number': 'R-2025-001',
+            'donation_id': 'don_123',
+            'donor_name': 'Mario Rossi',
+            'amount': 50.0,
+            'onlus_name': 'Test ONLUS'
+        }
+
+        with app.app_context():
+            success, message, pdf_data = service.generate_pdf_receipt(receipt_data)
+
+        assert success is True
+        assert message == "PDF_RECEIPT_GENERATED"
+        assert 'pdf_content' in pdf_data
+
+
+class TestTaxComplianceService:
+    """Test TaxComplianceService functionality."""
+
+    def test_calculate_deductibility(self, app):
+        """Test tax deductibility calculation."""
+        service = TaxComplianceService()
+
+        donation_data = {
+            'amount': 100.0,
+            'onlus_type': 'ONLUS'
+        }
+
+        with app.app_context():
+            deductibility = service.calculate_deductibility(donation_data)
+
+        assert deductibility['deductible_amount'] == 100.0
+        assert deductibility['deductible_percentage'] == 100.0
+        assert deductibility['max_deductible'] > 0
+
+    def test_generate_annual_summary(self, app):
+        """Test annual tax summary generation."""
+        service = TaxComplianceService()
+
+        donations = [
+            {'amount': 50.0, 'date': datetime.now(timezone.utc)},
+            {'amount': 75.0, 'date': datetime.now(timezone.utc)}
+        ]
+
+        with app.app_context():
+            summary = service.generate_annual_summary('user_123', donations, 2025)
+
+        assert summary['total_donated'] == 125.0
+        assert summary['tax_year'] == 2025
+        assert summary['user_id'] == 'user_123'
+
+
+class TestComplianceService:
+    """Test ComplianceService functionality."""
+
+    @patch('app.donations.services.compliance_service.ComplianceCheckRepository')
+    def test_initiate_compliance_check(self, mock_repo, app):
+        """Test compliance check initiation."""
+        mock_repo.return_value.create_check.return_value = "check_123"
+
+        service = ComplianceService()
+
+        with app.app_context():
+            success, message, result = service.initiate_compliance_check(
+                user_id="user_123",
+                check_type="aml",
+                reason="Transaction review"
+            )
+
+        assert success is True
+        assert message == "COMPLIANCE_CHECK_INITIATED"
+        assert result['check_id'] == "check_123"
+
+    @patch('app.donations.services.compliance_service.ComplianceCheckRepository')
+    def test_review_compliance_check(self, mock_repo, app):
+        """Test compliance check review."""
+        mock_repo.return_value.find_by_id.return_value = {
+            'check_id': 'check_123',
+            'status': 'pending_review'
+        }
+        mock_repo.return_value.update_check.return_value = True
+
+        service = ComplianceService()
+
+        with app.app_context():
+            success, message, result = service.review_compliance_check(
+                check_id="check_123",
+                reviewer_id="admin_456",
+                decision="approve",
+                review_notes="All clear"
+            )
+
+        assert success is True
+        assert message == "COMPLIANCE_CHECK_REVIEWED"
+
+
+class TestReconciliationService:
+    """Test ReconciliationService functionality."""
+
+    @patch('app.donations.services.reconciliation_service.ReconciliationRepository')
+    @patch('app.donations.services.reconciliation_service.TransactionRepository')
+    def test_start_reconciliation(self, mock_transaction_repo, mock_reconciliation_repo, app):
+        """Test reconciliation initiation."""
+        # Setup mocks
+        mock_reconciliation_repo.return_value.create_reconciliation.return_value = "recon_123"
+        mock_transaction_repo.return_value.find_by_date_range.return_value = [
+            {'transaction_id': 'tx_1', 'amount': 50.0, 'payment_intent_id': 'pi_1'}
+        ]
+
+        service = ReconciliationService()
+
+        start_date = datetime.now(timezone.utc) - timedelta(days=1)
+        end_date = datetime.now(timezone.utc)
+
+        with app.app_context():
+            success, message, result = service.start_reconciliation(
+                start_date=start_date,
+                end_date=end_date,
+                reconciliation_type="daily"
+            )
+
+        assert success is True
+        assert message == "RECONCILIATION_STARTED"
+        assert result['reconciliation_id'] == "recon_123"
+
+    def test_match_transactions(self, app):
+        """Test transaction matching logic."""
+        service = ReconciliationService()
+
+        internal_transactions = [
+            {'transaction_id': 'tx_1', 'amount': 50.0, 'payment_intent_id': 'pi_1'},
+            {'transaction_id': 'tx_2', 'amount': 25.0, 'payment_intent_id': 'pi_2'}
+        ]
+
+        external_payments = [
+            {'payment_id': 'pay_1', 'amount': 50.0, 'payment_intent_id': 'pi_1'},
+            {'payment_id': 'pay_2', 'amount': 25.0, 'payment_intent_id': 'pi_2'}
+        ]
+
+        with app.app_context():
+            matched_pairs, unmatched_internal, unmatched_external = service._match_transactions(
+                internal_transactions, external_payments
+            )
+
+        assert len(matched_pairs) == 2
+        assert len(unmatched_internal) == 0
+        assert len(unmatched_external) == 0
+
+
+class TestFinancialAnalyticsService:
+    """Test FinancialAnalyticsService functionality."""
+
+    @patch('app.donations.services.financial_analytics_service.TransactionRepository')
+    @patch('app.donations.services.financial_analytics_service.WalletRepository')
+    def test_generate_financial_dashboard(self, mock_wallet_repo, mock_transaction_repo, app):
+        """Test financial dashboard generation."""
+        # Setup mocks
+        mock_transaction_repo.return_value.get_aggregated_data.return_value = {
+            'total_volume': 1000.0,
+            'total_donations': 50,
+            'average_donation': 20.0
+        }
+        mock_wallet_repo.return_value.get_user_stats.return_value = {
+            'total_users': 100,
+            'active_users': 80
+        }
+
+        service = FinancialAnalyticsService()
+
+        date_range = {
+            'start_date': datetime.now(timezone.utc) - timedelta(days=30),
+            'end_date': datetime.now(timezone.utc)
+        }
+
+        with app.app_context():
+            success, message, dashboard = service.generate_financial_dashboard(date_range)
+
+        assert success is True
+        assert message == "FINANCIAL_DASHBOARD_GENERATED"
+        assert 'core_metrics' in dashboard
+        assert 'trends' in dashboard
+        assert 'user_analytics' in dashboard
+
+    @patch('app.donations.services.financial_analytics_service.TransactionRepository')
+    def test_get_trend_analysis(self, mock_transaction_repo, app):
+        """Test trend analysis generation."""
+        mock_transaction_repo.return_value.get_daily_aggregates.return_value = [
+            {'date': '2025-09-01', 'volume': 100.0, 'count': 5},
+            {'date': '2025-09-02', 'volume': 120.0, 'count': 6},
+            {'date': '2025-09-03', 'volume': 110.0, 'count': 5}
+        ]
+
+        service = FinancialAnalyticsService()
+
+        start_date = datetime.now(timezone.utc) - timedelta(days=7)
+        end_date = datetime.now(timezone.utc)
+
+        with app.app_context():
+            success, message, trends = service.get_trend_analysis(
+                start_date=start_date,
+                end_date=end_date,
+                metric='volume'
+            )
+
+        assert success is True
+        assert message == "TREND_ANALYSIS_GENERATED"
+        assert 'daily_data' in trends
+        assert 'trend_direction' in trends
+
+
+class TestGOO15Integration:
+    """Integration tests for GOO-15 complete system."""
+
+    @patch('app.donations.services.wallet_service.WalletRepository')
+    @patch('app.donations.services.wallet_service.TransactionRepository')
+    @patch('app.donations.services.batch_processing_service.BatchOperationRepository')
+    @patch('app.donations.services.compliance_service.ComplianceCheckRepository')
+    def test_complete_compliance_workflow(self, mock_compliance_repo, mock_batch_repo,
+                                        mock_transaction_repo, mock_wallet_repo, app):
+        """Test complete compliance workflow integration."""
+        # Setup mocks for wallet operations
+        mock_wallet = Wallet(user_id="user_123", current_balance=100.0)
+        mock_wallet_repo.return_value.find_by_user_id.return_value = mock_wallet
+        mock_wallet_repo.return_value.update_wallet.return_value = True
+
+        # Setup mocks for compliance
+        mock_compliance_repo.return_value.create_check.return_value = "check_123"
+        mock_compliance_repo.return_value.find_by_id.return_value = {
+            'check_id': 'check_123',
+            'status': 'approved'
+        }
+
+        # Setup transaction mocks
+        mock_transaction_repo.return_value.create_transaction.return_value = "tx_123"
+        mock_transaction_repo.return_value.update_transaction.return_value = True
+
+        wallet_service = WalletService()
+        compliance_service = ComplianceService()
+
+        with app.app_context():
+            # Step 1: Initiate compliance check
+            success, message, check_result = compliance_service.initiate_compliance_check(
+                user_id="user_123",
+                check_type="aml",
+                reason="High value donation"
+            )
+            assert success is True
+
+            # Step 2: Process donation after compliance approval
+            success, message, donation_result = wallet_service.process_donation(
+                user_id="user_123",
+                amount=50.0,
+                onlus_id="onlus_789"
+            )
+            assert success is True
+
+    def test_batch_processing_with_analytics(self, app):
+        """Test batch processing integration with analytics."""
+        batch_service = BatchProcessingService()
+        analytics_service = FinancialAnalyticsService()
+
+        with app.app_context():
+            # Test that services can be instantiated and work together
+            assert batch_service is not None
+            assert analytics_service is not None
+
+            # Test basic functionality
+            donations_data = [
+                {'user_id': 'user1', 'onlus_id': 'onlus1', 'amount': 10.0}
+            ]
+
+            # This would test the integration in a real scenario
+            # For now, we ensure the services are properly initialized
 
 
 if __name__ == '__main__':

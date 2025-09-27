@@ -168,11 +168,14 @@ graph TD
     A --> D
     B --> E[Donations Module]
     A --> E
+    D --> E
     B --> F[ONLUS Module]
     A --> F
+    E --> F
     A --> G[Admin Module]
     B --> G
     D --> G
+    E --> G
 ```
 
 ### 📋 Module Responsibilities
@@ -218,8 +221,26 @@ graph TD
   - `global_teams`, `team_members`, `tournaments`
 - **Dependencies**: Core (users), Social (impact score hooks)
 
+#### **Donations Module** (`app/donations/`) - **GOO-15 Implementation**
+- **Purpose**: Virtual wallet, payment processing, and donation management
+- **Components**:
+  - Virtual wallet system with credit conversion
+  - Payment processing and provider integration
+  - Donation workflow and receipt generation
+  - Transaction reconciliation and compliance
+  - Financial analytics and admin dashboard
+  - Batch processing for high-volume operations
+- **Database Collections**:
+  - `wallets` - User virtual wallets and balances
+  - `transactions` - Financial transaction records
+  - `conversion_rates` - Credit conversion rates and multipliers
+  - `payment_providers` - External payment provider configs
+  - `payment_intents` - Payment processing records
+  - `batch_operations` - Batch processing operations
+  - `batch_donations` - Batch donation records
+- **Dependencies**: Core (users, auth), Social (credit earning hooks)
+
 #### **Other Modules** (Future implementation)
-- **Donations**: Payment processing and wallet management
 - **ONLUS**: Charity organization management
 - **Admin**: Administrative interface and controls
 
@@ -416,6 +437,22 @@ graph LR
 - `team_members` - Team membership
   - Indexes: `user_id`, `team_id`, `role`
 
+#### **Donations Collections** (GOO-15)
+- `wallets` - Virtual wallet management
+  - Indexes: `user_id` (unique), `balance`, `total_earned`
+- `transactions` - Financial transaction records
+  - Indexes: `user_id`, `transaction_type`, `status`, `created_at`
+- `conversion_rates` - Credit conversion rates
+  - Indexes: `rate_type`, `is_active`, `effective_date`
+- `payment_providers` - Payment provider configurations
+  - Indexes: `provider_name` (unique), `is_active`
+- `payment_intents` - Payment processing records
+  - Indexes: `payment_intent_id` (unique), `user_id`, `status`
+- `batch_operations` - Batch processing operations
+  - Indexes: `operation_type`, `status`, `created_at`
+- `batch_donations` - Batch donation records
+  - Indexes: `batch_id`, `user_id`, `status`
+
 ### 📈 Index Strategy
 
 **Performance Considerations**:
@@ -581,5 +618,273 @@ def create_indexes(self):
 
 ---
 
-*Architecture documentation - GoodPlay Backend v1.0*
-*Last updated: September 26, 2025*
+## 💰 GOO-15: Donation Processing Engine Architecture
+
+### 🏗️ Donations Module Architecture
+
+The GOO-15 implementation introduces a comprehensive donation processing system with the following architectural components:
+
+#### **Service Layer Architecture**
+
+```mermaid
+graph TD
+    A[WalletService] --> B[ConversionRateService]
+    A --> C[TransactionService]
+    A --> D[FraudDetectionService]
+
+    E[DonationService] --> A
+    E --> F[PaymentService]
+    E --> G[ReceiptGenerationService]
+    E --> H[TaxComplianceService]
+
+    I[BatchProcessingService] --> A
+    I --> E
+    I --> J[ComplianceService]
+
+    K[ReconciliationService] --> C
+    K --> F
+
+    L[FinancialAnalyticsService] --> C
+    L --> A
+    L --> E
+```
+
+#### **Core Service Responsibilities**
+
+**WalletService** (`app/donations/services/wallet_service.py`):
+- Virtual wallet management and balance tracking
+- Credit conversion from game sessions
+- Auto-donation configuration and processing
+- Transaction validation and security checks
+
+**PaymentService** (`app/donations/services/payment_service.py`):
+- Payment provider integration (Stripe, PayPal, etc.)
+- Payment intent creation and processing
+- Payment method validation and security
+- Webhook handling for payment updates
+
+**DonationService** (`app/donations/services/donation_service.py`):
+- Donation workflow orchestration
+- ONLUS validation and verification
+- Donation receipt generation coordination
+- Tax deductibility calculations
+
+**BatchProcessingService** (`app/donations/services/batch_processing_service.py`):
+- High-volume donation processing
+- Batch operation management
+- Progress tracking and status updates
+- Error handling and retry mechanisms
+
+**ComplianceService** (`app/donations/services/compliance_service.py`):
+- AML (Anti-Money Laundering) checks
+- KYC (Know Your Customer) verification
+- Sanctions screening
+- Regulatory compliance reporting
+
+**ReconciliationService** (`app/donations/services/reconciliation_service.py`):
+- Transaction matching between internal and external systems
+- Discrepancy detection and resolution
+- Financial reconciliation reporting
+- Data integrity validation
+
+**FinancialAnalyticsService** (`app/donations/services/financial_analytics_service.py`):
+- Real-time financial dashboard generation
+- Donation trends and forecasting
+- User behavior analytics
+- System performance metrics
+
+#### **Data Flow Architecture**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant WalletController
+    participant WalletService
+    participant TransactionService
+    participant FraudDetection
+    participant PaymentService
+    participant DonationService
+    participant ComplianceService
+
+    User->>WalletController: Convert game session to credits
+    WalletController->>WalletService: process_session_conversion()
+    WalletService->>FraudDetection: validate_conversion()
+    FraudDetection->>WalletService: validation_result
+    WalletService->>TransactionService: create_transaction()
+    TransactionService->>WalletService: transaction_created
+    WalletService->>WalletController: conversion_success
+
+    User->>WalletController: Create donation
+    WalletController->>DonationService: process_donation()
+    DonationService->>PaymentService: create_payment_intent()
+    PaymentService->>DonationService: payment_intent_created
+    DonationService->>ComplianceService: perform_compliance_check()
+    ComplianceService->>DonationService: compliance_approved
+    DonationService->>TransactionService: record_donation()
+    TransactionService->>DonationService: transaction_recorded
+    DonationService->>WalletController: donation_success
+```
+
+#### **Controller Layer Organization**
+
+The donations module exposes 7 specialized controllers:
+
+1. **WalletController** (`/api/wallet/*`) - Virtual wallet operations
+2. **DonationController** (`/api/donations/*`) - Donation processing
+3. **ConversionRatesController** (`/api/conversion-rates/*`) - Rate management
+4. **PaymentController** (`/api/payments/*`) - Payment processing
+5. **BatchController** (`/api/batch/*`) - Batch operations (admin)
+6. **ComplianceController** (`/api/compliance/*`) - Compliance management (admin)
+7. **FinancialAdminController** (`/api/admin/financial/*`) - Financial analytics (admin)
+
+#### **Security Architecture**
+
+**Multi-Layer Security Approach**:
+
+1. **Input Validation Layer**:
+   - Request data sanitization
+   - Parameter type validation
+   - Business rule validation
+
+2. **Authentication Layer**:
+   - JWT token verification
+   - User session validation
+   - Admin role verification for sensitive operations
+
+3. **Authorization Layer**:
+   - Resource access control
+   - Operation-level permissions
+   - Admin-only endpoint protection
+
+4. **Transaction Security Layer**:
+   - Optimistic locking for wallet operations
+   - Transaction integrity validation
+   - Fraud detection algorithms
+
+5. **Compliance Layer**:
+   - AML/KYC verification
+   - Sanctions screening
+   - Regulatory compliance checks
+
+#### **Event Integration Architecture**
+
+**Credit Earning Events**:
+```python
+# Game session completion triggers credit conversion
+trigger_session_complete(user_id, session_data)
+  ↓
+WalletService.process_session_conversion()
+  ↓
+Apply dynamic multipliers (tournament, streak, weekend)
+  ↓
+Create transaction record
+  ↓
+Update wallet balance
+  ↓
+Check auto-donation settings
+  ↓
+Trigger auto-donation if threshold met
+```
+
+**Donation Events**:
+```python
+# Donation completion triggers multiple systems
+trigger_donation_complete(user_id, donation_data)
+  ↓
+Update Impact Score (social module)
+  ↓
+Generate receipt (tax compliance)
+  ↓
+Update financial analytics
+  ↓
+Check achievement unlocks
+  ↓
+Update leaderboards
+```
+
+#### **Error Handling Architecture**
+
+**Standardized Error Response Pattern**:
+```python
+# Service Layer Error Handling
+try:
+    validation_result = self._validate_input(data)
+    if validation_result:
+        return False, validation_result, None
+
+    business_result = self._execute_business_logic(data)
+
+    current_app.logger.info(f"Operation successful: {operation_info}")
+    return True, "SUCCESS_CONSTANT", business_result
+
+except ValidationError as e:
+    current_app.logger.warning(f"Validation failed: {str(e)}")
+    return False, "VALIDATION_ERROR_CONSTANT", None
+
+except BusinessLogicError as e:
+    current_app.logger.error(f"Business logic error: {str(e)}")
+    return False, "BUSINESS_ERROR_CONSTANT", None
+
+except Exception as e:
+    current_app.logger.error(f"Unexpected error: {str(e)}")
+    return False, "INTERNAL_SERVER_ERROR", None
+```
+
+**Controller Layer Error Handling**:
+```python
+# Standardized controller error responses
+try:
+    success, message, result = service.method(data)
+
+    if success:
+        return success_response(message, result)
+    else:
+        return error_response(message)
+
+except Exception as e:
+    current_app.logger.error(f"Controller error: {str(e)}")
+    return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+```
+
+#### **Performance Optimization Architecture**
+
+**Caching Strategy**:
+- Conversion rates cached for 1 hour
+- Financial analytics cached for 15 minutes
+- User wallet data cached for 5 minutes
+- Payment provider configs cached for 24 hours
+
+**Database Optimization**:
+- Compound indexes for complex queries
+- Transaction aggregation pipelines
+- Batch processing for high-volume operations
+- Connection pooling and query optimization
+
+**Concurrent Processing**:
+- Optimistic locking for wallet updates
+- Async processing for non-critical operations
+- Queue-based batch processing
+- Background reconciliation jobs
+
+### 🔄 GOO-15 Integration Points
+
+#### **Games Module Integration**:
+- Session completion triggers credit conversion
+- Multiplier calculation based on game type and mode
+- Tournament participation bonus calculations
+
+#### **Social Module Integration**:
+- Donation activities update Impact Score
+- Achievement unlocks for donation milestones
+- Leaderboard updates for charitable contributions
+
+#### **Core Module Integration**:
+- User authentication for all financial operations
+- User preferences for auto-donation settings
+- Admin role verification for sensitive operations
+
+---
+
+*Architecture documentation - GoodPlay Backend v1.1*
+*Last updated: September 27, 2025*
+*Includes GOO-15 Donation Processing Engine*

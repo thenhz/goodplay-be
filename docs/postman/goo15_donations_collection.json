@@ -1,0 +1,906 @@
+{
+	"info": {
+		"_postman_id": "d7f8a3b1-e9c2-4f0d-88d7-2a4b5c6e7f89",
+		"name": "GoodPlay Donations API - GOO-15 Complete",
+		"description": "Complete GOO-15 Donation Processing Engine API endpoints\n\nThis collection covers:\n- Virtual wallet management and statistics\n- Credit conversion from game sessions\n- Donation processing with compliance\n- Payment processing and providers\n- Batch operations (admin)\n- Compliance management (admin)\n- Financial analytics (admin)\n- Receipt generation and tax compliance\n- Transaction reconciliation\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{refresh_token}}` - JWT refresh token\n- `{{admin_token}}` - Admin JWT token\n- `{{test_email}}` - Test user email\n- `{{test_password}}` - Test user password\n- `{{user_id}}` - Current user ID\n- `{{wallet_id}}` - User's wallet ID\n- `{{transaction_id}}` - Sample transaction ID\n- `{{donation_id}}` - Sample donation ID\n- `{{batch_id}}` - Sample batch operation ID\n- `{{onlus_id}}` - Sample ONLUS ID",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1672196"
+	},
+	"item": [
+		{
+			"name": "01. Virtual Wallet",
+			"item": [
+				{
+					"name": "Get Wallet Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.user_id) {",
+									"        pm.environment.set('wallet_user_id', responseJson.data.user_id);",
+									"    }",
+									"    pm.test('Wallet info retrieved successfully', function () {",
+									"        pm.expect(responseJson.success).to.be.true;",
+									"        pm.expect(responseJson.data).to.have.property('balance');",
+									"        pm.expect(responseJson.data).to.have.property('total_earned');",
+									"        pm.expect(responseJson.data).to.have.property('total_donated');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "wallet"]
+						}
+					}
+				},
+				{
+					"name": "Get Wallet Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/transactions?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "wallet", "transactions"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Wallet Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/statistics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "wallet", "statistics"]
+						}
+					}
+				},
+				{
+					"name": "Convert Session to Credits",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"session_id\": \"session_12345\",\n  \"play_duration_ms\": 600000,\n  \"game_type\": \"puzzle\",\n  \"multipliers\": [\"weekend\", \"streak\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/convert-session",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "wallet", "convert-session"]
+						}
+					}
+				},
+				{
+					"name": "Update Auto-Donation Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"enabled\": true,\n  \"threshold\": 50.0,\n  \"percentage\": 25.0,\n  \"preferred_onlus_id\": \"{{onlus_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/auto-donation",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "wallet", "auto-donation"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02. Donations",
+			"item": [
+				{
+					"name": "Create Donation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.donation_id) {",
+									"        pm.environment.set('donation_id', responseJson.data.donation_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"onlus_id\": \"{{onlus_id}}\",\n  \"amount\": 25.0,\n  \"payment_method\": \"wallet\",\n  \"message\": \"Keep up the great work!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/create",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "donations", "create"]
+						}
+					}
+				},
+				{
+					"name": "Get Donation History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/history?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "donations", "history"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Donation Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/{{donation_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "donations", "{{donation_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Download Receipt PDF",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/{{donation_id}}/receipt?format=pdf",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "donations", "{{donation_id}}", "receipt"],
+							"query": [
+								{
+									"key": "format",
+									"value": "pdf"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Receipt Data",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/{{donation_id}}/receipt?format=json",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "donations", "{{donation_id}}", "receipt"],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "03. Conversion Rates",
+			"item": [
+				{
+					"name": "Get Current Rates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "conversion-rates"]
+						}
+					}
+				},
+				{
+					"name": "Credit Calculator",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates/calculator?duration_minutes=30&multipliers=tournament,weekend",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "conversion-rates", "calculator"],
+							"query": [
+								{
+									"key": "duration_minutes",
+									"value": "30"
+								},
+								{
+									"key": "multipliers",
+									"value": "tournament,weekend"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "04. Payments",
+			"item": [
+				{
+					"name": "Get Payment Methods",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/methods",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "methods"]
+						}
+					}
+				},
+				{
+					"name": "Create Payment Intent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 50.0,\n  \"currency\": \"EUR\",\n  \"payment_method\": \"stripe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/intent",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "payments", "intent"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "05. Admin - Batch Processing",
+			"item": [
+				{
+					"name": "Create Batch Operation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.batch_id) {",
+									"        pm.environment.set('batch_id', responseJson.data.batch_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"operation_type\": \"donations\",\n  \"items\": [\n    {\n      \"user_id\": \"user1\",\n      \"onlus_id\": \"onlus1\",\n      \"amount\": 10.0\n    },\n    {\n      \"user_id\": \"user2\",\n      \"onlus_id\": \"onlus1\",\n      \"amount\": 15.0\n    }\n  ],\n  \"configuration\": {\n    \"concurrent_workers\": 3,\n    \"batch_size\": 50\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/batch/operations",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "batch", "operations"]
+						}
+					}
+				},
+				{
+					"name": "List Batch Operations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/batch/operations?status=pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "batch", "operations"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Batch Operation Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/batch/operations/{{batch_id}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "batch", "operations", "{{batch_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "06. Admin - Compliance",
+			"item": [
+				{
+					"name": "Initiate Compliance Check",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"check_type\": \"aml\",\n  \"reason\": \"High value donation review\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/compliance/checks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "compliance", "checks"]
+						}
+					}
+				},
+				{
+					"name": "Review Compliance Check",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"decision\": \"approve\",\n  \"review_notes\": \"All documents verified successfully\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/compliance/checks/CHK-123/review",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "compliance", "checks", "CHK-123", "review"]
+						}
+					}
+				},
+				{
+					"name": "Get User Compliance Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/compliance/users/{{user_id}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "compliance", "users", "{{user_id}}", "status"]
+						}
+					}
+				},
+				{
+					"name": "Get Pending Compliance Checks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/compliance/checks/pending?check_type=aml",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "compliance", "checks", "pending"],
+							"query": [
+								{
+									"key": "check_type",
+									"value": "aml"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Compliance Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/compliance/alerts?alert_type=critical",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "compliance", "alerts"],
+							"query": [
+								{
+									"key": "alert_type",
+									"value": "critical"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "07. Admin - Financial Analytics",
+			"item": [
+				{
+					"name": "Financial Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/dashboard?days=30",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "dashboard"],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Financial Metrics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/metrics?metric_type=volume&metric_type=count&period=daily",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "metrics"],
+							"query": [
+								{
+									"key": "metric_type",
+									"value": "volume"
+								},
+								{
+									"key": "metric_type",
+									"value": "count"
+								},
+								{
+									"key": "period",
+									"value": "daily"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "User Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/analytics/users?segment=high_value",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "analytics", "users"],
+							"query": [
+								{
+									"key": "segment",
+									"value": "high_value"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Payment Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/analytics/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "analytics", "payments"]
+						}
+					}
+				},
+				{
+					"name": "Financial Forecasting",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/forecasting?forecast_days=7&metric=volume",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "forecasting"],
+							"query": [
+								{
+									"key": "forecast_days",
+									"value": "7"
+								},
+								{
+									"key": "metric",
+									"value": "volume"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Generate Custom Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"report_name\": \"Monthly Donation Analysis\",\n  \"start_date\": \"2025-09-01T00:00:00Z\",\n  \"end_date\": \"2025-09-30T23:59:59Z\",\n  \"metrics\": [\"volume\", \"count\", \"average\"],\n  \"group_by\": \"daily\",\n  \"filters\": {\n    \"min_amount\": 10.0\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/reports/custom",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "reports", "custom"]
+						}
+					}
+				},
+				{
+					"name": "Export Financial Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"format\": \"excel\",\n  \"export_type\": \"dashboard\",\n  \"date_range\": {\n    \"start_date\": \"2025-09-01\",\n    \"end_date\": \"2025-09-30\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/export",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "export"]
+						}
+					}
+				},
+				{
+					"name": "Get Financial Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/financial/alerts?severity=high",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "financial", "alerts"],
+							"query": [
+								{
+									"key": "severity",
+									"value": "high"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "08. Test Scenarios",
+			"item": [
+				{
+					"name": "Complete Donation Flow",
+					"item": [
+						{
+							"name": "1. Get Wallet Info",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/wallet",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "wallet"]
+								}
+							}
+						},
+						{
+							"name": "2. Convert Session to Credits",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"session_id\": \"session_test_001\",\n  \"play_duration_ms\": 1800000,\n  \"game_type\": \"puzzle\",\n  \"multipliers\": [\"tournament\", \"weekend\"]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/wallet/convert-session",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "wallet", "convert-session"]
+								}
+							}
+						},
+						{
+							"name": "3. Create Donation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"onlus_id\": \"onlus_test_001\",\n  \"amount\": 15.0,\n  \"payment_method\": \"wallet\",\n  \"message\": \"Test donation from API collection\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/donations/create",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "donations", "create"]
+								}
+							}
+						},
+						{
+							"name": "4. Download Receipt",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/donations/{{donation_id}}/receipt?format=pdf",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "donations", "{{donation_id}}", "receipt"],
+									"query": [
+										{
+											"key": "format",
+											"value": "pdf"
+										}
+									]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set default ONLUS ID if not set",
+					"if (!pm.environment.get('onlus_id')) {",
+					"    pm.environment.set('onlus_id', 'onlus_default_001');",
+					"}",
+					"",
+					"// Auto-refresh token if expired",
+					"const accessToken = pm.environment.get('access_token');",
+					"if (!accessToken && pm.environment.get('refresh_token')) {",
+					"    console.log('Access token missing, should refresh...');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for all responses",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Log response for debugging",
+					"if (pm.response.code >= 400) {",
+					"    console.log('Error response:', pm.response.text());",
+					"}"
+				]
+			}
+		}
+	]
+}

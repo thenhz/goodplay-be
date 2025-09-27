@@ -30,7 +30,7 @@ def create_app(config_name=None):
     from app.preferences.controllers.preferences_controller import preferences_blueprint
     from app.social import register_social_module
     from app.games import create_games_blueprint, create_modes_blueprint, create_challenges_blueprint, create_teams_blueprint, init_games_module
-    from app.donations.controllers import wallet_bp, donation_bp, rates_bp
+    from app.donations.controllers import wallet_bp, donation_bp, rates_bp, payment_bp, batch_bp, compliance_bp, financial_admin_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
@@ -59,6 +59,10 @@ def create_app(config_name=None):
     app.register_blueprint(wallet_bp)
     app.register_blueprint(donation_bp)
     app.register_blueprint(rates_bp)
+    app.register_blueprint(payment_bp)
+    app.register_blueprint(batch_bp)
+    app.register_blueprint(compliance_bp)
+    app.register_blueprint(financial_admin_bp)
 
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():
@@ -86,6 +90,10 @@ def init_db(app):
             from app.donations.repositories.wallet_repository import WalletRepository
             from app.donations.repositories.transaction_repository import TransactionRepository
             from app.donations.repositories.conversion_rate_repository import ConversionRateRepository
+            from app.donations.repositories.payment_provider_repository import PaymentProviderRepository
+            from app.donations.repositories.payment_intent_repository import PaymentIntentRepository
+            from app.donations.repositories.batch_operation_repository import BatchOperationRepository
+            from app.donations.repositories.batch_donation_repository import BatchDonationRepository
 
             user_repo = UserRepository()
             user_repo.create_indexes()
@@ -94,10 +102,18 @@ def init_db(app):
             wallet_repo = WalletRepository()
             transaction_repo = TransactionRepository()
             conversion_rate_repo = ConversionRateRepository()
+            payment_provider_repo = PaymentProviderRepository()
+            payment_intent_repo = PaymentIntentRepository()
+            batch_operation_repo = BatchOperationRepository()
+            batch_donation_repo = BatchDonationRepository()
 
             wallet_repo.create_indexes()
             transaction_repo.create_indexes()
             conversion_rate_repo.create_indexes()
+            payment_provider_repo.create_indexes()
+            payment_intent_repo.create_indexes()
+            batch_operation_repo.create_indexes()
+            batch_donation_repo.create_indexes()
 
             app.logger.info('Database initialized successfully')
     except Exception as e:

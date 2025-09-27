@@ -1,0 +1,943 @@
+# GOO-15: Donation Processing Engine - OpenAPI Specification
+# This file documents all donation-related endpoints for the GoodPlay API
+
+openapi: 3.1.0
+info:
+  title: GoodPlay Donations API - GOO-15
+  description: |
+    **GOO-15 Donation Processing Engine** - Complete virtual wallet and donation system.
+
+    ## Features
+    - Virtual wallet management with credit conversion
+    - Payment processing with multiple providers
+    - Donation workflow with compliance checks
+    - Batch processing for high-volume operations
+    - Financial analytics and reporting
+    - Receipt generation and tax compliance
+    - Transaction reconciliation
+
+    ## Endpoints Structure
+    - `/api/wallet/*` - Virtual wallet operations
+    - `/api/donations/*` - Donation processing
+    - `/api/conversion-rates/*` - Credit conversion rates
+    - `/api/payments/*` - Payment processing
+    - `/api/batch/*` - Batch operations (admin)
+    - `/api/compliance/*` - Compliance management (admin)
+    - `/api/admin/financial/*` - Financial analytics (admin)
+
+  version: 1.0.0
+
+paths:
+  # Virtual Wallet Endpoints
+  /api/wallet:
+    get:
+      tags:
+        - Virtual Wallet
+      summary: Get user wallet information
+      description: Retrieve wallet balance, statistics, and auto-donation settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: WALLET_RETRIEVED_SUCCESS
+                  data:
+                    $ref: '#/components/schemas/WalletInfo'
+              examples:
+                success:
+                  summary: Successful wallet retrieval
+                  value:
+                    success: true
+                    message: WALLET_RETRIEVED_SUCCESS
+                    data:
+                      user_id: user123
+                      balance: 25.50
+                      total_earned: 125.75
+                      total_donated: 100.25
+                      auto_donation_enabled: true
+                      auto_donation_threshold: 50.0
+                      auto_donation_percentage: 25.0
+
+  /api/wallet/transactions:
+    get:
+      tags:
+        - Virtual Wallet
+      summary: Get wallet transaction history
+      description: Retrieve paginated transaction history for the user's wallet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: transaction_type
+          in: query
+          schema:
+            type: string
+            enum: [earned, donated, bonus, refund]
+      responses:
+        '200':
+          description: Transaction history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: TRANSACTIONS_RETRIEVED_SUCCESS
+                  data:
+                    type: object
+                    properties:
+                      transactions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Transaction'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+  /api/wallet/statistics:
+    get:
+      tags:
+        - Virtual Wallet
+      summary: Get wallet statistics
+      description: Retrieve detailed wallet analytics and usage patterns
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: WALLET_STATISTICS_SUCCESS
+                  data:
+                    $ref: '#/components/schemas/WalletStatistics'
+
+  /api/wallet/convert-session:
+    post:
+      tags:
+        - Virtual Wallet
+      summary: Convert game session to credits
+      description: Convert a completed game session into virtual wallet credits
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+                - play_duration_ms
+              properties:
+                session_id:
+                  type: string
+                  description: Game session identifier
+                play_duration_ms:
+                  type: integer
+                  description: Actual play duration in milliseconds
+                game_type:
+                  type: string
+                  description: Type of game played
+                multipliers:
+                  type: array
+                  items:
+                    type: string
+                  description: Active multipliers (tournament, weekend, streak)
+      responses:
+        '200':
+          description: Session converted to credits successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: SESSION_CONVERSION_SUCCESS
+                  data:
+                    type: object
+                    properties:
+                      credits_earned:
+                        type: number
+                        format: float
+                      base_amount:
+                        type: number
+                        format: float
+                      total_multiplier:
+                        type: number
+                        format: float
+                      new_balance:
+                        type: number
+                        format: float
+
+  /api/wallet/auto-donation:
+    put:
+      tags:
+        - Virtual Wallet
+      summary: Configure auto-donation settings
+      description: Update automatic donation preferences and thresholds
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                threshold:
+                  type: number
+                  format: float
+                  minimum: 1.0
+                percentage:
+                  type: number
+                  format: float
+                  minimum: 1.0
+                  maximum: 100.0
+                preferred_onlus_id:
+                  type: string
+      responses:
+        '200':
+          description: Auto-donation settings updated successfully
+
+  # Donation Endpoints
+  /api/donations/create:
+    post:
+      tags:
+        - Donations
+      summary: Create a new donation
+      description: Process a donation from wallet balance or external payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - onlus_id
+                - amount
+              properties:
+                onlus_id:
+                  type: string
+                  description: Target ONLUS identifier
+                amount:
+                  type: number
+                  format: float
+                  minimum: 1.0
+                payment_method:
+                  type: string
+                  enum: [wallet, stripe, paypal, bank_transfer]
+                  default: wallet
+                message:
+                  type: string
+                  description: Optional message to ONLUS
+      responses:
+        '200':
+          description: Donation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: DONATION_CREATED_SUCCESS
+                  data:
+                    $ref: '#/components/schemas/DonationResponse'
+
+  /api/donations/history:
+    get:
+      tags:
+        - Donations
+      summary: Get donation history
+      description: Retrieve user's donation history with filtering and pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: onlus_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Donation history retrieved successfully
+
+  /api/donations/{donation_id}:
+    get:
+      tags:
+        - Donations
+      summary: Get donation details
+      description: Retrieve detailed information about a specific donation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: donation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Donation details retrieved successfully
+
+  /api/donations/{donation_id}/receipt:
+    get:
+      tags:
+        - Donations
+      summary: Download donation receipt
+      description: Generate and download PDF receipt for tax deductibility
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: donation_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [pdf, json]
+            default: pdf
+      responses:
+        '200':
+          description: Receipt generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: RECEIPT_GENERATED_SUCCESS
+                  data:
+                    $ref: '#/components/schemas/ReceiptData'
+
+  # Conversion Rates Endpoints
+  /api/conversion-rates:
+    get:
+      tags:
+        - Conversion Rates
+      summary: Get current conversion rates
+      description: Retrieve current base rates and active multipliers
+      responses:
+        '200':
+          description: Conversion rates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: RATES_RETRIEVED_SUCCESS
+                  data:
+                    $ref: '#/components/schemas/ConversionRates'
+
+  /api/conversion-rates/calculator:
+    get:
+      tags:
+        - Conversion Rates
+      summary: Calculate credits for duration
+      description: Estimate credits that would be earned for a given play duration
+      parameters:
+        - name: duration_minutes
+          in: query
+          required: true
+          schema:
+            type: number
+            format: float
+        - name: multipliers
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Credit calculation completed successfully
+
+  # Payment Processing Endpoints
+  /api/payments/methods:
+    get:
+      tags:
+        - Payments
+      summary: Get available payment methods
+      description: Retrieve list of supported payment providers and methods
+      responses:
+        '200':
+          description: Payment methods retrieved successfully
+
+  /api/payments/intent:
+    post:
+      tags:
+        - Payments
+      summary: Create payment intent
+      description: Create a payment intent for external payment processing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - currency
+                - payment_method
+              properties:
+                amount:
+                  type: number
+                  format: float
+                currency:
+                  type: string
+                  example: EUR
+                payment_method:
+                  type: string
+                  enum: [stripe, paypal, bank_transfer]
+      responses:
+        '200':
+          description: Payment intent created successfully
+
+  # Admin Batch Processing Endpoints
+  /api/batch/operations:
+    post:
+      tags:
+        - Admin - Batch Processing
+      summary: Create batch operation
+      description: Create a new batch operation for bulk donations or other tasks
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - operation_type
+                - items
+              properties:
+                operation_type:
+                  type: string
+                  enum: [donations, reconciliation, analytics_refresh]
+                items:
+                  type: array
+                  items:
+                    type: object
+                configuration:
+                  type: object
+      responses:
+        '200':
+          description: Batch operation created successfully
+
+    get:
+      tags:
+        - Admin - Batch Processing
+      summary: List batch operations
+      description: Retrieve list of batch operations with status and progress
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+      responses:
+        '200':
+          description: Batch operations retrieved successfully
+
+  /api/batch/operations/{batch_id}:
+    get:
+      tags:
+        - Admin - Batch Processing
+      summary: Get batch operation status
+      description: Retrieve detailed status and progress of a specific batch operation
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch operation status retrieved successfully
+
+  # Admin Compliance Endpoints
+  /api/compliance/checks:
+    post:
+      tags:
+        - Admin - Compliance
+      summary: Initiate compliance check
+      description: Start AML, KYC, sanctions, or fraud checks for users or transactions
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - check_type
+              properties:
+                user_id:
+                  type: string
+                check_type:
+                  type: string
+                  enum: [aml, kyc, sanctions, pep, fraud]
+                transaction_id:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Compliance check initiated successfully
+
+  /api/compliance/checks/{check_id}/review:
+    post:
+      tags:
+        - Admin - Compliance
+      summary: Review compliance check
+      description: Manually review and approve/reject compliance checks
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      parameters:
+        - name: check_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum: [approve, reject, escalate]
+                review_notes:
+                  type: string
+      responses:
+        '200':
+          description: Compliance check reviewed successfully
+
+  # Admin Financial Analytics Endpoints
+  /api/admin/financial/dashboard:
+    get:
+      tags:
+        - Admin - Financial Analytics
+      summary: Get financial dashboard
+      description: Retrieve comprehensive financial KPIs, trends, and analytics
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Financial dashboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: FINANCIAL_DASHBOARD_GENERATED
+                  data:
+                    $ref: '#/components/schemas/FinancialDashboard'
+
+  /api/admin/financial/analytics/users:
+    get:
+      tags:
+        - Admin - Financial Analytics
+      summary: Get user behavior analytics
+      description: Retrieve user segmentation, behavior patterns, and retention metrics
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      parameters:
+        - name: segment
+          in: query
+          schema:
+            type: string
+            enum: [new_donors, returning_donors, high_value, frequent_donors]
+      responses:
+        '200':
+          description: User analytics retrieved successfully
+
+  /api/admin/financial/forecasting:
+    get:
+      tags:
+        - Admin - Financial Analytics
+      summary: Get financial forecasting
+      description: Retrieve donation volume predictions and growth forecasts
+      security:
+        - bearerAuth: []
+        - adminRole: []
+      parameters:
+        - name: forecast_days
+          in: query
+          schema:
+            type: integer
+            default: 7
+            maximum: 90
+        - name: metric
+          in: query
+          schema:
+            type: string
+            enum: [volume, count, average]
+            default: volume
+      responses:
+        '200':
+          description: Financial forecasting retrieved successfully
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    adminRole:
+      type: apiKey
+      in: header
+      name: X-Admin-Role
+
+  schemas:
+    WalletInfo:
+      type: object
+      properties:
+        user_id:
+          type: string
+        balance:
+          type: number
+          format: float
+        total_earned:
+          type: number
+          format: float
+        total_donated:
+          type: number
+          format: float
+        auto_donation_enabled:
+          type: boolean
+        auto_donation_threshold:
+          type: number
+          format: float
+        auto_donation_percentage:
+          type: number
+          format: float
+        preferred_onlus_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        user_id:
+          type: string
+        transaction_type:
+          type: string
+          enum: [earned, donated, bonus, refund, adjustment, fee]
+        amount:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [pending, completed, failed, cancelled, refunded]
+        description:
+          type: string
+        source_type:
+          type: string
+        onlus_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    WalletStatistics:
+      type: object
+      properties:
+        total_sessions_converted:
+          type: integer
+        average_session_value:
+          type: number
+          format: float
+        total_donations_made:
+          type: integer
+        average_donation_amount:
+          type: number
+          format: float
+        donation_frequency_days:
+          type: number
+          format: float
+        preferred_onlus_list:
+          type: array
+          items:
+            type: object
+            properties:
+              onlus_id:
+                type: string
+              onlus_name:
+                type: string
+              total_donated:
+                type: number
+                format: float
+
+    DonationResponse:
+      type: object
+      properties:
+        donation_id:
+          type: string
+        onlus_id:
+          type: string
+        amount:
+          type: number
+          format: float
+        status:
+          type: string
+        payment_method:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+
+    ReceiptData:
+      type: object
+      properties:
+        receipt_number:
+          type: string
+        donation_id:
+          type: string
+        donor_name:
+          type: string
+        donor_tax_code:
+          type: string
+        onlus_name:
+          type: string
+        onlus_tax_code:
+          type: string
+        amount:
+          type: number
+          format: float
+        tax_deductible_amount:
+          type: number
+          format: float
+        tax_year:
+          type: integer
+        issued_date:
+          type: string
+          format: date-time
+
+    ConversionRates:
+      type: object
+      properties:
+        base_rate_per_minute:
+          type: number
+          format: float
+          example: 0.01
+        multipliers:
+          type: object
+          properties:
+            tournament:
+              type: number
+              format: float
+              example: 2.0
+            challenge:
+              type: number
+              format: float
+              example: 1.5
+            daily_streak:
+              type: number
+              format: float
+              example: 1.2
+            weekend:
+              type: number
+              format: float
+              example: 1.1
+            special_event:
+              type: number
+              format: float
+              example: 3.0
+        effective_date:
+          type: string
+          format: date-time
+        next_update:
+          type: string
+          format: date-time
+
+    FinancialDashboard:
+      type: object
+      properties:
+        core_metrics:
+          type: object
+          properties:
+            total_volume:
+              type: number
+              format: float
+            total_donations:
+              type: integer
+            average_donation:
+              type: number
+              format: float
+            growth_rate:
+              type: number
+              format: float
+        trends:
+          type: object
+          properties:
+            daily_data:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  volume:
+                    type: number
+                    format: float
+                  count:
+                    type: integer
+            trend_direction:
+              type: string
+              enum: [increasing, decreasing, stable]
+        user_analytics:
+          type: object
+          properties:
+            new_donors:
+              type: integer
+            returning_donors:
+              type: integer
+            high_value_users:
+              type: integer
+            retention_rate:
+              type: number
+              format: float
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total_pages:
+          type: integer
+        total_items:
+          type: integer
+        has_next:
+          type: boolean
+        has_previous:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: Constant error message key for UI localization
+        data:
+          type: object
+          description: Optional error details

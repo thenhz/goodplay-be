@@ -36,6 +36,7 @@ info:
     - **Social Module**: [social.yaml](./social.yaml) - Social features & relationships
     - **Games Module**: [games.yaml](./games.yaml) - Game engine, sessions, modes, challenges & teams
     - **Leaderboards Module**: [leaderboards.yaml](./leaderboards.yaml) - Impact scores & rankings
+    - **Donations Module**: [openapi_donations.yaml](./openapi_donations.yaml) - Virtual wallet, donations & payments (GOO-15)
 
   version: 1.0.0
   contact:
@@ -89,6 +90,22 @@ tags:
     description: Privacy controls and user settings
   - name: Ranking Engine
     description: Ranking system monitoring and control
+
+  # Donations Module Tags (GOO-15)
+  - name: Virtual Wallet
+    description: Virtual wallet management and credit conversion
+  - name: Donations
+    description: Donation processing and management
+  - name: Conversion Rates
+    description: Credit conversion rates and multipliers
+  - name: Payments
+    description: Payment processing and provider integration
+  - name: Admin - Batch Processing
+    description: Batch operations for high-volume processing
+  - name: Admin - Compliance
+    description: AML, KYC, and regulatory compliance management
+  - name: Admin - Financial Analytics
+    description: Financial analytics, reporting, and forecasting
 
   # Other Feature Tags
   - name: Achievements
