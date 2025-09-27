@@ -15,7 +15,7 @@ def auth_required(f):
             if not user or not user.is_active:
                 return jsonify({
                     'success': False,
-                    'message': 'Invalid token or user disabled'
+                    'message': 'INVALID_TOKEN_OR_USER_DISABLED'
                 }), 401
             
             return f(current_user=user, *args, **kwargs)
@@ -24,7 +24,7 @@ def auth_required(f):
             current_app.logger.error(f"Auth decorator error: {str(e)}")
             return jsonify({
                 'success': False,
-                'message': 'Authentication error'
+                'message': 'AUTHENTICATION_ERROR'
             }), 401
     
     return decorated_function
@@ -36,7 +36,7 @@ def admin_required(f):
         if current_user.role != 'admin':
             return jsonify({
                 'success': False,
-                'message': 'Admin access required'
+                'message': 'ADMIN_ACCESS_REQUIRED'
             }), 403
         
         return f(current_user=current_user, *args, **kwargs)

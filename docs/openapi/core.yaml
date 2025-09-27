@@ -75,6 +75,11 @@ core_constants: &core_constants
   - `VALIDATION_ERROR` - Validation error
   - `DATABASE_ERROR` - Database error
 
+  # Decorator Messages
+  - `INVALID_TOKEN_OR_USER_DISABLED` - Invalid token or user disabled
+  - `AUTHENTICATION_ERROR` - Authentication error
+  - `ADMIN_ACCESS_REQUIRED` - Admin access required
+
 # API Paths
 paths:
   # Authentication Endpoints
