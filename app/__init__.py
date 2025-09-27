@@ -30,6 +30,7 @@ def create_app(config_name=None):
     from app.preferences.controllers.preferences_controller import preferences_blueprint
     from app.social import register_social_module
     from app.games import create_games_blueprint, create_modes_blueprint, create_challenges_blueprint, create_teams_blueprint, init_games_module
+    from app.donations.controllers import wallet_bp, donation_bp, rates_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
@@ -54,6 +55,11 @@ def create_app(config_name=None):
     teams_bp = create_teams_blueprint()
     app.register_blueprint(teams_bp)
 
+    # Register donations module
+    app.register_blueprint(wallet_bp)
+    app.register_blueprint(donation_bp)
+    app.register_blueprint(rates_bp)
+
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():
         init_games_module()
@@ -77,9 +83,21 @@ def init_db(app):
 
         with app.app_context():
             from app.core.repositories.user_repository import UserRepository
+            from app.donations.repositories.wallet_repository import WalletRepository
+            from app.donations.repositories.transaction_repository import TransactionRepository
+            from app.donations.repositories.conversion_rate_repository import ConversionRateRepository
 
             user_repo = UserRepository()
             user_repo.create_indexes()
+
+            # Initialize donations module indexes
+            wallet_repo = WalletRepository()
+            transaction_repo = TransactionRepository()
+            conversion_rate_repo = ConversionRateRepository()
+
+            wallet_repo.create_indexes()
+            transaction_repo.create_indexes()
+            conversion_rate_repo.create_indexes()
 
             app.logger.info('Database initialized successfully')
     except Exception as e:

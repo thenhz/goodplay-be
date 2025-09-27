@@ -1,0 +1,806 @@
+{
+	"info": {
+		"_postman_id": "d7f8a3b1-e9c2-4f0d-88d7-2a4b5c6e7f89",
+		"name": "GoodPlay Donations API",
+		"description": "Virtual wallet, credit system, and donation processing API endpoints\n\nThis collection covers:\n- Wallet management and statistics\n- Credit conversion from game sessions\n- Donation processing\n- Conversion rates and multipliers\n- Transaction history\n- Auto-donation settings\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{refresh_token}}` - JWT refresh token\n- `{{test_email}}` - Test user email\n- `{{test_password}}` - Test user password\n- `{{user_id}}` - Current user ID\n- `{{wallet_id}}` - User's wallet ID\n- `{{transaction_id}}` - Sample transaction ID",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1672196"
+	},
+	"item": [
+		{
+			"name": "Wallet Management",
+			"item": [
+				{
+					"name": "Get Wallet Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.data && responseJson.data.wallet_id) {",
+									"        pm.environment.set('wallet_id', responseJson.data.wallet_id);",
+									"    }",
+									"    pm.test('Wallet info retrieved successfully', function () {",
+									"        pm.expect(responseJson.success).to.be.true;",
+									"        pm.expect(responseJson.data).to.have.property('current_balance');",
+									"        pm.expect(responseJson.data).to.have.property('total_earned');",
+									"        pm.expect(responseJson.data).to.have.property('total_donated');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Wallet Statistics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.test('Wallet statistics retrieved successfully', function () {",
+									"        pm.expect(responseJson.success).to.be.true;",
+									"        pm.expect(responseJson.data).to.have.property('wallet');",
+									"        pm.expect(responseJson.data).to.have.property('transactions');",
+									"        pm.expect(responseJson.data).to.have.property('conversion_rates');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/statistics",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"statistics"
+							]
+						}
+					}
+				},
+				{
+					"name": "Convert Game Session to Credits",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.test('Session converted to credits successfully', function () {",
+									"        pm.expect(responseJson.success).to.be.true;",
+									"        pm.expect(responseJson.data).to.have.property('credits_earned');",
+									"        pm.expect(responseJson.data).to.have.property('transaction_id');",
+									"        pm.expect(responseJson.data).to.have.property('new_balance');",
+									"    });",
+									"    if (responseJson.data && responseJson.data.transaction_id) {",
+									"        pm.environment.set('transaction_id', responseJson.data.transaction_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_data\": {\n        \"session_id\": \"session_123\",\n        \"game_id\": \"example_game\",\n        \"play_duration_ms\": 300000,\n        \"start_time\": \"2025-01-15T14:30:00Z\",\n        \"end_time\": \"2025-01-15T14:35:00Z\",\n        \"score\": 1250,\n        \"device_info\": {\n            \"platform\": \"web\",\n            \"device_type\": \"desktop\",\n            \"app_version\": \"1.0.0\"\n        }\n    },\n    \"user_context\": {\n        \"is_tournament_mode\": false,\n        \"is_challenge_mode\": true,\n        \"has_daily_streak\": true,\n        \"special_event_active\": false,\n        \"user_loyalty_level\": 2,\n        \"is_first_time_player\": false\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/convert-session",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"convert-session"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Transaction History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/transactions?page=1&page_size=20&transaction_type=earned&sort_by=created_at&sort_order=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "transaction_type",
+									"value": "earned"
+								},
+								{
+									"key": "sort_by",
+									"value": "created_at"
+								},
+								{
+									"key": "sort_order",
+									"value": "desc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Configure Auto-Donation",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"auto_donation_enabled\": true,\n    \"auto_donation_threshold\": 50.0,\n    \"auto_donation_percentage\": 10.0,\n    \"preferred_onlus_id\": \"onlus_123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/wallet/auto-donation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"auto-donation"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Donation Processing",
+			"item": [
+				{
+					"name": "Create Donation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.test('Donation created successfully', function () {",
+									"        pm.expect(responseJson.success).to.be.true;",
+									"        pm.expect(responseJson.data).to.have.property('transaction_id');",
+									"        pm.expect(responseJson.data).to.have.property('donation_amount');",
+									"        pm.expect(responseJson.data).to.have.property('remaining_balance');",
+									"    });",
+									"    if (responseJson.data && responseJson.data.transaction_id) {",
+									"        pm.environment.set('donation_transaction_id', responseJson.data.transaction_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 25.50,\n    \"onlus_id\": \"onlus_123\",\n    \"onlus_name\": \"Children's Education Foundation\",\n    \"message\": \"Happy to contribute to this great cause!\",\n    \"is_anonymous\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"donations",
+								"create"
+							]
+						}
+					}
+				},
+				{
+					"name": "Validate Donation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 100.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/validate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"donations",
+								"validate"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Donation History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/history?page=1&page_size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"donations",
+								"history"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Donation Receipt",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/{{transaction_id}}/receipt",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"donations",
+								"{{transaction_id}}",
+								"receipt"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Donation Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/donations/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"donations",
+								"summary"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Conversion Rates & Credits",
+			"item": [
+				{
+					"name": "Get Conversion Rates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"conversion-rates"
+							]
+						}
+					}
+				},
+				{
+					"name": "Calculate Credits Estimate",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates/calculator?duration_minutes=15&is_tournament=false&is_challenge=true&has_daily_streak=true&special_event_active=false&loyalty_level=2&is_first_time=false",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"conversion-rates",
+								"calculator"
+							],
+							"query": [
+								{
+									"key": "duration_minutes",
+									"value": "15"
+								},
+								{
+									"key": "is_tournament",
+									"value": "false"
+								},
+								{
+									"key": "is_challenge",
+									"value": "true"
+								},
+								{
+									"key": "has_daily_streak",
+									"value": "true"
+								},
+								{
+									"key": "special_event_active",
+									"value": "false"
+								},
+								{
+									"key": "loyalty_level",
+									"value": "2"
+								},
+								{
+									"key": "is_first_time",
+									"value": "false"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Active Multipliers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates/multipliers?is_tournament=false&is_challenge=true&has_daily_streak=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"conversion-rates",
+								"multipliers"
+							],
+							"query": [
+								{
+									"key": "is_tournament",
+									"value": "false"
+								},
+								{
+									"key": "is_challenge",
+									"value": "true"
+								},
+								{
+									"key": "has_daily_streak",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Simulate Credit Scenarios",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"scenarios\": [\n        {\n            \"name\": \"Normal Game Session\",\n            \"duration_minutes\": 30,\n            \"context\": {\n                \"is_tournament_mode\": false,\n                \"is_challenge_mode\": false,\n                \"has_daily_streak\": false,\n                \"special_event_active\": false,\n                \"user_loyalty_level\": 1,\n                \"is_first_time_player\": false\n            }\n        },\n        {\n            \"name\": \"Tournament Session with Bonuses\",\n            \"duration_minutes\": 45,\n            \"context\": {\n                \"is_tournament_mode\": true,\n                \"is_challenge_mode\": false,\n                \"has_daily_streak\": true,\n                \"special_event_active\": false,\n                \"user_loyalty_level\": 3,\n                \"is_first_time_player\": false\n            }\n        },\n        {\n            \"name\": \"Special Event Session\",\n            \"duration_minutes\": 20,\n            \"context\": {\n                \"is_tournament_mode\": false,\n                \"is_challenge_mode\": true,\n                \"has_daily_streak\": true,\n                \"special_event_active\": true,\n                \"user_loyalty_level\": 2,\n                \"is_first_time_player\": false\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates/simulation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"conversion-rates",
+								"simulation"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Credit Breakdown",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"duration_minutes\": 25,\n    \"context\": {\n        \"is_tournament_mode\": false,\n        \"is_challenge_mode\": true,\n        \"has_daily_streak\": true,\n        \"special_event_active\": false,\n        \"user_loyalty_level\": 2,\n        \"is_first_time_player\": false\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates/breakdown",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"conversion-rates",
+								"breakdown"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Rate History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/conversion-rates/history",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"conversion-rates",
+								"history"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Test Scenarios",
+			"item": [
+				{
+					"name": "Complete Donation Flow",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// This is a comprehensive test that simulates a complete donation flow",
+									"// 1. Get wallet info",
+									"// 2. Convert a game session to credits",
+									"// 3. Validate donation",
+									"// 4. Create donation",
+									"// 5. Get donation receipt"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"item": [
+						{
+							"name": "1. Get Initial Wallet State",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/wallet",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"wallet"
+									]
+								}
+							}
+						},
+						{
+							"name": "2. Convert Game Session",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"session_data\": {\n        \"session_id\": \"test_session_{{$randomUUID}}\",\n        \"game_id\": \"example_game\",\n        \"play_duration_ms\": 600000,\n        \"start_time\": \"{{$isoTimestamp}}\",\n        \"end_time\": \"{{$isoTimestamp}}\",\n        \"score\": 2500\n    },\n    \"user_context\": {\n        \"is_tournament_mode\": true,\n        \"has_daily_streak\": true\n    }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/wallet/convert-session",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"wallet",
+										"convert-session"
+									]
+								}
+							}
+						},
+						{
+							"name": "3. Validate Donation Amount",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"amount\": 5.00\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/donations/validate",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"donations",
+										"validate"
+									]
+								}
+							}
+						},
+						{
+							"name": "4. Create Donation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"amount\": 5.00,\n    \"onlus_id\": \"test_onlus_{{$randomUUID}}\",\n    \"onlus_name\": \"Test Charity Foundation\",\n    \"message\": \"Test donation from Postman collection\",\n    \"is_anonymous\": false\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/donations/create",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"donations",
+										"create"
+									]
+								}
+							}
+						},
+						{
+							"name": "5. Get Final Wallet State",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/wallet",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"wallet"
+									]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-refresh token if needed",
+					"const access_token = pm.environment.get('access_token');",
+					"if (!access_token) {",
+					"    console.log('No access token found. Please login first using the Core API collection.');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for all requests",
+					"pm.test('Response time is less than 5000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test('Response has valid JSON structure', function () {",
+					"    const responseJson = pm.response.json();",
+					"    pm.expect(responseJson).to.have.property('success');",
+					"    pm.expect(responseJson).to.have.property('message');",
+					"    if (responseJson.success) {",
+					"        pm.expect(responseJson).to.have.property('data');",
+					"    }",
+					"});",
+					"",
+					"// Log request and response for debugging",
+					"console.log('Request URL:', pm.request.url.toString());",
+					"console.log('Response Status:', pm.response.status);",
+					"console.log('Response Body:', pm.response.text());"
+				]
+			}
+		}
+	]
+}

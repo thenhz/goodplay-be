@@ -123,6 +123,45 @@ app/
   - Team contribution calculations with weighted scoring
   - Streak bonuses and challenge multipliers
 
+### Virtual Wallet & Credit System Features (GOO-14)
+- ✅ **Virtual Wallet Management**: Complete wallet system with balance tracking
+  - Individual user wallets with current balance, total earned, and total donated
+  - Optimistic locking for concurrent transaction safety
+  - Auto-donation settings with configurable thresholds and percentages
+  - Comprehensive wallet statistics and analytics
+- ✅ **Credit Conversion Engine**: Time-based credit calculation with multipliers
+  - Base rate: €0.01 per minute of gameplay
+  - Dynamic multipliers: Tournament (2.0x), Challenge (1.5x), Daily Streak (1.2x), Weekend (1.1x), Special Events (3.0x)
+  - Precise time tracking integration with GOO-9 session management (play_duration_ms)
+  - Fraud detection with anomaly detection for suspicious patterns
+- ✅ **Transaction Processing**: Complete audit trail with batch operations
+  - Transaction types: earned, donated, bonus, refund, adjustment, fee
+  - Transaction statuses: pending, completed, failed, cancelled, refunded
+  - Batch transaction processing for performance optimization
+  - Receipt generation for donations with tax deductibility information
+- ✅ **Auto-Donation System**: Automated donation processing
+  - Configurable auto-donation thresholds and percentages
+  - Round-up donation options for micro-donations
+  - Preferred ONLUS selection for automated donations
+  - Smart donation triggers based on balance thresholds
+- ✅ **Fraud Prevention & Security**: Multi-layer security system
+  - Rate limiting on credit conversion (max €1000/day per user)
+  - Anomaly detection for unusual earning patterns
+  - Session validation for legitimate gameplay
+  - Transaction integrity validation with cryptographic signatures
+  - Suspicious activity flagging and automated alerts
+- ✅ **Enhanced API Endpoints** (15+ new endpoints):
+  - `GET /api/wallet` - Get user wallet information
+  - `GET /api/wallet/transactions` - Transaction history with pagination
+  - `GET /api/wallet/statistics` - Comprehensive wallet analytics
+  - `POST /api/wallet/convert-session` - Convert game session to credits
+  - `PUT /api/wallet/auto-donation` - Configure auto-donation settings
+  - `POST /api/donations/create` - Process donation to ONLUS
+  - `GET /api/donations/history` - User donation history
+  - `GET /api/donations/{id}/receipt` - Get donation receipt
+  - `GET /api/conversion-rates` - Current rates and multipliers
+  - `GET /api/conversion-rates/calculator` - Estimate credits for duration
+
 ## Technology Stack
 - **Framework**: Flask 3.1.2
 - **Database**: MongoDB 
@@ -150,6 +189,7 @@ Database entities and schemas are defined in each module's `models/` directory:
   - `docs/openapi/core.yaml` - Authentication, user management, preferences
   - `docs/openapi/games.yaml` - Game engine, sessions, challenges, teams
   - `docs/openapi/social.yaml` - Social features, achievements, leaderboards
+  - `docs/openapi/donations.yaml` - Virtual wallet, credits, donations, conversion rates
 - **Usage**:
   - Import into Swagger UI for interactive documentation
   - Use for frontend API client generation
@@ -170,11 +210,14 @@ Database entities and schemas are defined in each module's `models/` directory:
   4. Run collection tests for API validation
   5. Export new requests when adding endpoints
 
-#### Game Engine APIs (50+ endpoints)
+#### Platform APIs (70+ endpoints)
 - **Game Management**: `/api/games/*` - Core game and session management
 - **Game Modes**: `/api/modes/*` - Temporary mode management and scheduling
 - **Challenges**: `/api/challenges/*` - Direct challenges and matchmaking
 - **Teams**: `/api/teams/*` - Global teams and tournament management
+- **Wallet Management**: `/api/wallet/*` - Virtual wallet and credit operations
+- **Donations**: `/api/donations/*` - Donation processing and receipts
+- **Conversion Rates**: `/api/conversion-rates/*` - Credit rates and calculators
 
 ## Development Guidelines
 

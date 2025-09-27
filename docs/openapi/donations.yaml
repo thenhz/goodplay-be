@@ -1,0 +1,851 @@
+# Donations & Virtual Wallet API
+# This module contains donation and wallet functionality for GOO-14
+
+# Message Constants for Donations Module
+donations_constants: &donations_constants
+  # Wallet Operations
+  - `WALLET_RETRIEVED_SUCCESS` - Wallet retrieved successfully
+  - `WALLET_NOT_FOUND` - Wallet not found
+  - `WALLET_CREATION_SUCCESS` - Wallet created successfully
+  - `WALLET_UPDATE_SUCCESS` - Wallet updated successfully
+  - `WALLET_STATISTICS_SUCCESS` - Wallet statistics retrieved successfully
+  - `WALLET_RETRIEVAL_ERROR` - Error retrieving wallet
+  - `WALLET_UPDATE_FAILED` - Failed to update wallet
+  - `WALLET_STATISTICS_ERROR` - Error retrieving wallet statistics
+
+  # Credit Operations
+  - `CREDITS_ADDED_SUCCESS` - Credits added successfully
+  - `CREDITS_CALCULATED_SUCCESS` - Credits calculated successfully
+  - `CREDIT_ESTIMATION_SUCCESS` - Credit estimation successful
+  - `SESSION_CONVERSION_SUCCESS` - Session converted to credits successfully
+  - `CREDITS_ADD_FAILED` - Failed to add credits
+  - `CREDITS_ADD_ERROR` - Error adding credits
+  - `CREDIT_CALCULATION_ERROR` - Error calculating credits
+  - `CREDIT_ESTIMATION_ERROR` - Error estimating credits
+  - `SESSION_CONVERSION_ERROR` - Error converting session to credits
+
+  # Transaction Operations
+  - `TRANSACTION_HISTORY_RETRIEVED_SUCCESS` - Transaction history retrieved
+  - `TRANSACTION_NOT_FOUND` - Transaction not found
+  - `TRANSACTION_ACCESS_DENIED` - Access denied to transaction
+  - `TRANSACTION_NOT_DONATION` - Transaction is not a donation
+  - `TRANSACTION_HISTORY_ERROR` - Error retrieving transaction history
+
+  # Donation Operations
+  - `DONATION_SUCCESS` - Donation processed successfully
+  - `DONATION_FAILED` - Donation processing failed
+  - `DONATION_ERROR` - Error processing donation
+  - `DONATION_DEDUCTION_FAILED` - Failed to deduct donation amount
+  - `INSUFFICIENT_CREDITS` - Insufficient credits for donation
+  - `AMOUNT_MUST_BE_POSITIVE` - Amount must be positive
+
+  # Auto-Donation Operations
+  - `AUTO_DONATION_SUCCESS` - Auto-donation processed successfully
+  - `AUTO_DONATION_NOT_ELIGIBLE` - Not eligible for auto-donation
+  - `AUTO_DONATION_ERROR` - Error processing auto-donation
+  - `AUTO_DONATION_SETTINGS_UPDATED_SUCCESS` - Auto-donation settings updated
+  - `AUTO_DONATION_SETTINGS_INVALID` - Invalid auto-donation settings
+  - `AUTO_DONATION_SETTINGS_UPDATE_ERROR` - Error updating auto-donation settings
+
+  # Receipt Operations
+  - `RECEIPT_RETRIEVED_SUCCESS` - Receipt retrieved successfully
+  - `RECEIPT_RETRIEVAL_ERROR` - Error retrieving receipt
+
+  # Conversion Rate Operations
+  - `CONVERSION_RATE_RETRIEVED_SUCCESS` - Conversion rate retrieved successfully
+  - `CONVERSION_RATE_NOT_AVAILABLE` - No conversion rate available
+  - `CONVERSION_RATE_RETRIEVAL_ERROR` - Error retrieving conversion rate
+  - `MULTIPLIERS_RETRIEVED_SUCCESS` - Multipliers retrieved successfully
+  - `MULTIPLIERS_RETRIEVAL_ERROR` - Error retrieving multipliers
+
+  # Session Validation
+  - `SESSION_INVALID_PLAY_DURATION` - Invalid play duration
+  - `SESSION_DURATION_TOO_LONG` - Session duration too long
+  - `SESSION_DURATION_TOO_SHORT` - Session duration too short
+  - `SESSION_USER_ID_REQUIRED` - Session user ID required
+  - `SESSION_SESSION_ID_REQUIRED` - Session ID required
+  - `SESSION_PLAY_DURATION_MS_REQUIRED` - Play duration required
+
+  # Fraud Detection
+  - `FRAUD_DETECTION_TRIGGERED` - Fraud detection triggered
+  - `SUSPICIOUS_ACTIVITY_DETECTED` - Suspicious activity detected
+
+  # Validation Errors
+  - `INVALID_DURATION` - Invalid duration specified
+  - `WALLET_DATA_INVALID_FORMAT` - Invalid wallet data format
+  - `WALLET_USER_ID_REQUIRED` - Wallet user ID required
+  - `WALLET_BALANCE_INVALID` - Invalid wallet balance
+  - `WALLET_AUTO_DONATION_SETTINGS_INVALID` - Invalid auto-donation settings
+  - `WALLET_AUTO_DONATION_THRESHOLD_INVALID` - Invalid auto-donation threshold
+  - `WALLET_AUTO_DONATION_PERCENTAGE_INVALID` - Invalid auto-donation percentage
+
+# API Paths
+paths:
+  # Wallet Management Endpoints
+  /api/wallet:
+    get:
+      tags:
+        - Wallet Management
+      summary: Get user wallet
+      description: Retrieve current user's wallet information including balance and statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WalletInfo'
+              example:
+                success: true
+                message: "WALLET_RETRIEVED_SUCCESS"
+                data:
+                  wallet_id: "64f8b2c1234567890abcdef1"
+                  user_id: "user_123"
+                  current_balance: 125.50
+                  total_earned: 300.00
+                  total_donated: 174.50
+                  auto_donation_settings:
+                    enabled: true
+                    threshold: 50.0
+                    percentage: 25
+                    preferred_onlus_id: "onlus_456"
+                    round_up_enabled: false
+        '404':
+          description: Wallet not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "WALLET_NOT_FOUND"
+
+  /api/wallet/transactions:
+    get:
+      tags:
+        - Wallet Management
+      summary: Get transaction history
+      description: Retrieve user's transaction history with pagination and filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of transactions per page
+        - name: transaction_type
+          in: query
+          schema:
+            type: string
+            enum: [earned, donated, bonus, refund, adjustment]
+          description: Filter by transaction type
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, failed, cancelled]
+          description: Filter by transaction status
+      responses:
+        '200':
+          description: Transaction history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TransactionHistory'
+
+  /api/wallet/statistics:
+    get:
+      tags:
+        - Wallet Management
+      summary: Get wallet statistics
+      description: Retrieve comprehensive wallet statistics and analytics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WalletStatistics'
+
+  /api/wallet/convert-session:
+    post:
+      tags:
+        - Credit Conversion
+      summary: Convert game session to credits
+      description: Convert a completed game session to wallet credits using current conversion rates
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionConversionRequest'
+            example:
+              session_id: "session_12345"
+              play_duration_ms: 600000
+              game_id: "puzzle_game"
+              game_mode: "tournament"
+              user_context:
+                has_daily_streak: true
+                special_event_active: false
+      responses:
+        '200':
+          description: Session converted to credits successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SessionConversionResult'
+        '400':
+          description: Session conversion failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_duration:
+                  value:
+                    success: false
+                    message: "SESSION_INVALID_PLAY_DURATION"
+                fraud_detection:
+                  value:
+                    success: false
+                    message: "FRAUD_DETECTION_TRIGGERED"
+
+  /api/wallet/auto-donation:
+    put:
+      tags:
+        - Auto-Donation
+      summary: Update auto-donation settings
+      description: Configure automatic donation settings for the user's wallet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoDonationSettings'
+            example:
+              enabled: true
+              threshold: 100.0
+              percentage: 30
+              preferred_onlus_id: "onlus_789"
+              round_up_enabled: true
+      responses:
+        '200':
+          description: Auto-donation settings updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AutoDonationSettings'
+
+  # Donation Endpoints
+  /api/donations/create:
+    post:
+      tags:
+        - Donations
+      summary: Process donation
+      description: Process a donation from user's wallet credits to an ONLUS
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DonationRequest'
+            example:
+              amount: 25.50
+              onlus_id: "onlus_456"
+              message: "Happy to help!"
+              is_anonymous: false
+      responses:
+        '200':
+          description: Donation processed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DonationResult'
+        '400':
+          description: Donation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                insufficient_credits:
+                  value:
+                    success: false
+                    message: "INSUFFICIENT_CREDITS"
+                invalid_amount:
+                  value:
+                    success: false
+                    message: "AMOUNT_MUST_BE_POSITIVE"
+
+  /api/donations/history:
+    get:
+      tags:
+        - Donations
+      summary: Get donation history
+      description: Retrieve user's donation history with pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: Donation history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DonationHistory'
+
+  /api/donations/{donation_id}/receipt:
+    get:
+      tags:
+        - Donations
+      summary: Get donation receipt
+      description: Retrieve detailed receipt for a specific donation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: donation_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Donation transaction ID
+      responses:
+        '200':
+          description: Receipt retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DonationReceipt'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "TRANSACTION_NOT_FOUND"
+
+  # Conversion Rate Endpoints
+  /api/conversion-rates:
+    get:
+      tags:
+        - Conversion Rates
+      summary: Get current conversion rates
+      description: Retrieve current credit conversion rates and active multipliers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Conversion rates retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ConversionRateInfo'
+
+  /api/conversion-rates/calculator:
+    get:
+      tags:
+        - Conversion Rates
+      summary: Estimate credits for duration
+      description: Calculate estimated credits for a given play duration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: duration_minutes
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: 0.1
+            maximum: 1440
+          description: Play duration in minutes
+        - name: is_tournament
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Whether this is tournament play
+        - name: is_challenge
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Whether this is challenge play
+        - name: has_daily_streak
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Whether user has daily streak
+      responses:
+        '200':
+          description: Credit estimation successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CreditEstimation'
+
+# Components
+components:
+  schemas:
+    # Core response structure (inherited from core.yaml)
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+        message:
+          type: string
+          description: Constant message key for UI localization
+        data:
+          type: object
+          description: Optional response data
+          nullable: true
+
+    # Wallet schemas
+    WalletInfo:
+      type: object
+      properties:
+        wallet_id:
+          type: string
+          description: Unique wallet identifier
+        user_id:
+          type: string
+          description: User identifier
+        current_balance:
+          type: number
+          format: float
+          description: Current wallet balance in EUR
+        total_earned:
+          type: number
+          format: float
+          description: Total credits earned
+        total_donated:
+          type: number
+          format: float
+          description: Total amount donated
+        auto_donation_settings:
+          $ref: '#/components/schemas/AutoDonationSettings'
+        statistics:
+          $ref: '#/components/schemas/WalletStatistics'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WalletStatistics:
+      type: object
+      properties:
+        donation_ratio:
+          type: number
+          format: float
+          description: Ratio of donated to earned credits
+        account_age_days:
+          type: integer
+          description: Account age in days
+        avg_credits_per_session:
+          type: number
+          format: float
+        total_transactions:
+          type: integer
+        completed_transactions:
+          type: integer
+
+    AutoDonationSettings:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Whether auto-donation is enabled
+        threshold:
+          type: number
+          format: float
+          description: Balance threshold to trigger auto-donation
+        percentage:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Percentage of excess to donate
+        preferred_onlus_id:
+          type: string
+          nullable: true
+          description: Preferred ONLUS for auto-donations
+        round_up_enabled:
+          type: boolean
+          description: Whether to round up donations
+
+    # Transaction schemas
+    TransactionInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Transaction database ID
+        transaction_id:
+          type: string
+          description: Unique transaction identifier
+        user_id:
+          type: string
+        type:
+          type: string
+          enum: [earned, donated, bonus, refund, adjustment, fee]
+        amount:
+          type: number
+          format: float
+          description: Base transaction amount
+        effective_amount:
+          type: number
+          format: float
+          description: Actual amount after multipliers
+        multiplier_applied:
+          type: number
+          format: float
+        source_type:
+          type: string
+          enum: [gameplay, tournament, challenge, daily_bonus, streak_bonus, referral, manual]
+          nullable: true
+        game_session_id:
+          type: string
+          nullable: true
+        onlus_id:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, completed, failed, cancelled, refunded]
+        metadata:
+          type: object
+        receipt_available:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    TransactionHistory:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionInfo'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    # Session conversion schemas
+    SessionConversionRequest:
+      type: object
+      required:
+        - session_id
+        - play_duration_ms
+        - game_id
+      properties:
+        session_id:
+          type: string
+          description: Game session identifier
+        play_duration_ms:
+          type: integer
+          minimum: 10000
+          maximum: 86400000
+          description: Actual play duration in milliseconds
+        game_id:
+          type: string
+          description: Game identifier
+        game_mode:
+          type: string
+          enum: [normal, tournament, challenge]
+          description: Game mode played
+        user_context:
+          type: object
+          properties:
+            has_daily_streak:
+              type: boolean
+            special_event_active:
+              type: boolean
+            user_loyalty_level:
+              type: integer
+            is_first_time_player:
+              type: boolean
+
+    SessionConversionResult:
+      type: object
+      properties:
+        credits_calculation:
+          type: object
+          properties:
+            amount:
+              type: number
+              format: float
+              description: Base credits calculated
+            effective_amount:
+              type: number
+              format: float
+              description: Final credits after multipliers
+            multiplier_applied:
+              type: number
+              format: float
+            active_multipliers:
+              type: array
+              items:
+                type: string
+            source_type:
+              type: string
+        wallet_update:
+          type: object
+          properties:
+            new_balance:
+              type: number
+              format: float
+            amount_added:
+              type: number
+              format: float
+            auto_donation:
+              type: object
+              nullable: true
+        session_id:
+          type: string
+
+    # Donation schemas
+    DonationRequest:
+      type: object
+      required:
+        - amount
+        - onlus_id
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          description: Donation amount in EUR
+        onlus_id:
+          type: string
+          description: ONLUS identifier
+        message:
+          type: string
+          maxLength: 500
+          description: Optional donation message
+        is_anonymous:
+          type: boolean
+          default: false
+          description: Whether donation should be anonymous
+
+    DonationResult:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        donation_amount:
+          type: number
+          format: float
+        remaining_balance:
+          type: number
+          format: float
+        onlus_id:
+          type: string
+        receipt:
+          $ref: '#/components/schemas/DonationReceipt'
+
+    DonationHistory:
+      type: object
+      properties:
+        donations:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionInfo'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        total_donated:
+          type: number
+          format: float
+
+    DonationReceipt:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        type:
+          type: string
+        amount:
+          type: number
+          format: float
+        date:
+          type: string
+          format: date-time
+        onlus_id:
+          type: string
+        onlus_name:
+          type: string
+        donation_receipt:
+          type: string
+        tax_deductible:
+          type: boolean
+        status:
+          type: string
+
+    # Conversion rate schemas
+    ConversionRateInfo:
+      type: object
+      properties:
+        rate_id:
+          type: string
+        base_rate_eur_per_minute:
+          type: number
+          format: float
+        is_active:
+          type: boolean
+        is_currently_valid:
+          type: boolean
+        multipliers:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+        max_possible_multiplier:
+          type: number
+          format: float
+        valid_from:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        description:
+          type: string
+
+    CreditEstimation:
+      type: object
+      properties:
+        duration_minutes:
+          type: number
+          format: float
+        base_credits:
+          type: number
+          format: float
+        credits_with_multipliers:
+          type: number
+          format: float
+        active_multipliers:
+          type: array
+          items:
+            type: string
+        total_multiplier:
+          type: number
+          format: float
+        base_rate:
+          type: number
+          format: float
+
+    # Common schemas
+    PaginationInfo:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
