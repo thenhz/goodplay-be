@@ -1,0 +1,813 @@
+# Impact Tracking & Reporting API (GOO-16)
+# Complete API specification for impact tracking, story unlocking, and transparency features
+
+# Message Constants for Impact Module
+impact_constants: &impact_constants
+  # Impact Tracking Operations
+  - `IMPACT_TRACKING_SUCCESS` - Impact tracking completed successfully
+  - `IMPACT_TRACKING_ERROR` - Error tracking impact
+  - `USER_IMPACT_SUMMARY_SUCCESS` - User impact summary retrieved successfully
+  - `USER_IMPACT_SUMMARY_ERROR` - Error retrieving user impact summary
+  - `DONATION_IMPACT_DETAILS_SUCCESS` - Donation impact details retrieved successfully
+  - `DONATION_IMPACT_DETAILS_ERROR` - Error retrieving donation impact details
+  - `USER_TIMELINE_SUCCESS` - User impact timeline retrieved successfully
+
+  # Story Unlocking Operations
+  - `STORIES_RETRIEVED_SUCCESS` - Stories retrieved successfully
+  - `STORIES_RETRIEVAL_ERROR` - Error retrieving stories
+  - `STORY_PROGRESS_SUCCESS` - Story progress retrieved successfully
+  - `STORY_PROGRESS_ERROR` - Error retrieving story progress
+  - `NEXT_STORIES_SUCCESS` - Next unlockable stories retrieved successfully
+  - `NEXT_STORIES_ERROR` - Error retrieving next stories
+  - `STORY_NOT_FOUND` - Story not found
+  - `STORY_UNLOCKED_SUCCESS` - Story unlocked successfully
+
+  # Community & Dashboard Operations
+  - `COMMUNITY_STATS_SUCCESS` - Community statistics retrieved successfully
+  - `COMMUNITY_STATS_ERROR` - Error retrieving community statistics
+  - `LEADERBOARD_SUCCESS` - Leaderboard retrieved successfully
+  - `LEADERBOARD_ERROR` - Error retrieving leaderboard
+  - `DASHBOARD_DATA_SUCCESS` - Dashboard data retrieved successfully
+  - `DASHBOARD_DATA_ERROR` - Error retrieving dashboard data
+
+  # ONLUS Impact Operations
+  - `ONLUS_VISUALIZATION_SUCCESS` - ONLUS visualization data retrieved successfully
+  - `ONLUS_VISUALIZATION_ERROR` - Error retrieving ONLUS visualization
+  - `ONLUS_UPDATES_SUCCESS` - ONLUS updates retrieved successfully
+  - `METRIC_UPDATED_SUCCESS` - Impact metric updated successfully
+  - `METRIC_CREATED_SUCCESS` - Impact metric created successfully
+  - `METRIC_UPDATE_ERROR` - Error updating metric
+
+  # Report Operations
+  - `MONTHLY_REPORT_SUCCESS` - Monthly report retrieved successfully
+  - `ANNUAL_REPORT_SUCCESS` - Annual report retrieved successfully
+  - `REPORT_NOT_FOUND` - Report not found
+  - `REAL_TIME_REPORT_GENERATED` - Real-time report generated successfully
+  - `REAL_TIME_REPORT_ERROR` - Error generating real-time report
+
+  # Impact Update Operations
+  - `IMPACT_UPDATE_CREATED_SUCCESS` - Impact update created successfully
+  - `IMPACT_UPDATE_CREATION_ERROR` - Error creating impact update
+
+  # Validation Errors
+  - `ONLUS_ID_REQUIRED` - ONLUS ID is required
+  - `REPORT_TYPE_REQUIRED` - Report type is required
+  - `INVALID_MONTH` - Invalid month specified
+  - `INVALID_YEAR` - Invalid year specified
+  - `UNSUPPORTED_REPORT_TYPE` - Unsupported report type
+
+# API Paths
+paths:
+  # =============================================================================
+  # USER IMPACT ENDPOINTS
+  # =============================================================================
+  /api/impact/user/{user_id}:
+    get:
+      tags:
+        - User Impact
+      summary: Get user impact summary
+      description: Get comprehensive impact summary for a user including donations, stories unlocked, and statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: User impact summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserImpactSummary'
+              example:
+                success: true
+                message: "USER_IMPACT_SUMMARY_SUCCESS"
+                data:
+                  user_id: "user123"
+                  statistics:
+                    total_donated: 150.50
+                    donation_count: 8
+                    onlus_diversity: 3
+                    impact_score: 85.2
+                  stories:
+                    unlocked_count: 5
+                    next_unlockable: []
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/impact/user/{user_id}/timeline:
+    get:
+      tags:
+        - User Impact
+      summary: Get user impact timeline
+      description: Get timeline of user's impact milestones and story unlocks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+            maximum: 365
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserTimeline'
+
+  /api/impact/donation/{donation_id}:
+    get:
+      tags:
+        - Donation Impact
+      summary: Get donation impact details
+      description: Get detailed impact information for a specific donation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: donation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Donation impact details retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DonationImpactDetails'
+
+  # =============================================================================
+  # STORY UNLOCKING ENDPOINTS
+  # =============================================================================
+  /api/impact/stories/available:
+    get:
+      tags:
+        - Impact Stories
+      summary: Get available stories
+      description: Get stories available for the current user based on their achievements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by story category
+      responses:
+        '200':
+          description: Available stories retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available_stories:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ImpactStory'
+
+  /api/impact/stories/{story_id}:
+    get:
+      tags:
+        - Impact Stories
+      summary: Get story details
+      description: Get detailed information about a specific story
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: story_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Story details retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/StoryWithProgress'
+
+  /api/impact/stories/progress:
+    get:
+      tags:
+        - Impact Stories
+      summary: Get story unlock progress
+      description: Get unlock progress for next available stories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Story progress retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          next_stories:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/StoryWithProgress'
+
+  # =============================================================================
+  # COMMUNITY & DASHBOARD ENDPOINTS
+  # =============================================================================
+  /api/impact/community/statistics:
+    get:
+      tags:
+        - Community Impact
+      summary: Get community statistics
+      description: Get platform-wide community impact statistics
+      responses:
+        '200':
+          description: Community statistics retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CommunityStatistics'
+
+  /api/impact/community/leaderboard:
+    get:
+      tags:
+        - Community Impact
+      summary: Get community leaderboard
+      description: Get community impact leaderboard
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, yearly]
+            default: monthly
+      responses:
+        '200':
+          description: Leaderboard retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CommunityLeaderboard'
+
+  /api/impact/dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard data
+      description: Get comprehensive dashboard data for impact visualization
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+          description: Optional user ID for personalization
+      responses:
+        '200':
+          description: Dashboard data retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardData'
+
+  # =============================================================================
+  # ONLUS IMPACT ENDPOINTS
+  # =============================================================================
+  /api/impact/onlus/{onlus_id}/metrics:
+    get:
+      tags:
+        - ONLUS Impact
+      summary: Get ONLUS impact metrics
+      description: Get impact metrics and visualization data for a specific ONLUS
+      parameters:
+        - name: onlus_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ONLUS metrics retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OnlusImpactMetrics'
+
+  /api/impact/onlus/{onlus_id}/updates:
+    get:
+      tags:
+        - ONLUS Impact
+      summary: Get ONLUS updates
+      description: Get recent updates from a specific ONLUS
+      parameters:
+        - name: onlus_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+            maximum: 90
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        '200':
+          description: ONLUS updates retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          onlus_id:
+                            type: string
+                          updates:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ImpactUpdate'
+
+  # =============================================================================
+  # REPORTS ENDPOINTS
+  # =============================================================================
+  /api/impact/reports/monthly/{year}/{month}:
+    get:
+      tags:
+        - Reports
+      summary: Get monthly report
+      description: Get monthly community impact report
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 2020
+            maximum: 2030
+        - name: month
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        '200':
+          description: Monthly report retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CommunityReport'
+
+  /api/impact/reports/annual/{year}:
+    get:
+      tags:
+        - Reports
+      summary: Get annual report
+      description: Get annual community impact report
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 2020
+            maximum: 2030
+      responses:
+        '200':
+          description: Annual report retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CommunityReport'
+
+  # =============================================================================
+  # ADMIN ENDPOINTS
+  # =============================================================================
+  /api/impact/admin/metrics:
+    post:
+      tags:
+        - Admin
+      summary: Create impact metric
+      description: Create or update an impact metric (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpactMetricRequest'
+      responses:
+        '200':
+          description: Metric created/updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImpactMetric'
+
+  /api/impact/admin/updates:
+    post:
+      tags:
+        - Admin
+      summary: Create impact update
+      description: Create an impact update (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpactUpdateRequest'
+      responses:
+        '200':
+          description: Update created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ImpactUpdate'
+
+  /api/impact/admin/reports/generate:
+    post:
+      tags:
+        - Admin
+      summary: Generate community report
+      description: Generate a new community report (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - report_type
+              properties:
+                report_type:
+                  type: string
+                  enum: [real_time, daily, weekly, monthly, quarterly, annual]
+      responses:
+        '200':
+          description: Report generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CommunityReport'
+
+# Components
+components:
+  schemas:
+    UserImpactSummary:
+      type: object
+      properties:
+        user_id:
+          type: string
+        statistics:
+          type: object
+          properties:
+            total_donated:
+              type: number
+              format: float
+            donation_count:
+              type: integer
+            onlus_diversity:
+              type: integer
+            impact_score:
+              type: number
+              format: float
+        stories:
+          type: object
+          properties:
+            unlocked_count:
+              type: integer
+            unlocked_stories:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImpactStory'
+            next_unlockable:
+              type: array
+              items:
+                $ref: '#/components/schemas/StoryWithProgress'
+
+    ImpactStory:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        story_type:
+          type: string
+          enum: [milestone, onlus_update, impact_report, community_highlight, seasonal]
+        unlock_condition_type:
+          type: string
+          enum: [total_donated, donation_count, onlus_diversity, impact_score, special_event, time_based]
+        unlock_condition_value:
+          type: number
+        category:
+          type: string
+        is_featured:
+          type: boolean
+        estimated_read_time:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    StoryWithProgress:
+      allOf:
+        - $ref: '#/components/schemas/ImpactStory'
+        - type: object
+          properties:
+            unlock_progress:
+              type: object
+              properties:
+                current_value:
+                  type: number
+                required_value:
+                  type: number
+                progress_percent:
+                  type: number
+                is_unlocked:
+                  type: boolean
+
+    ImpactMetric:
+      type: object
+      properties:
+        id:
+          type: string
+        onlus_id:
+          type: string
+        metric_name:
+          type: string
+        metric_type:
+          type: string
+          enum: [financial, beneficiaries, projects, geographic, environmental, educational, healthcare, social]
+        metric_unit:
+          type: string
+        current_value:
+          type: number
+        formatted_value:
+          type: string
+        target_value:
+          type: number
+        progress_percentage:
+          type: number
+        verification_status:
+          type: string
+          enum: [unverified, verified, disputed]
+        created_at:
+          type: string
+          format: date-time
+
+    ImpactUpdate:
+      type: object
+      properties:
+        id:
+          type: string
+        onlus_id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        update_type:
+          type: string
+          enum: [milestone_reached, project_completed, beneficiary_story, financial_report, operational_update, emergency_response, seasonal_campaign, partnership_news]
+        priority:
+          type: string
+          enum: [low, normal, high, urgent, critical]
+        is_featured:
+          type: boolean
+        beneficiary_count:
+          type: integer
+        financial_impact:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    CommunityReport:
+      type: object
+      properties:
+        id:
+          type: string
+        report_type:
+          type: string
+          enum: [daily, weekly, monthly, quarterly, annual, special_event, real_time]
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+            duration_days:
+              type: integer
+        summary:
+          type: object
+          properties:
+            donations:
+              type: object
+              properties:
+                total_amount:
+                  type: number
+                total_count:
+                  type: integer
+                average_amount:
+                  type: number
+            community:
+              type: object
+              properties:
+                unique_donors:
+                  type: integer
+                onlus_supported:
+                  type: integer
+
+    ImpactMetricRequest:
+      type: object
+      required:
+        - onlus_id
+        - metric_name
+        - metric_type
+        - metric_unit
+        - current_value
+      properties:
+        onlus_id:
+          type: string
+        metric_name:
+          type: string
+        metric_type:
+          type: string
+          enum: [financial, beneficiaries, projects, geographic, environmental, educational, healthcare, social]
+        metric_unit:
+          type: string
+        current_value:
+          type: number
+        target_value:
+          type: number
+        description:
+          type: string
+        methodology:
+          type: string
+
+    ImpactUpdateRequest:
+      type: object
+      required:
+        - onlus_id
+        - title
+        - content
+        - update_type
+      properties:
+        onlus_id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        update_type:
+          type: string
+          enum: [milestone_reached, project_completed, beneficiary_story, financial_report, operational_update, emergency_response, seasonal_campaign, partnership_news]
+        priority:
+          type: string
+          enum: [low, normal, high, urgent, critical]
+          default: normal
+        beneficiary_count:
+          type: integer
+        financial_impact:
+          type: number
+        location:
+          type: string
+        media_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+
+  responses:
+    Forbidden:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "ACCESS_DENIED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "RESOURCE_NOT_FOUND"

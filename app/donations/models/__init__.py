@@ -7,7 +7,14 @@ from .batch_operation import BatchOperation, BatchOperationType, BatchOperationS
 from .batch_donation import BatchDonation, BatchDonationStatus
 from .compliance_check import ComplianceCheck, ComplianceCheckType, ComplianceCheckStatus, ComplianceRiskLevel
 
+# Import new GOO-16 Impact Tracking models
+from .impact_story import ImpactStory, StoryType, UnlockConditionType, StoryStatus
+from .impact_metric import ImpactMetric, MetricType, MetricUnit, MetricPeriod
+from .impact_update import ImpactUpdate, UpdateType, UpdatePriority, UpdateStatus
+from .community_report import CommunityReport, ReportType, ReportStatus
+
 __all__ = [
+    # Core donation models
     'Wallet',
     'Transaction',
     'TransactionType',
@@ -28,5 +35,22 @@ __all__ = [
     'ComplianceCheck',
     'ComplianceCheckType',
     'ComplianceCheckStatus',
-    'ComplianceRiskLevel'
+    'ComplianceRiskLevel',
+
+    # GOO-16 Impact tracking models
+    'ImpactStory',
+    'StoryType',
+    'UnlockConditionType',
+    'StoryStatus',
+    'ImpactMetric',
+    'MetricType',
+    'MetricUnit',
+    'MetricPeriod',
+    'ImpactUpdate',
+    'UpdateType',
+    'UpdatePriority',
+    'UpdateStatus',
+    'CommunityReport',
+    'ReportType',
+    'ReportStatus'
 ]

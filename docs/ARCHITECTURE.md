@@ -885,6 +885,504 @@ except Exception as e:
 
 ---
 
-*Architecture documentation - GoodPlay Backend v1.1*
+## 🎨 GOO-16: Impact Tracking & Reporting System Architecture
+
+### 🏗️ System Overview
+
+The GOO-16 Impact Tracking & Reporting System completes the donation platform by providing real-time impact visualization, progressive story unlocking, and community transparency features. Building on the foundation of GOO-14 (Virtual Wallet) and GOO-15 (Donation Processing), GOO-16 creates direct connections between donations and their real-world impact.
+
+### 📊 Module Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        DONATIONS MODULE ARCHITECTURE                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  GOO-14: Virtual Wallet System (Foundation)                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐ │
+│  │     Wallet      │  │   Transaction   │  │    Credit Conversion        │ │
+│  │     Model       │  │     Model       │  │       Service               │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘ │
+│                                                                             │
+│  GOO-15: Donation Processing Engine                                       │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐ │
+│  │  PaymentIntent  │  │ BatchOperation  │  │    Compliance & Receipt     │ │
+│  │     Model       │  │     Model       │  │       Services              │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘ │
+│                                                                             │
+│  GOO-16: Impact Tracking & Reporting (NEW)                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐ │
+│  │  ImpactStory    │  │  ImpactMetric   │  │    Progressive Unlocking    │ │
+│  │     Model       │  │     Model       │  │       System                │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘ │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐ │
+│  │  ImpactUpdate   │  │ CommunityReport │  │    Real-time Impact         │ │
+│  │     Model       │  │     Model       │  │      Visualization          │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🔄 Integration Workflow
+
+```mermaid
+graph TD
+    A[User Makes Donation] --> B[GOO-15: Process Payment]
+    B --> C[GOO-14: Update Wallet]
+    C --> D[GOO-16: Track Impact]
+
+    D --> E[Update ONLUS Metrics]
+    D --> F[Check Story Unlocks]
+    D --> G[Update Community Stats]
+
+    E --> H[Efficiency Calculations]
+    F --> I[Progressive Content Reveal]
+    G --> J[Platform Analytics]
+
+    H --> K[ONLUS Dashboard]
+    I --> L[User Engagement]
+    J --> M[Community Reports]
+```
+
+### 🎯 Core Components
+
+#### **Impact Models** (`app/donations/models/`)
+
+**ImpactStory** (`impact_story.py`):
+- Progressive story unlocking system
+- Milestone-based content revelation (€10 → €10,000)
+- Multiple unlock conditions (total donated, donation count, ONLUS diversity)
+- User progress tracking and API response formatting
+
+**ImpactMetric** (`impact_metric.py`):
+- Aggregated ONLUS impact metrics
+- Efficiency ratio calculations (impact per euro)
+- Time-series trend analysis
+- Verification and dispute resolution system
+
+**ImpactUpdate** (`impact_update.py`):
+- Real-time updates from ONLUS organizations
+- Engagement tracking (views, likes, shares, comments)
+- Priority-based publishing system
+- Media attachments and related metrics
+
+**CommunityReport** (`community_report.py`):
+- Platform-wide aggregated reports
+- Growth metrics and statistical analysis
+- Monthly/annual reporting cycles
+- Community milestone tracking
+
+#### **Repository Layer** (`app/donations/repositories/`)
+
+**Advanced MongoDB Aggregations**:
+```python
+# Trend analysis pipeline
+def get_metric_trends(self, onlus_id: str, metric_name: str, days: int = 30):
+    pipeline = [
+        {"$match": {"onlus_id": onlus_id, "metric_name": metric_name}},
+        {"$group": {
+            "_id": {"date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$collection_date"}}},
+            "avg_value": {"$avg": "$current_value"},
+            "efficiency_ratio": {"$avg": {"$divide": ["$current_value", "$related_donations_amount"]}}
+        }},
+        {"$sort": {"_id.date": 1}}
+    ]
+
+# Community growth analysis
+def get_platform_growth_trends(self, months: int = 12):
+    pipeline = [
+        {"$match": {"report_type": "monthly", "status": "published"}},
+        {"$group": {
+            "_id": {"year": {"$year": "$period_start"}, "month": {"$month": "$period_start"}},
+            "total_donations": {"$sum": "$total_donations"},
+            "growth_rate": {"$avg": "$growth_metrics.donations_growth"}
+        }}
+    ]
+```
+
+**Performance Indexes**:
+```javascript
+// High-performance indexes for story unlocking
+{onlus_id: 1, is_active: 1, story_type: 1}
+{unlock_condition_type: 1, unlock_condition_value: 1, is_active: 1}
+{title: "text", content: "text", tags: "text"}
+
+// Metrics aggregation optimization
+{onlus_id: 1, metric_name: 1, collection_date: -1}
+{metric_type: 1, efficiency_ratio: -1}
+
+// Community reporting performance
+{report_type: 1, period_start: -1, status: 1}
+```
+
+#### **Service Layer** (`app/donations/services/`)
+
+**ImpactTrackingService** (`impact_tracking_service.py`):
+- Core donation→impact workflow coordination
+- User statistics aggregation and caching
+- Cross-service integration with GOO-14/GOO-15
+- Impact milestone detection and user level progression
+
+**StoryUnlockingService** (`story_unlocking_service.py`):
+- Progressive unlock algorithm implementation
+- Milestone achievement tracking
+- User progress calculation and API responses
+- Content availability management based on donation history
+
+**ImpactVisualizationService** (`impact_visualization_service.py`):
+- Dashboard data aggregation and formatting
+- ONLUS impact visualization preparation
+- Trend analysis and efficiency calculations
+- Real-time metrics compilation for frontend
+
+**CommunityImpactService** (`community_impact_service.py`):
+- Platform-wide statistics generation
+- Community leaderboards and ranking systems
+- Growth rate calculations and projections
+- Real-time report generation and caching
+
+#### **API Layer** (`app/donations/controllers/`)
+
+**ImpactController** (`impact_controller.py`):
+- 15+ REST endpoints with constant message responses
+- User impact summaries and timeline visualization
+- Story unlock progress and availability
+- Community statistics and leaderboards
+- ONLUS metrics and real-time updates
+- Monthly/annual reporting endpoints
+- Admin metrics and update management
+
+**Endpoint Categories**:
+```python
+# User Impact Endpoints
+GET  /api/impact/user/{user_id}                    # Impact summary
+GET  /api/impact/user/{user_id}/timeline           # Donation timeline
+GET  /api/impact/donation/{donation_id}            # Donation details
+
+# Story System Endpoints
+GET  /api/impact/stories/available                 # Available stories
+GET  /api/impact/stories/{story_id}                # Story details
+GET  /api/impact/stories/progress                  # Unlock progress
+
+# Community Endpoints
+GET  /api/impact/community/statistics              # Platform stats
+GET  /api/impact/community/leaderboard             # Leaderboards
+GET  /api/impact/dashboard                         # Dashboard data
+
+# ONLUS Endpoints
+GET  /api/impact/onlus/{onlus_id}/metrics          # ONLUS metrics
+GET  /api/impact/onlus/{onlus_id}/updates          # ONLUS updates
+
+# Reporting Endpoints
+GET  /api/impact/reports/monthly/{year}/{month}    # Monthly reports
+GET  /api/impact/reports/annual/{year}             # Annual reports
+
+# Admin Endpoints (Admin Required)
+POST /api/impact/admin/metrics                     # Create metrics
+POST /api/impact/admin/updates                     # Create updates
+POST /api/impact/admin/reports/generate            # Generate reports
+```
+
+### 🎮 Gamification System
+
+#### **Progressive Milestone System**:
+```python
+MILESTONE_LEVELS = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+
+# Example progression:
+€10   → "First Impact" story unlock
+€25   → "Growing Difference" story + basic metrics access
+€50   → "Community Builder" story + trend data
+€100  → "Changemaker" story + detailed analytics
+€250  → "Impact Champion" story + ONLUS direct updates
+€500  → "Philanthropist" story + community leaderboard
+€1000 → "Major Donor" story + platform insights
+€2500 → "Community Leader" story + admin dashboards
+€5000 → "Impact Hero" story + advanced reporting
+€10000→ "Transformation Leader" story + all features
+```
+
+#### **Unlock Conditions**:
+- **Total Donated**: Cumulative donation amount across all ONLUS
+- **Donation Count**: Number of separate donation transactions
+- **ONLUS Diversity**: Number of different organizations supported
+- **Impact Score**: Calculated efficiency and engagement metric
+- **Special Events**: Holiday campaigns, emergency responses, community goals
+
+### 📊 Database Collections
+
+#### **New Collections Added**:
+
+**impact_stories** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "onlus_id": "uuid",                    // ONLUS organization ID
+  "title": "Your First Impact Story",    // Display title
+  "content": "Full story content...",    // Revealed when unlocked
+  "story_type": "milestone",             // milestone|progress|featured|special
+  "unlock_condition_type": "total_donated",  // unlock trigger type
+  "unlock_condition_value": 100.0,      // threshold amount/count
+  "category": "education",               // impact category
+  "priority": 5,                         // display priority 1-10
+  "media_urls": ["https://..."],         // photos, videos, documents
+  "tags": ["education", "children"],     // searchable tags
+  "featured_until": null,                // featured expiration
+  "is_active": true,                     // visibility control
+  "created_at": ISODate,
+  "updated_at": ISODate
+}
+```
+
+**impact_metrics** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "onlus_id": "uuid",                    // ONLUS organization ID
+  "metric_name": "children_helped",      // metric identifier
+  "metric_type": "beneficiaries",        // financial|beneficiaries|projects|etc
+  "current_value": 150,                  // current metric value
+  "previous_value": 120,                 // previous period value
+  "unit": "people",                      // measurement unit
+  "related_donations_amount": 2500.0,    // associated donation total
+  "efficiency_ratio": 0.06,              // calculated efficiency
+  "collection_period": "month",          // data collection period
+  "collection_date": ISODate,            // when metric was recorded
+  "verification_status": "verified",     // verified|pending|disputed
+  "is_active": true,
+  "created_at": ISODate
+}
+```
+
+**impact_updates** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "onlus_id": "uuid",                    // ONLUS organization ID
+  "title": "New School Completed",       // update title
+  "content": "Full update content...",   // update details
+  "update_type": "milestone_reached",    // update category
+  "priority": "high",                    // low|normal|high|urgent|critical
+  "status": "published",                 // draft|scheduled|published|featured
+  "tags": ["construction", "education"], // categorization tags
+  "media_urls": ["https://..."],         // attached media
+  "related_metrics": {                   // related metric updates
+    "schools_built": 1,
+    "children_capacity": 200
+  },
+  "engagement_metrics": {                // user engagement tracking
+    "views": 1250,
+    "likes": 45,
+    "shares": 12,
+    "comments": 8
+  },
+  "featured_until": null,                // featured expiration
+  "created_at": ISODate,
+  "published_at": ISODate
+}
+```
+
+**community_reports** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "report_type": "monthly",              // daily|weekly|monthly|quarterly|annual
+  "title": "Sept 2024 Impact Report",    // report title
+  "summary": "Community achievements...", // executive summary
+  "period_start": ISODate("2024-09-01"), // reporting period start
+  "period_end": ISODate("2024-09-30"),   // reporting period end
+  "total_donations": 45000.0,            // period donation total
+  "total_donors": 320,                   // active donor count
+  "active_onlus_count": 15,              // participating organizations
+  "detailed_metrics": {                  // comprehensive statistics
+    "donations_by_category": {
+      "education": 18000.0,
+      "health": 15000.0,
+      "environment": 12000.0
+    },
+    "user_engagement": {
+      "stories_unlocked": 180,
+      "avg_session_duration": 420,
+      "return_rate": 0.75
+    }
+  },
+  "growth_metrics": {                    // period-over-period growth
+    "donations_growth": 15.5,
+    "users_growth": 8.2,
+    "engagement_growth": 12.3
+  },
+  "status": "published",                 // draft|published|archived
+  "created_at": ISODate,
+  "published_at": ISODate
+}
+```
+
+### 🔗 Integration Points
+
+#### **GOO-16 → GOO-15 Integration**:
+```python
+# Donation completion triggers impact tracking
+@donation_bp.route('/process', methods=['POST'])
+def process_donation():
+    # GOO-15: Process payment
+    success, message, donation_data = donation_service.process_donation(data)
+
+    if success:
+        # GOO-16: Track impact
+        impact_service.track_donation_impact(
+            donation_data['donation_id'],
+            donation_data['user_id'],
+            donation_data['amount'],
+            donation_data['onlus_id']
+        )
+
+    return success_response(message, donation_data)
+```
+
+#### **GOO-16 → GOO-14 Integration**:
+```python
+# Credit conversion includes impact milestone checks
+def convert_session_to_credits(session_data):
+    # GOO-14: Convert credits
+    credits_earned = credit_service.calculate_credits(session_data)
+
+    # GOO-16: Check if credit earnings unlock stories
+    user_total = wallet_service.get_user_total_earned(user_id)
+    unlocked_stories = story_service.check_and_unlock_stories(user_id, user_total)
+
+    return {
+        'credits_earned': credits_earned,
+        'stories_unlocked': unlocked_stories,
+        'new_milestone_reached': len(unlocked_stories) > 0
+    }
+```
+
+### 📈 Performance Considerations
+
+#### **Caching Strategy**:
+```python
+# Redis caching for frequently accessed data
+CACHE_KEYS = {
+    'user_impact_summary': 'impact:user:{user_id}:summary',      # TTL: 10 minutes
+    'dashboard_data': 'impact:user:{user_id}:dashboard',         # TTL: 15 minutes
+    'community_stats': 'impact:community:stats',                # TTL: 30 minutes
+    'onlus_metrics': 'impact:onlus:{onlus_id}:metrics',         # TTL: 5 minutes
+    'story_unlocks': 'impact:user:{user_id}:unlocks'            # TTL: 60 minutes
+}
+```
+
+#### **Database Query Optimization**:
+```python
+# Efficient aggregation pipeline for user impact
+def get_user_impact_summary(user_id):
+    # Single aggregation query across multiple collections
+    pipeline = [
+        {"$lookup": {"from": "transactions", "localField": "user_id", "foreignField": "user_id"}},
+        {"$lookup": {"from": "impact_stories", "localField": "unlock_level", "foreignField": "unlock_condition_value"}},
+        {"$group": {"_id": "$user_id", "total_donated": {"$sum": "$amount"}, "stories_unlocked": {"$addToSet": "$story_id"}}}
+    ]
+```
+
+#### **Scalability Features**:
+- Background task queues for report generation
+- Incremental aggregation updates
+- Partitioned collections for historical data
+- Read replicas for analytics queries
+
+### 🧪 Testing Architecture
+
+#### **Test Structure (99 Test Methods)**:
+```
+tests/test_goo16_models.py        (25 tests) - Model validation & business logic
+tests/test_goo16_repositories.py  (28 tests) - Database operations & aggregations
+tests/test_goo16_services.py      (18 tests) - Service layer business logic
+tests/test_goo16_controllers.py   (21 tests) - API endpoints & auth validation
+tests/test_goo16_integration.py   (7 tests)  - End-to-end workflow testing
+```
+
+#### **Coverage Requirements**:
+- Models: >95% line coverage
+- Repositories: >90% line coverage
+- Services: >88% line coverage
+- Controllers: >92% line coverage
+- Integration: >85% line coverage
+- **Overall Target**: >90% coverage
+
+### 📱 Frontend Integration
+
+#### **API Response Constants**:
+All responses use constant message keys for UI internationalization:
+```python
+# Success constants
+"USER_IMPACT_SUMMARY_SUCCESS", "STORIES_RETRIEVED_SUCCESS",
+"COMMUNITY_STATS_SUCCESS", "LEADERBOARD_SUCCESS",
+"DASHBOARD_DATA_SUCCESS", "MONTHLY_REPORT_SUCCESS"
+
+# Error constants
+"STORY_NOT_FOUND", "REPORT_NOT_FOUND", "ACCESS_DENIED",
+"INVALID_MONTH", "ONLUS_ID_REQUIRED"
+```
+
+#### **Real-time Updates**:
+```javascript
+// WebSocket integration for live updates
+const impactSocket = io('/impact');
+
+impactSocket.on('story_unlocked', (data) => {
+    // Show unlock notification
+    showStoryUnlockNotification(data.story);
+    // Refresh user progress
+    refreshUserProgress();
+});
+
+impactSocket.on('community_milestone', (data) => {
+    // Show platform achievement
+    showCommunityMilestone(data.milestone);
+});
+```
+
+### 🚀 Deployment Considerations
+
+#### **Environment Variables**:
+```bash
+# GOO-16 specific configuration
+IMPACT_STORY_CACHE_TTL=600
+METRIC_UPDATE_FREQUENCY=300
+COMMUNITY_REPORT_SCHEDULE="0 0 1 * *"
+TRENDING_UPDATE_WINDOW=24
+MAX_STORIES_PER_USER=50
+REPORT_GENERATION_TIMEOUT=300
+```
+
+#### **Background Jobs**:
+```python
+# Scheduled tasks for GOO-16
+@scheduler.task('cron', hour=0, minute=0, day=1)  # Monthly reports
+def generate_monthly_reports():
+    CommunityImpactService().generate_monthly_report()
+
+@scheduler.task('interval', minutes=5)  # Metric updates
+def update_trending_metrics():
+    ImpactVisualizationService().refresh_trending_updates()
+
+@scheduler.task('interval', minutes=10)  # Cache warming
+def warm_dashboard_cache():
+    CacheService().warm_dashboard_data()
+```
+
+#### **Monitoring & Alerts**:
+```python
+# Key metrics to monitor
+MONITORING_METRICS = {
+    'story_unlock_latency': {'threshold': '500ms', 'alert': 'high'},
+    'dashboard_load_time': {'threshold': '2s', 'alert': 'medium'},
+    'report_generation_time': {'threshold': '5min', 'alert': 'high'},
+    'daily_story_unlocks': {'threshold': '> 0', 'alert': 'low'},
+    'api_error_rate': {'threshold': '< 1%', 'alert': 'critical'}
+}
+```
+
+---
+
+*Architecture documentation - GoodPlay Backend v1.2*
 *Last updated: September 27, 2025*
-*Includes GOO-15 Donation Processing Engine*
+*Includes GOO-14 Virtual Wallet, GOO-15 Donation Processing, and GOO-16 Impact Tracking*

@@ -8,7 +8,14 @@ from .receipt_generation_service import ReceiptGenerationService
 from .tax_compliance_service import TaxComplianceService
 from .compliance_service import ComplianceService
 
+# Import new GOO-16 Impact Tracking services
+from .impact_tracking_service import ImpactTrackingService
+from .story_unlocking_service import StoryUnlockingService
+from .impact_visualization_service import ImpactVisualizationService
+from .community_impact_service import CommunityImpactService
+
 __all__ = [
+    # Core donation services
     'WalletService',
     'CreditCalculationService',
     'FraudPreventionService',
@@ -17,5 +24,11 @@ __all__ = [
     'BatchProcessingService',
     'ReceiptGenerationService',
     'TaxComplianceService',
-    'ComplianceService'
+    'ComplianceService',
+
+    # GOO-16 Impact tracking services
+    'ImpactTrackingService',
+    'StoryUnlockingService',
+    'ImpactVisualizationService',
+    'CommunityImpactService'
 ]

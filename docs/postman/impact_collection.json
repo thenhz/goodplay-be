@@ -1,0 +1,918 @@
+{
+	"info": {
+		"_postman_id": "goo16-impact-tracking-api",
+		"name": "GoodPlay Impact Tracking API (GOO-16)",
+		"description": "Impact tracking, story unlocking, and transparency reporting API endpoints\n\nThis collection covers:\n- User impact tracking and summaries\n- Progressive story unlocking system\n- Community statistics and leaderboards\n- ONLUS impact visualization\n- Impact reports (monthly/annual)\n- Admin impact management\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{user_id}}` - Current user ID\n- `{{onlus_id}}` - Sample ONLUS ID\n- `{{donation_id}}` - Sample donation ID\n- `{{story_id}}` - Sample story ID",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "goo16"
+	},
+	"item": [
+		{
+			"name": "User Impact",
+			"description": "Endpoints for tracking and retrieving user impact data",
+			"item": [
+				{
+					"name": "Get User Impact Summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has success field', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('success', true);",
+									"});",
+									"",
+									"pm.test('Response has constant message', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('USER_IMPACT_SUMMARY_SUCCESS');",
+									"});",
+									"",
+									"pm.test('Response has user impact data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.data).to.have.property('user_id');",
+									"    pm.expect(responseJson.data).to.have.property('statistics');",
+									"    pm.expect(responseJson.data).to.have.property('milestones');",
+									"    pm.expect(responseJson.data).to.have.property('next_unlocks');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/user/{{user_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Impact Timeline",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has timeline data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('USER_TIMELINE_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('timeline');",
+									"    pm.expect(responseJson.data.timeline).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/user/{{user_id}}/timeline?days=30",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"user",
+								"{{user_id}}",
+								"timeline"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Donation Impact Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has donation impact data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('DONATION_IMPACT_DETAILS_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('donation_id');",
+									"    pm.expect(responseJson.data).to.have.property('impact_metrics');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/donation/{{donation_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"donation",
+								"{{donation_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Story Unlocking",
+			"description": "Progressive story unlocking system endpoints",
+			"item": [
+				{
+					"name": "Get Available Stories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has stories data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('STORIES_RETRIEVED_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('stories');",
+									"    pm.expect(responseJson.data.stories).to.be.an('array');",
+									"});",
+									"",
+									"if (pm.response.json().data.stories.length > 0) {",
+									"    pm.environment.set('story_id', pm.response.json().data.stories[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/stories/available?include_locked=false&category=impact&limit=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"stories",
+								"available"
+							],
+							"query": [
+								{
+									"key": "include_locked",
+									"value": "false"
+								},
+								{
+									"key": "category",
+									"value": "impact"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Story Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has story details', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('STORIES_RETRIEVED_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('story');",
+									"    pm.expect(responseJson.data.story).to.have.property('id');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/stories/{{story_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"stories",
+								"{{story_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Story Unlock Progress",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has progress data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('STORY_PROGRESS_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('progress');",
+									"    pm.expect(responseJson.data).to.have.property('next_unlocks');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/stories/progress",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"stories",
+								"progress"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Community & Dashboard",
+			"description": "Community statistics and dashboard data endpoints",
+			"item": [
+				{
+					"name": "Get Community Statistics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has community stats', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('COMMUNITY_STATS_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('total_donated');",
+									"    pm.expect(responseJson.data).to.have.property('active_users');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/community/statistics?period=month",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"community",
+								"statistics"
+							],
+							"query": [
+								{
+									"key": "period",
+									"value": "month"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Community Leaderboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has leaderboard data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('LEADERBOARD_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('leaderboard');",
+									"    pm.expect(responseJson.data.leaderboard).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/community/leaderboard?metric=total_donated&limit=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"community",
+								"leaderboard"
+							],
+							"query": [
+								{
+									"key": "metric",
+									"value": "total_donated"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Dashboard Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has dashboard data', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('DASHBOARD_DATA_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('user_summary');",
+									"    pm.expect(responseJson.data).to.have.property('featured_stories');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/dashboard",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"dashboard"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ONLUS Impact",
+			"description": "ONLUS-specific impact visualization and updates",
+			"item": [
+				{
+					"name": "Get ONLUS Impact Metrics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has ONLUS metrics', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('ONLUS_VISUALIZATION_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('onlus_id');",
+									"    pm.expect(responseJson.data).to.have.property('metrics');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/onlus/{{onlus_id}}/metrics?period=month&include_trends=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"onlus",
+								"{{onlus_id}}",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "period",
+									"value": "month"
+								},
+								{
+									"key": "include_trends",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get ONLUS Impact Updates",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has ONLUS updates', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('ONLUS_UPDATES_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('updates');",
+									"    pm.expect(responseJson.data.updates).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/onlus/{{onlus_id}}/updates?include_engagement=true&limit=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"onlus",
+								"{{onlus_id}}",
+								"updates"
+							],
+							"query": [
+								{
+									"key": "include_engagement",
+									"value": "true"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Impact Reports",
+			"description": "Monthly and annual impact reporting endpoints",
+			"item": [
+				{
+					"name": "Get Monthly Report",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has monthly report', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('MONTHLY_REPORT_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('report');",
+									"    pm.expect(responseJson.data.report).to.have.property('period');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/reports/monthly/2024/9",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"reports",
+								"monthly",
+								"2024",
+								"9"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Annual Report",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has annual report', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('ANNUAL_REPORT_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('report');",
+									"    pm.expect(responseJson.data.report).to.have.property('year');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/reports/annual/2024",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"reports",
+								"annual",
+								"2024"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Operations",
+			"description": "Administrative endpoints for impact management",
+			"item": [
+				{
+					"name": "Create Impact Metric",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has metric creation success', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('METRIC_CREATED_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('metric_id');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"onlus_id\": \"{{onlus_id}}\",\n    \"metric_name\": \"children_helped\",\n    \"metric_type\": \"cumulative\",\n    \"current_value\": 150,\n    \"unit\": \"count\",\n    \"description\": \"Number of children helped through educational programs\",\n    \"related_donations_amount\": 2500.00,\n    \"collection_period\": \"month\",\n    \"collection_date\": \"2024-09-01T00:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/admin/metrics",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"admin",
+								"metrics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Impact Update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has update creation success', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('IMPACT_UPDATE_CREATED_SUCCESS');",
+									"    pm.expect(responseJson.data).to.have.property('update_id');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"onlus_id\": \"{{onlus_id}}\",\n    \"title\": \"New School Opened\",\n    \"content\": \"Thanks to your donations, we have successfully opened a new school in rural Tanzania, providing education to 150 children.\",\n    \"update_type\": \"milestone\",\n    \"priority\": \"high\",\n    \"tags\": [\"education\", \"milestone\", \"Tanzania\"],\n    \"media_urls\": [\"https://example.com/school-opening.jpg\"],\n    \"related_metrics\": {\n        \"children_helped\": 150,\n        \"schools_built\": 1\n    },\n    \"featured_until\": \"2024-10-15T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/admin/updates",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"admin",
+								"updates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Real-Time Report",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has report generation success', function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.equal('REAL_TIME_REPORT_GENERATED');",
+									"    pm.expect(responseJson.data).to.have.property('report');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"report_type\": \"real_time_snapshot\",\n    \"include_projections\": true,\n    \"filters\": {\n        \"start_date\": \"2024-09-01T00:00:00Z\",\n        \"end_date\": \"2024-09-30T23:59:59Z\",\n        \"onlus_ids\": [\"{{onlus_id}}\"]\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/impact/admin/reports/generate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"impact",
+								"admin",
+								"reports",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set default environment variables if not set",
+					"if (!pm.environment.get('baseUrl')) {",
+					"    pm.environment.set('baseUrl', 'http://localhost:5000');",
+					"}",
+					"",
+					"// Set default test IDs for demo purposes",
+					"if (!pm.environment.get('user_id')) {",
+					"    pm.environment.set('user_id', 'test-user-id');",
+					"}",
+					"",
+					"if (!pm.environment.get('onlus_id')) {",
+					"    pm.environment.set('onlus_id', 'test-onlus-id');",
+					"}",
+					"",
+					"if (!pm.environment.get('donation_id')) {",
+					"    pm.environment.set('donation_id', 'test-donation-id');",
+					"}",
+					"",
+					"if (!pm.environment.get('story_id')) {",
+					"    pm.environment.set('story_id', 'test-story-id');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for all responses",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test('Response has required structure', function () {",
+					"    const responseJson = pm.response.json();",
+					"    pm.expect(responseJson).to.have.property('success');",
+					"    pm.expect(responseJson).to.have.property('message');",
+					"    ",
+					"    if (responseJson.success) {",
+					"        pm.expect(responseJson).to.have.property('data');",
+					"    }",
+					"});"
+				]
+			}
+		}
+	]
+}
