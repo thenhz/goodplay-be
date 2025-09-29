@@ -1383,6 +1383,536 @@ MONITORING_METRICS = {
 
 ---
 
+## 🏛️ **GOO-17: ONLUS Registry & Verification System Architecture**
+
+The ONLUS Registry & Verification System provides comprehensive management for non-profit organization registration, verification, and ongoing compliance monitoring within the GoodPlay platform.
+
+### **System Overview**
+
+GOO-17 implements a complete ONLUS (Non-profit Organization) lifecycle management system with:
+- **Multi-phase Application Workflow**: Draft → Submission → Review → Verification → Approval
+- **Document Management**: Upload, versioning, review, and lifecycle tracking
+- **Automated & Manual Verification**: Risk-based verification with fraud detection
+- **Compliance Monitoring**: Ongoing compliance scoring and review management
+- **Public Discovery**: Searchable directory with categorization and ratings
+
+### **Module Architecture**
+
+#### **5-Layer Component Architecture**
+
+```mermaid
+graph TB
+    A[Public APIs] --> B[Admin APIs]
+    B --> C[Service Layer]
+    C --> D[Repository Layer]
+    D --> E[Model Layer]
+
+    F[Document Management] --> C
+    G[Verification Engine] --> C
+    H[Compliance Monitor] --> C
+```
+
+#### **Core Components**
+
+**1. Model Layer** (`app/onlus/models/`):
+- **ONLUSCategory**: Category definitions with verification requirements
+- **ONLUSDocument**: Document lifecycle management with versioning
+- **VerificationCheck**: Automated and manual verification processes
+- **ONLUSApplication**: Multi-phase application workflow management
+- **ONLUSOrganization**: Verified organization profiles with compliance tracking
+
+**2. Repository Layer** (`app/onlus/repositories/`):
+- **ONLUSCategoryRepository**: Category management and requirement queries
+- **ONLUSDocumentRepository**: Document CRUD with expiration tracking
+- **VerificationCheckRepository**: Verification workflow and risk assessment
+- **ONLUSApplicationRepository**: Application lifecycle and statistics
+- **ONLUSOrganizationRepository**: Organization management and discovery
+
+**3. Service Layer** (`app/onlus/services/`):
+- **ApplicationService**: Complete application workflow orchestration
+- **VerificationService**: Verification engine with automated checks
+- **DocumentService**: Document management with review workflow
+- **ONLUSService**: Organization management and public discovery
+
+**4. Controller Layer** (`app/onlus/controllers/`):
+- **ApplicationController**: User application management (7 endpoints)
+- **AdminApplicationController**: Admin review workflow (13 endpoints)
+- **DocumentController**: Document operations (8 endpoints)
+- **ONLUSController**: Public organization APIs (9 endpoints)
+- **AdminONLUSController**: Admin organization management (10 endpoints)
+
+### **Application Workflow Architecture**
+
+#### **Multi-Phase Application Process**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: submit_application()
+    Submitted --> UnderReview: assign_reviewer()
+    UnderReview --> DocumentationPending: request_documents()
+    DocumentationPending --> DueDiligence: documents_approved()
+    DueDiligence --> Approved: final_approval()
+    DueDiligence --> Rejected: reject_application()
+    UnderReview --> Rejected: reject_application()
+    Submitted --> Rejected: reject_application()
+    Draft --> Withdrawn: withdraw_application()
+    Submitted --> Expired: 90_days_timeout()
+```
+
+#### **Application Service Orchestration**
+
+```python
+class ApplicationService:
+    def create_application(self, user_id: str, data: Dict) -> Tuple[bool, str, Dict]:
+        # 1. Validate application data
+        validation_result = self._validate_application_data(data)
+
+        # 2. Get category-specific requirements
+        requirements = self.category_repo.get_verification_requirements_for_category(
+            data['category']
+        )
+
+        # 3. Create application with requirements
+        application_data = {
+            **data,
+            'applicant_id': user_id,
+            'status': ApplicationStatus.DRAFT.value,
+            'phase': ApplicationPhase.INITIAL.value,
+            'required_documents': requirements,
+            'created_at': datetime.now(timezone.utc)
+        }
+
+        # 4. Save and return result
+        application_id = self.application_repo.create_application(application_data)
+        return True, "APPLICATION_CREATED_SUCCESS", {'application_id': application_id}
+```
+
+### **Document Management Architecture**
+
+#### **Document Lifecycle with Versioning**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant DocumentService
+    participant DocumentRepo
+    participant AdminReviewer
+
+    User->>DocumentService: upload_document()
+    DocumentService->>DocumentRepo: create_document(v1)
+    DocumentRepo->>DocumentService: document_created
+
+    AdminReviewer->>DocumentService: review_document(resubmit)
+    DocumentService->>User: notification(resubmission_required)
+
+    User->>DocumentService: upload_document(v2)
+    DocumentService->>DocumentRepo: create_document(v2, previous_version_id)
+    DocumentRepo->>DocumentService: document_created
+
+    AdminReviewer->>DocumentService: review_document(approve)
+    DocumentService->>DocumentRepo: update_document(approved)
+```
+
+#### **Document Version Management**
+
+```python
+class ONLUSDocument:
+    def update_version(self, previous_document: 'ONLUSDocument'):
+        """Update document version and link to previous version."""
+        self.version = previous_document.version + 1
+        self.previous_version_id = previous_document._id
+        self.is_current_version = True
+
+        # Mark previous version as superseded
+        previous_document.is_current_version = False
+```
+
+### **Verification Engine Architecture**
+
+#### **Risk-Based Verification System**
+
+```mermaid
+flowchart TD
+    A[Application Submitted] --> B[Initiate Verification Checks]
+    B --> C{Check Type}
+
+    C -->|Automated| D[Legal Status Check]
+    C -->|Automated| E[Tax Exempt Status]
+    C -->|Automated| F[Fraud Screening]
+    C -->|Manual| G[Background Check]
+    C -->|Manual| H[Financial Review]
+
+    D --> I[Risk Score Calculation]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J{Risk Level}
+    J -->|Low| K[Auto-Approve]
+    J -->|Medium| L[Manual Review Required]
+    J -->|High| M[Enhanced Due Diligence]
+    J -->|Critical| N[Auto-Reject]
+```
+
+#### **Verification Check Types**
+
+**Automated Checks**:
+- **Legal Status Verification**: Registry lookup and validation
+- **Tax Exempt Status**: Government database cross-reference
+- **Fraud Screening**: Pattern analysis and blacklist checking
+- **Financial Health**: Basic financial stability assessment
+
+**Manual Checks**:
+- **Background Check**: Leadership and board member verification
+- **Operational Assessment**: Site visits and operational validation
+- **Compliance Review**: Regulatory compliance verification
+- **Reference Verification**: Stakeholder and partner references
+
+#### **Risk Scoring Algorithm**
+
+```python
+class VerificationCheck:
+    def get_risk_score(self) -> float:
+        """Calculate risk score from verification results."""
+        if self.score is None:
+            return 3.0  # Unknown risk
+
+        # Convert 0-100 score to 1-5 risk scale (lower score = higher risk)
+        if self.score >= 90:
+            return 1.0  # Very low risk
+        elif self.score >= 75:
+            return 2.0  # Low risk
+        elif self.score >= 60:
+            return 3.0  # Medium risk
+        elif self.score >= 40:
+            return 4.0  # High risk
+        else:
+            return 5.0  # Very high risk
+```
+
+### **Organization Management Architecture**
+
+#### **Organization Lifecycle States**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active: application_approved()
+    Active --> Suspended: compliance_violation()
+    Active --> UnderReview: compliance_review_triggered()
+    Suspended --> Active: compliance_restored()
+    UnderReview --> Active: review_passed()
+    UnderReview --> Suspended: review_failed()
+    Active --> Inactive: voluntary_deactivation()
+    Suspended --> Deactivated: permanent_suspension()
+```
+
+#### **Compliance Monitoring System**
+
+```python
+class ONLUSOrganization:
+    def needs_compliance_review(self) -> bool:
+        """Check if organization needs compliance review."""
+        # Score-based review
+        if self.compliance_score < 70:
+            return True
+
+        # Time-based review (annual minimum)
+        if self.last_compliance_review:
+            days_since_review = (datetime.now(timezone.utc) - self.last_compliance_review).days
+            if days_since_review > 365:
+                return True
+
+        # Risk-based triggers
+        if self.total_donations_received > 100000 and days_since_review > 180:
+            return True
+
+        return False
+```
+
+### **API Architecture & Endpoints**
+
+#### **47 REST Endpoints Organized by Access Level**
+
+**Public APIs** (No authentication required):
+- `GET /api/onlus/organizations` - Browse organizations
+- `GET /api/onlus/organizations/{id}` - Organization details
+- `GET /api/onlus/organizations/featured` - Featured organizations
+- `GET /api/onlus/organizations/top-rated` - Top-rated organizations
+- `GET /api/onlus/categories` - Available categories
+- `GET /api/onlus/statistics` - Public statistics
+
+**User APIs** (Authentication required):
+- `POST /api/onlus/applications` - Create application
+- `PUT /api/onlus/applications/{id}` - Update application
+- `POST /api/onlus/applications/{id}/submit` - Submit for review
+- `GET /api/onlus/applications` - User's applications
+- `POST /api/onlus/applications/{id}/documents` - Upload documents
+- `GET /api/onlus/documents/{id}/download` - Download documents
+
+**Admin APIs** (Admin authentication required):
+- `GET /api/admin/onlus/applications` - Applications for review
+- `POST /api/admin/onlus/applications/{id}/assign` - Assign reviewer
+- `POST /api/admin/onlus/applications/{id}/verification/initiate` - Start verification
+- `POST /api/admin/onlus/applications/{id}/approve` - Final approval
+- `POST /api/admin/onlus/documents/{id}/review` - Review documents
+- `PUT /api/admin/onlus/organizations/{id}/status` - Update org status
+- `PUT /api/admin/onlus/organizations/{id}/compliance` - Update compliance
+
+#### **Security Architecture by Endpoint Type**
+
+**Public Endpoints**:
+- Rate limiting (100 requests/minute)
+- Response sanitization (no sensitive data)
+- Cache headers for performance
+
+**User Endpoints**:
+- JWT token validation
+- Resource ownership verification
+- Input sanitization and validation
+
+**Admin Endpoints**:
+- Admin role verification
+- Audit logging for all actions
+- Enhanced input validation
+- Session timeout enforcement
+
+### **Integration Architecture**
+
+#### **Cross-Module Integration Points**
+
+```python
+# Integration with GOO-14 Virtual Wallet
+def process_donation_to_onlus(user_id: str, onlus_id: str, amount: float):
+    # 1. Validate ONLUS eligibility
+    organization = self.onlus_service.get_organization(onlus_id)
+    if not organization.is_eligible_for_donations():
+        raise ValueError("Organization not eligible for donations")
+
+    # 2. Process donation through wallet system
+    donation_result = wallet_service.process_donation(user_id, amount, onlus_id)
+
+    # 3. Update ONLUS donation statistics
+    organization.update_donation_stats(amount, donation_result['is_new_donor'])
+
+    # 4. Generate receipt and compliance records
+    receipt = self.document_service.generate_donation_receipt(donation_result)
+
+    return donation_result, receipt
+```
+
+#### **Event-Driven Integrations**
+
+**ONLUS Events**:
+```python
+# Organization approval triggers multiple systems
+def trigger_organization_approved(organization_id: str):
+    # 1. Enable donation processing
+    wallet_service.enable_donation_target(organization_id)
+
+    # 2. Update impact tracking
+    impact_service.register_organization(organization_id)
+
+    # 3. Add to public directory
+    discovery_service.index_organization(organization_id)
+
+    # 4. Generate compliance monitoring schedule
+    compliance_service.schedule_monitoring(organization_id)
+```
+
+### **Database Architecture**
+
+#### **Collection Design**
+
+**onlus_applications**:
+```javascript
+{
+  _id: ObjectId,
+  applicant_id: String,           // User who submitted
+  organization_name: String,
+  tax_id: String,                 // Unique identifier
+  email: String,
+  category: String,               // ONLUSCategory enum
+  status: String,                 // ApplicationStatus enum
+  phase: String,                  // ApplicationPhase enum
+  priority: String,               // Priority enum
+  required_documents: [String],   // Document types required
+  submitted_documents: [String],  // Documents submitted
+  verification_checks: [ObjectId], // Related checks
+  created_at: Date,
+  submission_date: Date,
+  review_deadline: Date,
+  completion_percentage: Number
+}
+```
+
+**onlus_organizations**:
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  tax_id: String,                    // Indexed unique
+  category: String,
+  status: String,                    // OrganizationStatus enum
+  compliance_status: String,         // ComplianceStatus enum
+  compliance_score: Number,          // 0-100 score
+  verification_date: Date,
+  last_compliance_review: Date,
+  featured: Boolean,
+  featured_until: Date,
+  total_donations_received: Number,
+  total_donors: Number,
+  last_donation_date: Date,
+  bank_account_verified: Boolean,
+  created_at: Date,
+  updated_at: Date
+}
+```
+
+#### **Index Strategy**
+
+**Primary Indexes**:
+```python
+# Application queries
+applications.create_index([("status", 1), ("submission_date", -1)])
+applications.create_index([("assigned_reviewer", 1), ("status", 1)])
+
+# Organization discovery
+organizations.create_index([("category", 1), ("status", 1)])
+organizations.create_index([("featured", 1), ("featured_until", 1)])
+organizations.create_index([("compliance_score", -1), ("total_donations_received", -1)])
+
+# Text search
+organizations.create_index([("name", "text"), ("description", "text")])
+```
+
+### **Performance Optimization**
+
+#### **Caching Strategy**
+
+```python
+# Organization discovery cache
+@cache.memoize(timeout=300)  # 5 minutes
+def get_featured_organizations():
+    return self.organization_repo.get_featured_organizations()
+
+# Category requirements cache
+@cache.memoize(timeout=3600)  # 1 hour
+def get_category_requirements(category: str):
+    return self.category_repo.get_verification_requirements_for_category(category)
+```
+
+#### **Query Optimization**
+
+**Aggregation Pipelines for Statistics**:
+```python
+def get_organization_statistics(self):
+    pipeline = [
+        {
+            "$group": {
+                "_id": {"status": "$status"},
+                "count": {"$sum": 1},
+                "total_donations": {"$sum": "$total_donations_received"},
+                "total_donors": {"$sum": "$total_donors"}
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "by_status": {
+                    "$push": {
+                        "status": "$_id.status",
+                        "count": "$count",
+                        "total_donations": "$total_donations"
+                    }
+                },
+                "total_organizations": {"$sum": "$count"}
+            }
+        }
+    ]
+```
+
+### **Security & Compliance**
+
+#### **Data Protection**
+
+**Sensitive Data Handling**:
+```python
+def to_dict(self, include_sensitive: bool = False) -> Dict[str, Any]:
+    """Serialize with conditional sensitive data inclusion."""
+    base_data = {
+        'name': self.name,
+        'category': self.category,
+        'description': self.description,
+        'status': self.status
+    }
+
+    if include_sensitive:
+        base_data.update({
+            'tax_id': self.tax_id,
+            'compliance_score': self.compliance_score,
+            'legal_entity_type': self.legal_entity_type,
+            'bank_account': self.bank_account
+        })
+
+    return base_data
+```
+
+#### **Audit Trail**
+
+**Admin Action Logging**:
+```python
+@audit_log_action
+def approve_application(self, application_id: str, admin_id: str, conditions: List[str]):
+    # Log: WHO (admin_id) did WHAT (approve) on WHAT (application_id) WHEN (timestamp) WHY (conditions)
+    log_data = {
+        'action': 'APPROVE_APPLICATION',
+        'admin_id': admin_id,
+        'resource_type': 'ONLUS_APPLICATION',
+        'resource_id': application_id,
+        'conditions': conditions,
+        'timestamp': datetime.now(timezone.utc)
+    }
+    audit_logger.log_admin_action(log_data)
+```
+
+### **Monitoring & Analytics**
+
+#### **Key Performance Indicators**
+
+**Application Processing Metrics**:
+- Average application processing time
+- Application approval rate by category
+- Document review turnaround time
+- Verification check completion rates
+
+**Organization Health Metrics**:
+- Active organizations count by category
+- Compliance review completion rate
+- Average compliance scores
+- Donation eligibility percentage
+
+**System Performance Metrics**:
+- API response times by endpoint type
+- Database query performance
+- Document upload success rates
+- Search result relevance scores
+
+#### **Monitoring Dashboards**
+
+```python
+MONITORING_METRICS = {
+    'application_processing_time': {'threshold': '7_days', 'alert': 'high'},
+    'verification_completion_rate': {'threshold': '> 95%', 'alert': 'medium'},
+    'compliance_review_backlog': {'threshold': '< 50', 'alert': 'high'},
+    'document_upload_success_rate': {'threshold': '> 98%', 'alert': 'critical'},
+    'api_response_time_p95': {'threshold': '< 2s', 'alert': 'medium'}
+}
+```
+
+---
+
 *Architecture documentation - GoodPlay Backend v1.2*
-*Last updated: September 27, 2025*
-*Includes GOO-14 Virtual Wallet, GOO-15 Donation Processing, and GOO-16 Impact Tracking*
+*Last updated: September 28, 2025*
+*Includes GOO-14 Virtual Wallet, GOO-15 Donation Processing, GOO-16 Impact Tracking, and GOO-17 ONLUS Registry*
