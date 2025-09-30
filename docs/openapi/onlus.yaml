@@ -2001,6 +2001,485 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  # =============================================================================
+  # GOO-19: SMART ALLOCATION & FINANCIAL CONTROL ENDPOINTS
+  # =============================================================================
+
+  # Smart Allocation Endpoints
+  /api/onlus/allocations/request:
+    post:
+      tags: [Smart Allocation]
+      summary: Create new allocation request
+      description: Create a new donation allocation request for an ONLUS with smart scoring
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [onlus_id, requested_amount, project_description]
+              properties:
+                onlus_id:
+                  type: string
+                  description: ONLUS organization identifier
+                requested_amount:
+                  type: number
+                  minimum: 1
+                  description: Amount requested in EUR
+                project_description:
+                  type: string
+                  maxLength: 2000
+                  description: Description of project needing funding
+                deadline:
+                  type: string
+                  format: date
+                  description: Project deadline (optional)
+                priority_level:
+                  type: string
+                  enum: [low, medium, high, urgent, emergency]
+                  description: Request priority level
+      responses:
+        '200':
+          description: Allocation request created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ALLOCATION_REQUEST_CREATED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/AllocationRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/onlus/allocations/{request_id}:
+    get:
+      tags: [Smart Allocation]
+      summary: Get allocation request details
+      description: Retrieve detailed information about a specific allocation request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Allocation request retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ALLOCATION_REQUEST_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/AllocationRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/onlus/allocations/{request_id}/approve:
+    post:
+      tags: [Smart Allocation]
+      summary: Approve allocation request
+      description: Approve an allocation request and execute the allocation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved_amount:
+                  type: number
+                  description: Override requested amount (optional)
+                approval_notes:
+                  type: string
+                  maxLength: 1000
+                  description: Admin notes for approval
+      responses:
+        '200':
+          description: Request approved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ALLOCATION_REQUEST_APPROVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/AllocationResult'
+
+  # Financial Reporting Endpoints
+  /api/onlus/financial/reports:
+    post:
+      tags: [Financial Reporting]
+      summary: Generate financial report
+      description: Generate various types of financial reports with analytics
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [report_type, start_date, end_date]
+              properties:
+                report_type:
+                  type: string
+                  enum: [monthly, quarterly, annual, donor_statement, onlus_statement, audit_report]
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                entity_id:
+                  type: string
+                  description: Specific ONLUS or donor ID (optional)
+                report_format:
+                  type: string
+                  enum: [pdf, csv, json]
+                  default: pdf
+                include_tax_info:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Report generation started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "REPORT_GENERATION_STARTED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/FinancialReport'
+
+    get:
+      tags: [Financial Reporting]
+      summary: Get financial reports list
+      description: Retrieve list of financial reports with filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [monthly, quarterly, annual, donor_statement, onlus_statement, audit_report]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "REPORTS_RETRIEVED_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      reports:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FinancialReport'
+                      count:
+                        type: integer
+                      pagination:
+                        type: object
+
+  /api/onlus/financial/reports/{report_id}:
+    get:
+      tags: [Financial Reporting]
+      summary: Get specific financial report
+      description: Retrieve a specific financial report by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Report retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "FINANCIAL_REPORT_RETRIEVED_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/FinancialReport'
+
+  /api/onlus/financial/analytics/dashboard:
+    get:
+      tags: [Financial Reporting]
+      summary: Get financial analytics dashboard
+      description: Retrieve real-time financial analytics and KPIs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+          description: Period in days for analytics
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "ANALYTICS_DASHBOARD_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      total_donations:
+                        type: number
+                        example: 125000.00
+                      total_allocations:
+                        type: number
+                        example: 95000.00
+                      pending_requests:
+                        type: integer
+                        example: 15
+                      avg_processing_time:
+                        type: string
+                        example: "2.5 days"
+
+  # Compliance Monitoring Endpoints
+  /api/onlus/compliance/assessment/{onlus_id}:
+    post:
+      tags: [Compliance Monitoring]
+      summary: Conduct compliance assessment
+      description: Perform comprehensive compliance assessment for an ONLUS
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: onlus_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                period_months:
+                  type: integer
+                  minimum: 1
+                  maximum: 60
+                  default: 12
+      responses:
+        '200':
+          description: Assessment completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "COMPLIANCE_ASSESSMENT_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/ComplianceScore'
+
+  /api/onlus/compliance/score/{onlus_id}/current:
+    get:
+      tags: [Compliance Monitoring]
+      summary: Get current compliance score
+      description: Retrieve the current compliance score for an ONLUS
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: onlus_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Compliance score retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "CURRENT_COMPLIANCE_SCORE_SUCCESS"
+                  data:
+                    $ref: '#/components/schemas/ComplianceScore'
+
+  /api/onlus/compliance/monitoring/real-time:
+    post:
+      tags: [Compliance Monitoring]
+      summary: Perform real-time compliance monitoring
+      description: Execute real-time compliance monitoring across all organizations
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                max_alerts:
+                  type: integer
+                  minimum: 1
+                  maximum: 500
+                  default: 100
+      responses:
+        '200':
+          description: Monitoring completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "REAL_TIME_MONITORING_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      monitoring_session_id:
+                        type: string
+                        example: "monitor_456"
+                      total_organizations_checked:
+                        type: integer
+                        example: 150
+                      alerts_generated:
+                        type: integer
+                        example: 8
+
+  /api/onlus/compliance/dashboard:
+    get:
+      tags: [Compliance Monitoring]
+      summary: Get compliance dashboard
+      description: Retrieve comprehensive compliance dashboard data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: include_trends
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "COMPLIANCE_DASHBOARD_SUCCESS"
+                  data:
+                    type: object
+                    properties:
+                      total_organizations:
+                        type: integer
+                        example: 150
+                      high_risk_count:
+                        type: integer
+                        example: 5
+                      avg_compliance_score:
+                        type: number
+                        example: 82.3
+
 # =============================================================================
 # COMPONENTS SECTION
 # =============================================================================
@@ -4136,3 +4615,287 @@ components:
         - verification_status_breakdown
         - compliance_metrics
         - performance_metrics
+
+  # =============================================================================
+  # GOO-19: SMART ALLOCATION & FINANCIAL CONTROL SCHEMAS
+  # =============================================================================
+
+    # Smart Allocation Schemas
+    AllocationRequest:
+      type: object
+      properties:
+        request_id:
+          type: string
+          description: Unique request identifier
+          example: "60f1b2a3c4d5e6f7a8b9c0d1"
+        onlus_id:
+          type: string
+          description: ONLUS organization identifier
+          example: "onlus_123"
+        requested_amount:
+          type: number
+          minimum: 1
+          description: Requested amount in EUR
+          example: 5000.00
+        approved_amount:
+          type: number
+          description: Approved amount (may differ from requested)
+          example: 4500.00
+        allocation_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Calculated allocation score
+          example: 85.5
+        status:
+          type: string
+          enum: [draft, submitted, pending_review, approved, rejected, allocated, completed]
+          description: Current request status
+          example: "pending_review"
+        priority_level:
+          type: string
+          enum: [low, medium, high, urgent, emergency]
+          description: Request priority level
+          example: "high"
+        project_description:
+          type: string
+          maxLength: 2000
+          description: Description of the project
+          example: "Emergency relief fund for flood victims"
+        deadline:
+          type: string
+          format: date
+          description: Project deadline
+          example: "2024-02-15"
+        created_at:
+          type: string
+          format: date-time
+          description: Request creation timestamp
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-16T14:20:00Z"
+      required:
+        - request_id
+        - onlus_id
+        - requested_amount
+        - allocation_score
+        - status
+
+    AllocationResult:
+      type: object
+      properties:
+        result_id:
+          type: string
+          description: Unique result identifier
+          example: "result_456"
+        request_id:
+          type: string
+          description: Associated request ID
+          example: "60f1b2a3c4d5e6f7a8b9c0d1"
+        allocated_amount:
+          type: number
+          description: Actually allocated amount
+          example: 4500.00
+        execution_status:
+          type: string
+          enum: [pending, in_progress, completed, failed, cancelled]
+          description: Execution status
+          example: "completed"
+        donor_breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              donor_id:
+                type: string
+                example: "donor_789"
+              amount:
+                type: number
+                example: 1500.00
+              percentage:
+                type: number
+                example: 33.33
+          description: Breakdown by donor contributions
+        efficiency_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Allocation efficiency ratio
+          example: 0.92
+        executed_at:
+          type: string
+          format: date-time
+          description: Execution timestamp
+          example: "2024-01-17T09:15:00Z"
+      required:
+        - result_id
+        - request_id
+        - allocated_amount
+        - execution_status
+
+    # Financial Reporting Schemas
+    FinancialReport:
+      type: object
+      properties:
+        report_id:
+          type: string
+          description: Unique report identifier
+          example: "report_789"
+        report_type:
+          type: string
+          enum: [monthly, quarterly, annual, donor_statement, onlus_statement, audit_report]
+          description: Type of financial report
+          example: "quarterly"
+        report_format:
+          type: string
+          enum: [pdf, csv, json]
+          description: Report output format
+          example: "pdf"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+          description: Report generation status
+          example: "completed"
+        file_path:
+          type: string
+          description: Path to generated report file
+          example: "/reports/2024/Q1/quarterly_report_789.pdf"
+        file_size:
+          type: integer
+          description: Report file size in bytes
+          example: 2048576
+        start_date:
+          type: string
+          format: date
+          description: Report period start date
+          example: "2024-01-01"
+        end_date:
+          type: string
+          format: date
+          description: Report period end date
+          example: "2024-03-31"
+        generated_for_id:
+          type: string
+          description: Entity ID (ONLUS or donor) the report is for
+          example: "onlus_123"
+        generated_at:
+          type: string
+          format: date-time
+          description: Report generation timestamp
+          example: "2024-04-01T08:00:00Z"
+        is_confidential:
+          type: boolean
+          description: Whether the report contains confidential information
+          example: false
+      required:
+        - report_id
+        - report_type
+        - status
+
+    # Compliance Monitoring Schemas
+    ComplianceScore:
+      type: object
+      properties:
+        score_id:
+          type: string
+          description: Unique score identifier
+          example: "score_456"
+        onlus_id:
+          type: string
+          description: ONLUS organization identifier
+          example: "onlus_123"
+        overall_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Overall compliance score
+          example: 87.5
+        compliance_level:
+          type: string
+          enum: [excellent, good, satisfactory, needs_improvement, critical]
+          description: Compliance level classification
+          example: "good"
+        category_scores:
+          type: object
+          properties:
+            financial_transparency:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 90.0
+            regulatory_compliance:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 85.0
+            operational_efficiency:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 88.5
+            governance_quality:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 87.0
+            impact_effectiveness:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 89.0
+            stakeholder_engagement:
+              type: number
+              minimum: 0
+              maximum: 100
+              example: 85.5
+          description: Individual category scores
+        compliance_issues:
+          type: array
+          items:
+            type: object
+            properties:
+              issue_id:
+                type: string
+                example: "issue_123"
+              issue_type:
+                type: string
+                example: "documentation_incomplete"
+              description:
+                type: string
+                example: "Annual financial statement not submitted"
+              severity:
+                type: string
+                enum: [low, medium, high, critical]
+                example: "medium"
+              status:
+                type: string
+                enum: [open, in_progress, resolved, dismissed]
+                example: "open"
+          description: List of compliance issues
+        improvement_recommendations:
+          type: array
+          items:
+            type: string
+          description: Recommended improvements
+          example: ["Submit annual financial statements", "Update board member information"]
+        is_current:
+          type: boolean
+          description: Whether this is the current/latest score
+          example: true
+        assessment_date:
+          type: string
+          format: date-time
+          description: Assessment timestamp
+          example: "2024-01-15T10:30:00Z"
+        assessor_id:
+          type: string
+          description: ID of the assessor (admin user)
+          example: "admin_456"
+      required:
+        - score_id
+        - onlus_id
+        - overall_score
+        - compliance_level
