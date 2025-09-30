@@ -1,0 +1,1113 @@
+openapi: 3.1.0
+info:
+  title: GoodPlay Admin API
+  description: Admin dashboard and management API for GoodPlay platform
+  version: 1.0.0
+
+paths:
+  /api/admin/auth/login:
+    post:
+      summary: Admin Login
+      description: Authenticate admin user and receive JWT tokens
+      tags:
+        - Admin Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: Admin username or email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLoginResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: ADMIN_LOGIN_SUCCESS
+                    data:
+                      admin:
+                        _id: "admin123"
+                        username: "admin"
+                        email: "admin@goodplay.com"
+                        role: "admin"
+                      tokens:
+                        access_token: "eyJ..."
+                        refresh_token: "eyJ..."
+                        token_type: "Bearer"
+                        expires_in: 3600
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '403':
+          $ref: '#/components/responses/AccountLocked'
+
+  /api/admin/auth/profile:
+    get:
+      summary: Get Admin Profile
+      description: Get current admin user profile
+      tags:
+        - Admin Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProfileResponse'
+
+  /api/admin/auth/change-password:
+    put:
+      summary: Change Admin Password
+      tags:
+        - Admin Authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - new_password
+              properties:
+                current_password:
+                  type: string
+                new_password:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/PasswordChanged'
+        '400':
+          $ref: '#/components/responses/InvalidPassword'
+
+  /api/admin/dashboard:
+    get:
+      summary: Get Dashboard Overview
+      description: Get comprehensive dashboard overview based on admin permissions
+      tags:
+        - Admin Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardOverview'
+
+  /api/admin/dashboard/user-management:
+    get:
+      summary: Get User Management Dashboard
+      tags:
+        - Admin Dashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            default: "7d"
+            enum: ["1d", "7d", "30d", "90d"]
+      responses:
+        '200':
+          $ref: '#/components/responses/DashboardData'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+
+  /api/admin/dashboard/financial:
+    get:
+      summary: Get Financial Dashboard
+      tags:
+        - Admin Dashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            default: "30d"
+      responses:
+        '200':
+          $ref: '#/components/responses/DashboardData'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+
+  /api/admin/dashboard/system-monitoring:
+    get:
+      summary: Get System Monitoring Dashboard
+      tags:
+        - Admin Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/DashboardData'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+
+  /api/admin/metrics/real-time:
+    get:
+      summary: Get Real-time Metrics
+      tags:
+        - System Monitoring
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Real-time metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealTimeMetrics'
+
+  /api/admin/metrics/performance:
+    get:
+      summary: Get Performance Analytics
+      tags:
+        - System Monitoring
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hours
+          in: query
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 720
+      responses:
+        '200':
+          $ref: '#/components/responses/PerformanceAnalytics'
+
+  /api/admin/alerts:
+    get:
+      summary: Get System Alerts
+      tags:
+        - System Monitoring
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: ["critical", "high", "medium", "low"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          $ref: '#/components/responses/SystemAlerts'
+
+  /api/admin/alerts/{alert_id}/acknowledge:
+    post:
+      summary: Acknowledge Alert
+      tags:
+        - System Monitoring
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/AlertAcknowledged'
+
+  /api/admin/admins:
+    get:
+      summary: List Admin Users
+      tags:
+        - Admin Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: ["super_admin", "admin", "moderator", "analyst"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminList'
+
+    post:
+      summary: Create Admin User
+      tags:
+        - Admin Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AdminCreated'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+
+  /api/admin/admins/{admin_id}:
+    get:
+      summary: Get Admin Details
+      tags:
+        - Admin Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminId'
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminDetails'
+        '404':
+          $ref: '#/components/responses/AdminNotFound'
+
+    put:
+      summary: Update Admin
+      tags:
+        - Admin Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminUpdated'
+
+  /api/admin/admins/{admin_id}/activate:
+    post:
+      summary: Activate Admin Account
+      tags:
+        - Admin Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminId'
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminActivated'
+
+  /api/admin/admins/{admin_id}/deactivate:
+    post:
+      summary: Deactivate Admin Account
+      tags:
+        - Admin Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminDeactivated'
+        '400':
+          $ref: '#/components/responses/CannotDeactivateSelf'
+
+  /api/admin/users:
+    get:
+      summary: List Platform Users
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          $ref: '#/components/responses/UserList'
+
+  /api/admin/users/{user_id}:
+    get:
+      summary: Get User Details
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserDetails'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+
+  /api/admin/users/{user_id}/suspend:
+    post:
+      summary: Suspend User Account
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/UserSuspended'
+
+  /api/admin/users/{user_id}/activate:
+    post:
+      summary: Activate User Account
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/UserActivated'
+
+  /api/admin/users/bulk-action:
+    post:
+      summary: Bulk User Actions
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkUserActionRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BulkActionCompleted'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    AdminId:
+      name: admin_id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    AdminUser:
+      type: object
+      properties:
+        _id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: ["super_admin", "admin", "moderator", "analyst"]
+        permissions:
+          type: array
+          items:
+            type: string
+        is_active:
+          type: boolean
+        last_login:
+          type: string
+          format: date-time
+        mfa_enabled:
+          type: boolean
+
+    CreateAdminRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - role
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: ["super_admin", "admin", "moderator", "analyst"]
+
+    UpdateAdminRequest:
+      type: object
+      properties:
+        role:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        is_active:
+          type: boolean
+        session_timeout:
+          type: integer
+
+    BulkUserActionRequest:
+      type: object
+      required:
+        - user_ids
+        - action
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: string
+        action:
+          type: string
+          enum: ["suspend", "activate", "delete"]
+        reason:
+          type: string
+
+    AdminLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            admin:
+              $ref: '#/components/schemas/AdminUser'
+            tokens:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                refresh_token:
+                  type: string
+                token_type:
+                  type: string
+                expires_in:
+                  type: integer
+
+    AdminProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            admin:
+              $ref: '#/components/schemas/AdminUser'
+
+    DashboardOverview:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            system_health:
+              type: object
+            user_metrics:
+              type: object
+            financial_metrics:
+              type: object
+            content_metrics:
+              type: object
+            security_alerts:
+              type: array
+              items:
+                type: object
+            recent_activity:
+              type: array
+              items:
+                type: object
+
+    RealTimeMetrics:
+      type: object
+      properties:
+        current_performance:
+          type: object
+          properties:
+            cpu_usage:
+              type: number
+            memory_usage:
+              type: number
+            disk_usage:
+              type: number
+        latest_metrics:
+          type: object
+        alerts:
+          type: array
+          items:
+            type: object
+        system_status:
+          type: string
+          enum: ["healthy", "warning", "critical", "unknown"]
+
+  responses:
+    InvalidCredentials:
+      description: Invalid credentials
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                enum:
+                  - INVALID_CREDENTIALS
+                  - ADMIN_NOT_FOUND
+
+    AccountLocked:
+      description: Account locked or disabled
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                enum:
+                  - ADMIN_ACCOUNT_LOCKED
+                  - ADMIN_ACCOUNT_DISABLED
+                  - IP_NOT_WHITELISTED
+
+    AccessDenied:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                enum:
+                  - ACCESS_DENIED
+                  - INSUFFICIENT_PERMISSIONS
+                  - INSUFFICIENT_ROLE
+
+    PasswordChanged:
+      description: Password changed successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: PASSWORD_CHANGED_SUCCESS
+
+    InvalidPassword:
+      description: Invalid password
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                enum:
+                  - CURRENT_PASSWORD_INCORRECT
+                  - PASSWORD_TOO_WEAK
+
+    DashboardData:
+      description: Dashboard data retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+              data:
+                type: object
+
+    PerformanceAnalytics:
+      description: Performance analytics data
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  time_period:
+                    type: string
+                  statistics:
+                    type: object
+                  timelines:
+                    type: object
+                  performance_score:
+                    type: integer
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+
+    SystemAlerts:
+      description: System alerts retrieved
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+                  total_count:
+                    type: integer
+                  severity_distribution:
+                    type: object
+
+    AlertAcknowledged:
+      description: Alert acknowledged successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: ALERT_ACKNOWLEDGED_SUCCESS
+
+    AdminList:
+      description: List of admin users
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  admins:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminUser'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  skip:
+                    type: integer
+
+    AdminCreated:
+      description: Admin created successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: ADMIN_CREATED_SUCCESS
+
+    AdminDetails:
+      description: Admin details retrieved
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+                properties:
+                  admin:
+                    $ref: '#/components/schemas/AdminUser'
+
+    AdminNotFound:
+      description: Admin not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: ADMIN_NOT_FOUND
+
+    AdminUpdated:
+      description: Admin updated successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: ADMIN_UPDATED_SUCCESS
+
+    AdminActivated:
+      description: Admin activated successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: ADMIN_ACTIVATED_SUCCESS
+
+    AdminDeactivated:
+      description: Admin deactivated successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: ADMIN_DEACTIVATED_SUCCESS
+
+    CannotDeactivateSelf:
+      description: Cannot deactivate self
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: CANNOT_DEACTIVATE_SELF
+
+    UserList:
+      description: List of users
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+
+    UserDetails:
+      description: User details retrieved
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+              data:
+                type: object
+
+    UserNotFound:
+      description: User not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: USER_NOT_FOUND
+
+    UserSuspended:
+      description: User suspended successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: USER_SUSPENDED_SUCCESS
+
+    UserActivated:
+      description: User activated successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: USER_ACTIVATED_SUCCESS
+
+    BulkActionCompleted:
+      description: Bulk action completed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: BULK_ACTION_COMPLETED
+
+# Admin Response Constants
+admin_constants:
+  authentication:
+    - ADMIN_LOGIN_SUCCESS
+    - ADMIN_PROFILE_SUCCESS
+    - INVALID_CREDENTIALS
+    - ADMIN_NOT_FOUND
+    - ADMIN_ACCOUNT_DISABLED
+    - ADMIN_ACCOUNT_LOCKED
+    - IP_NOT_WHITELISTED
+    - PASSWORD_CHANGED_SUCCESS
+    - CURRENT_PASSWORD_INCORRECT
+    - PASSWORD_TOO_WEAK
+    - ADMIN_TOKEN_REQUIRED
+    - INVALID_ADMIN_TOKEN_OR_DISABLED
+    - ADMIN_AUTHENTICATION_ERROR
+
+  admin_management:
+    - ADMIN_CREATED_SUCCESS
+    - ADMIN_USERNAME_EXISTS
+    - ADMIN_EMAIL_EXISTS
+    - ADMIN_RETRIEVED_SUCCESS
+    - ADMINS_RETRIEVED_SUCCESS
+    - ADMIN_UPDATED_SUCCESS
+    - ADMIN_ACTIVATED_SUCCESS
+    - ADMIN_DEACTIVATED_SUCCESS
+    - ADMIN_NOT_FOUND
+    - CANNOT_DEACTIVATE_SELF
+    - ADMIN_UNLOCKED_SUCCESS
+    - ADMIN_NOT_LOCKED
+    - MFA_ENABLED_SUCCESS
+    - MFA_ENABLE_FAILED
+    - ADMINS_SEARCH_SUCCESS
+    - ADMIN_STATS_SUCCESS
+
+  user_management:
+    - USERS_RETRIEVED_SUCCESS
+    - USER_DETAILS_SUCCESS
+    - USER_SUSPENDED_SUCCESS
+    - USER_ALREADY_SUSPENDED
+    - USER_ACTIVATED_SUCCESS
+    - USER_ALREADY_ACTIVE
+    - USER_ROLE_UPDATED_SUCCESS
+    - BULK_ACTION_COMPLETED
+    - USER_ACTIVITY_SUCCESS
+    - USER_STATISTICS_SUCCESS
+    - USER_EXPORT_SUCCESS
+    - USER_NOT_FOUND
+    - USER_SUSPENSION_FAILED
+    - USER_ACTIVATION_FAILED
+    - ROLE_UPDATE_FAILED
+    - INVALID_BULK_ACTION
+
+  dashboard:
+    - DASHBOARD_OVERVIEW_SUCCESS
+    - USER_MANAGEMENT_DATA_SUCCESS
+    - FINANCIAL_DASHBOARD_SUCCESS
+    - SYSTEM_MONITORING_SUCCESS
+    - CONTENT_MODERATION_SUCCESS
+    - ANALYTICS_DATA_SUCCESS
+    - INVALID_METRIC_TYPE
+    - NO_PERFORMANCE_DATA
+
+  monitoring:
+    - METRICS_COLLECTED_SUCCESS
+    - METRICS_COLLECTION_FAILED
+    - REAL_TIME_METRICS_SUCCESS
+    - PERFORMANCE_ANALYTICS_SUCCESS
+    - SECURITY_MONITORING_SUCCESS
+    - SYSTEM_ALERTS_SUCCESS
+    - ALERT_ACKNOWLEDGED_SUCCESS
+
+  permissions:
+    - ACCESS_DENIED
+    - INSUFFICIENT_PERMISSIONS
+    - INSUFFICIENT_ROLE
+
+  general:
+    - DATA_REQUIRED
+    - INTERNAL_SERVER_ERROR
+    - NO_CHANGES_PROVIDED
+    - SEARCH_QUERY_REQUIRED
+    - USER_IDS_AND_ACTION_REQUIRED
+    - ROLE_REQUIRED

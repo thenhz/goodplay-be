@@ -1,0 +1,801 @@
+{
+  "info": {
+    "name": "GoodPlay Admin API",
+    "description": "Admin dashboard and management API collection for GoodPlay platform",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.tokens) {",
+                  "        pm.environment.set('admin_access_token', response.data.tokens.access_token);",
+                  "        pm.environment.set('admin_refresh_token', response.data.tokens.refresh_token);",
+                  "        pm.environment.set('admin_id', response.data.admin._id);",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has tokens', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('tokens');",
+                  "    pm.expect(response.data.tokens).to.have.property('access_token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{admin_username}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Change Admin Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"current_password\": \"{{admin_password}}\",\n    \"new_password\": \"NewSecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "auth", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get User Management Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/user-management?time_range=7d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "user-management"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "7d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Financial Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/financial?time_range=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "financial"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get System Monitoring Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/system-monitoring",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "system-monitoring"]
+            }
+          }
+        },
+        {
+          "name": "Get Content Moderation Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/content-moderation?time_range=7d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "content-moderation"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "7d"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System Monitoring",
+      "item": [
+        {
+          "name": "Get Real-time Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/metrics/real-time",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "metrics", "real-time"]
+            }
+          }
+        },
+        {
+          "name": "Get Performance Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/metrics/performance?hours=24",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "metrics", "performance"],
+              "query": [
+                {
+                  "key": "hours",
+                  "value": "24"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Security Monitoring",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/metrics/security?hours=24",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "metrics", "security"],
+              "query": [
+                {
+                  "key": "hours",
+                  "value": "24"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get System Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/alerts?severity=high&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "alerts"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "high"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Acknowledge Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notes\": \"Alert reviewed and acknowledged\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/alerts/{{alert_id}}/acknowledge",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "alerts", "{{alert_id}}", "acknowledge"]
+            }
+          }
+        },
+        {
+          "name": "Collect System Metrics",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/metrics/collect",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "metrics", "collect"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Management",
+      "item": [
+        {
+          "name": "List Admin Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins?active_only=true&limit=50&skip=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins"],
+              "query": [
+                {
+                  "key": "active_only",
+                  "value": "true"
+                },
+                {
+                  "key": "role",
+                  "value": "admin",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Admin User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"newadmin\",\n    \"email\": \"newadmin@goodplay.com\",\n    \"password\": \"SecurePassword123!\",\n    \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/{{target_admin_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "{{target_admin_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Admin",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"moderator\",\n    \"is_active\": true,\n    \"session_timeout\": 7200\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/{{target_admin_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "{{target_admin_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Activate Admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/{{target_admin_id}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "{{target_admin_id}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Account suspended for security review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/{{target_admin_id}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "{{target_admin_id}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Unlock Admin Account",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/{{target_admin_id}}/unlock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "{{target_admin_id}}", "unlock"]
+            }
+          }
+        },
+        {
+          "name": "Enable MFA for Admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/{{target_admin_id}}/enable-mfa",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "{{target_admin_id}}", "enable-mfa"]
+            }
+          }
+        },
+        {
+          "name": "Search Admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/admins/search?q=admin&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "admins", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "admin"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "List Platform Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?active_only=true&limit=50&skip=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                {
+                  "key": "active_only",
+                  "value": "true"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{target_user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{target_user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Account suspended for policy violation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{target_user_id}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{target_user_id}}", "suspend"]
+            }
+          }
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Account reactivated after review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{target_user_id}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{target_user_id}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"premium\",\n    \"reason\": \"Upgraded to premium membership\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{target_user_id}}/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{target_user_id}}", "role"]
+            }
+          }
+        },
+        {
+          "name": "Bulk User Action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_ids\": [\"user1\", \"user2\", \"user3\"],\n    \"action\": \"suspend\",\n    \"reason\": \"Bulk suspension for investigation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/bulk-action",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get User Activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{target_user_id}}/activity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{target_user_id}}", "activity"]
+            }
+          }
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Export Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"filters\": {\n        \"is_active\": true\n    },\n    \"format\": \"json\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "export"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get User Activity Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics/user_activity?time_range=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "analytics", "user_activity"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Financial Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics/financial?time_range=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "analytics", "financial"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Performance Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics/performance?time_range=7d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "analytics", "performance"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "7d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Security Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics/security?time_range=1d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "analytics", "security"],
+              "query": [
+                {
+                  "key": "time_range",
+                  "value": "1d"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "admin_username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "AdminPass123!",
+      "type": "string"
+    },
+    {
+      "key": "admin_access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "target_admin_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "target_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "alert_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

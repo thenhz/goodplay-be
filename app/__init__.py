@@ -31,6 +31,7 @@ def create_app(config_name=None):
     from app.social import register_social_module
     from app.games import create_games_blueprint, create_modes_blueprint, create_challenges_blueprint, create_teams_blueprint, init_games_module
     from app.donations.controllers import wallet_bp, donation_bp, rates_bp, payment_bp, batch_bp, compliance_bp, financial_admin_bp
+    from app.admin.controllers import admin_bp, dashboard_bp, user_mgmt_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
@@ -63,6 +64,11 @@ def create_app(config_name=None):
     app.register_blueprint(batch_bp)
     app.register_blueprint(compliance_bp)
     app.register_blueprint(financial_admin_bp)
+
+    # Register admin module
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(user_mgmt_bp)
 
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():
@@ -114,6 +120,19 @@ def init_db(app):
             payment_intent_repo.create_indexes()
             batch_operation_repo.create_indexes()
             batch_donation_repo.create_indexes()
+
+            # Initialize admin module indexes
+            from app.admin.repositories.admin_repository import AdminRepository
+            from app.admin.repositories.metrics_repository import MetricsRepository
+            from app.admin.repositories.audit_repository import AuditRepository
+
+            admin_repo = AdminRepository()
+            metrics_repo = MetricsRepository()
+            audit_repo = AuditRepository()
+
+            admin_repo.create_indexes()
+            metrics_repo.create_indexes()
+            audit_repo.create_indexes()
 
             app.logger.info('Database initialized successfully')
     except Exception as e:

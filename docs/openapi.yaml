@@ -33,6 +33,7 @@ info:
 
     ## Module Documentation
     - **Core Module**: [core.yaml](./core.yaml) - Authentication & user management
+    - **Admin Module**: [admin.yaml](./admin.yaml) - Admin dashboard & management (GOO-20)
     - **Social Module**: [social.yaml](./social.yaml) - Social features & relationships
     - **Games Module**: [games.yaml](./games.yaml) - Game engine, sessions, modes, challenges & teams
     - **Leaderboards Module**: [leaderboards.yaml](./leaderboards.yaml) - Impact scores & rankings
