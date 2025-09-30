@@ -481,3 +481,122 @@ class AuditRepository(BaseRepository):
             }
             for action in actions
         ]
+
+    # Additional methods for SecurityService and AuditService
+    def get_actions_by_type(self, action_type: str, hours: int = 24) -> List[AdminAction]:
+        """Get actions by type in recent hours"""
+        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        return self.find_actions_by_type(action_type, start_time=start_time)
+
+    def get_recent_actions(self, admin_id: str = None, hours: int = 24) -> List[AdminAction]:
+        """Get recent actions, optionally filtered by admin"""
+        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        if admin_id:
+            return self.find_actions_by_admin(admin_id, start_time=start_time)
+        else:
+            return self.find_actions_in_time_range(start_time, datetime.now(timezone.utc))
+
+    def get_actions_by_admin(self, admin_id: str) -> List[AdminAction]:
+        """Get all actions by admin (wrapper for compatibility)"""
+        return self.find_actions_by_admin(admin_id)
+
+    def get_actions_in_timeframe(self, action_type: str, start_time: datetime, end_time: datetime) -> List[AdminAction]:
+        """Get actions of specific type in timeframe"""
+        return self.find_actions_by_type(action_type, start_time=start_time, end_time=end_time)
+
+    def get_security_events(self) -> List[AdminAction]:
+        """Get security-related events"""
+        security_action_types = [
+            "admin_login", "admin_logout", "failed_login_attempt",
+            "account_locked", "password_change", "mfa_enabled", "mfa_disabled"
+        ]
+        actions = []
+        for action_type in security_action_types:
+            actions.extend(self.find_actions_by_type(action_type, limit=100))
+        return actions
+
+    def get_session_activities(self, session_id: str) -> List[AdminAction]:
+        """Get activities for a specific session"""
+        if not self.collection:
+            return []
+
+        filter_dict = {"session_id": session_id}
+        data_list = self.find_many(filter_dict, sort=[("timestamp", -1)])
+        return [AdminAction.from_dict(data) for data in data_list]
+
+    def get_recent_actions_with_failures(self, hours: int = 24) -> List[AdminAction]:
+        """Get recent actions that had permission failures"""
+        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        filter_dict = {
+            "timestamp": {"$gte": start_time},
+            "details.has_permission": False
+        }
+        data_list = self.find_many(filter_dict, sort=[("timestamp", -1)])
+        return [AdminAction.from_dict(data) for data in data_list]
+
+    def get_compliance_actions(self, period: str, regulation: str) -> List[AdminAction]:
+        """Get compliance-relevant actions for a period"""
+        # Parse period (e.g., "2024-01" for January 2024)
+        year, month = period.split("-")
+        start_time = datetime(int(year), int(month), 1, tzinfo=timezone.utc)
+        if int(month) == 12:
+            end_time = datetime(int(year) + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            end_time = datetime(int(year), int(month) + 1, 1, tzinfo=timezone.utc)
+
+        # Filter for compliance-relevant actions
+        compliance_types = ["user_data_access", "user_data_export", "user_data_deletion", "privacy_setting_change"]
+        actions = []
+        for action_type in compliance_types:
+            actions.extend(self.find_actions_by_type(action_type, start_time=start_time, end_time=end_time))
+
+        return actions
+
+    def get_logs_with_filters(self, filters: Dict) -> List[AdminAction]:
+        """Get logs with custom filters"""
+        filter_dict = {}
+
+        if 'admin_id' in filters:
+            filter_dict['admin_id'] = filters['admin_id']
+
+        if 'action_type' in filters:
+            filter_dict['action_type'] = filters['action_type']
+
+        if 'date_from' in filters and 'date_to' in filters:
+            filter_dict['timestamp'] = {
+                '$gte': datetime.fromisoformat(filters['date_from']),
+                '$lte': datetime.fromisoformat(filters['date_to'])
+            }
+
+        data_list = self.find_many(filter_dict, sort=[("timestamp", -1)])
+        return [AdminAction.from_dict(data) for data in data_list]
+
+    def get_logs_older_than(self, cutoff_date: datetime) -> List[AdminAction]:
+        """Get logs older than cutoff date"""
+        filter_dict = {"timestamp": {"$lt": cutoff_date}}
+        data_list = self.find_many(filter_dict, sort=[("timestamp", -1)])
+        return [AdminAction.from_dict(data) for data in data_list]
+
+    def get_logs_in_range(self, start_date: str, end_date: str) -> List[AdminAction]:
+        """Get logs in date range"""
+        start_time = datetime.fromisoformat(start_date)
+        end_time = datetime.fromisoformat(end_date)
+        return self.find_actions_in_time_range(start_time, end_time, limit=1000)
+
+    def search_logs(self, query: str, search_fields: List[str]) -> List[AdminAction]:
+        """Search logs with text query"""
+        if not self.collection:
+            return []
+
+        # Build text search filter
+        search_conditions = []
+        for field in search_fields:
+            search_conditions.append({field: {"$regex": query, "$options": "i"}})
+
+        filter_dict = {"$or": search_conditions} if search_conditions else {}
+        data_list = self.find_many(filter_dict, sort=[("timestamp", -1)])
+        return [AdminAction.from_dict(data) for data in data_list]
+
+    def get_logs_for_export(self, start_date: str, end_date: str) -> List[AdminAction]:
+        """Get logs for export (same as get_logs_in_range)"""
+        return self.get_logs_in_range(start_date, end_date)

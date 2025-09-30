@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 from typing import List, Optional, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -37,7 +37,10 @@ class AdminUser:
                  mfa_enabled: bool = False, mfa_secret: str = None,
                  ip_whitelist: List[str] = None, session_timeout: int = 3600,
                  _id: str = None, created_at: datetime = None,
-                 updated_at: datetime = None):
+                 updated_at: datetime = None, failed_login_attempts: int = 0,
+                 is_locked: bool = False, locked_until: datetime = None,
+                 allowed_ips: List[str] = None, last_activity: datetime = None,
+                 session_timeout_minutes: int = 60):
 
         self._id = _id
         self.username = username
@@ -53,6 +56,12 @@ class AdminUser:
         self.mfa_secret = mfa_secret
         self.ip_whitelist = ip_whitelist or []
         self.session_timeout = session_timeout
+        self.failed_login_attempts = failed_login_attempts
+        self.is_locked = is_locked
+        self.locked_until = locked_until
+        self.allowed_ips = allowed_ips or []
+        self.last_activity = last_activity
+        self.session_timeout_minutes = session_timeout_minutes
         self.created_at = created_at or datetime.now(timezone.utc)
         self.updated_at = updated_at or datetime.now(timezone.utc)
 
@@ -244,3 +253,123 @@ class AdminUser:
 
     def __repr__(self):
         return f"<AdminUser {self.username} ({self.role})>"
+
+    # Additional methods for test compatibility
+    def get_role_level(self) -> int:
+        """Get numeric role level for hierarchy comparison"""
+        role_levels = {
+            'super_admin': 4,
+            'admin': 3,
+            'moderator': 2,
+            'analyst': 1
+        }
+        return role_levels.get(self.role, 0)
+
+    def can_manage_user(self, other_user: 'AdminUser') -> bool:
+        """Check if this admin can manage another admin user"""
+        return self.get_role_level() > other_user.get_role_level()
+
+    def add_permissions(self, permissions: List[str]):
+        """Add multiple permissions"""
+        for permission in permissions:
+            self.add_permission(permission)
+
+    def remove_permissions(self, permissions: List[str]):
+        """Remove multiple permissions"""
+        for permission in permissions:
+            self.remove_permission(permission)
+
+    def _update_permissions_for_role(self):
+        """Update permissions based on current role"""
+        self.permissions = self._get_role_permissions(self.role)
+        self.updated_at = datetime.now(timezone.utc)
+
+    def add_temporary_permission(self, permission: str, hours: int = 1):
+        """Add temporary permission (placeholder for future implementation)"""
+        # This would be implemented with expiring permissions
+        if not hasattr(self, 'temporary_permissions'):
+            self.temporary_permissions = {}
+
+        expiry = datetime.now(timezone.utc) + timedelta(hours=hours)
+        self.temporary_permissions[permission] = expiry
+        self.updated_at = datetime.now(timezone.utc)
+
+    def has_permission_in_context(self, permission: str, context: str) -> bool:
+        """Check permission in specific context"""
+        # Basic implementation - could be extended for context-aware permissions
+        return self.has_permission(permission)
+
+    def can_perform_action(self, action: str) -> bool:
+        """Check if admin can perform specific action"""
+        action_permissions = {
+            'suspend_user': 'user_management',
+            'delete_content': 'content_moderation',
+            'view_financials': 'financial_oversight',
+            'manage_onlus': 'onlus_management',
+            'system_config': 'system_administration'
+        }
+
+        required_permission = action_permissions.get(action)
+        if not required_permission:
+            return False
+
+        return self.has_permission(required_permission)
+
+    def has_department_permission(self, permission: str, department: str) -> bool:
+        """Check permission for specific department"""
+        # Basic implementation - could be extended for department-based permissions
+        if hasattr(self, 'department') and self.department == department:
+            return self.has_permission(permission)
+        return False
+
+    def is_ip_allowed(self, ip_address: str) -> bool:
+        """Check if IP is in allowed list (with subnet support)"""
+        if not hasattr(self, 'allowed_ips') or not self.allowed_ips:
+            return True
+
+        import ipaddress
+
+        try:
+            ip = ipaddress.ip_address(ip_address)
+            for allowed in self.allowed_ips:
+                if '/' in allowed:  # CIDR notation
+                    network = ipaddress.ip_network(allowed, strict=False)
+                    if ip in network:
+                        return True
+                else:  # Exact IP match
+                    if str(ip) == allowed:
+                        return True
+            return False
+        except ValueError:
+            return False
+
+    def has_session_permission(self, permission: str) -> bool:
+        """Check session-specific permissions"""
+        if hasattr(self, 'session_permissions'):
+            return permission in self.session_permissions
+        return False
+
+    def generate_password_reset_token(self) -> str:
+        """Generate password reset token"""
+        import secrets
+        token = secrets.token_urlsafe(32)
+
+        # Store token and expiry
+        self.password_reset_token = token
+        self.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        self.updated_at = datetime.now(timezone.utc)
+
+        return token
+
+    def validate_password_reset_token(self, token: str) -> bool:
+        """Validate password reset token"""
+        if not hasattr(self, 'password_reset_token') or not self.password_reset_token:
+            return False
+
+        if not hasattr(self, 'password_reset_expires') or not self.password_reset_expires:
+            return False
+
+        if datetime.now(timezone.utc) > self.password_reset_expires:
+            return False
+
+        return self.password_reset_token == token

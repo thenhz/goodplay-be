@@ -482,3 +482,25 @@ class AdminService:
             "token_type": "Bearer",
             "expires_in": admin.session_timeout
         }
+
+    def _is_session_expired(self, admin: AdminUser) -> bool:
+        """Check if admin session is expired"""
+        if not admin.last_activity:
+            return True
+
+        timeout_minutes = getattr(admin, 'session_timeout_minutes', 60)
+        expiry_time = admin.last_activity + timedelta(minutes=timeout_minutes)
+        return datetime.now(timezone.utc) > expiry_time
+
+    def _can_create_user_with_role(self, creating_admin: AdminUser, target_role: str) -> bool:
+        """Check if admin can create user with target role"""
+        # Super admin can create any role
+        if creating_admin.role == 'super_admin':
+            return True
+
+        # Admin can create moderator and analyst
+        if creating_admin.role == 'admin':
+            return target_role in ['moderator', 'analyst']
+
+        # Moderator and analyst cannot create other admins
+        return False

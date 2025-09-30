@@ -95,6 +95,7 @@ class AdminAction:
         self.target_type = target_type
         self.target_id = target_id
         self.action_details = action_details or {}
+        self.details = action_details or {}  # Alias for compatibility
         self.reason = reason
         self.status = status
         self.ip_address = ip_address
@@ -267,6 +268,22 @@ class AdminAction:
             action_type=action_type,
             target_type=TargetType.SYSTEM.value,
             reason=reason,
+            action_details=action_details,
+            ip_address=ip_address
+        )
+
+    @staticmethod
+    def create_security_action(admin_id: str, action_type: str, ip_address: str = None,
+                              details: Dict[str, Any] = None) -> 'AdminAction':
+        """Create a security-related action"""
+        action_details = details or {}
+        if ip_address:
+            action_details['ip_address'] = ip_address
+
+        return AdminAction(
+            admin_id=admin_id,
+            action_type=action_type,
+            target_type=TargetType.SESSION.value,
             action_details=action_details,
             ip_address=ip_address
         )
