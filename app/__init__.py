@@ -66,6 +66,11 @@ def create_app(config_name=None):
     app.register_blueprint(compliance_bp)
     app.register_blueprint(financial_admin_bp)
 
+    # Register admin module
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(user_mgmt_bp)
+
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():
         init_games_module()
@@ -129,6 +134,36 @@ def init_db(app):
             payment_intent_repo.create_indexes()
             batch_operation_repo.create_indexes()
             batch_donation_repo.create_indexes()
+            impact_story_repo.create_indexes()
+            impact_metric_repo.create_indexes()
+            impact_update_repo.create_indexes()
+            community_report_repo.create_indexes()
+
+            # Initialize ONLUS module indexes
+            category_repo = ONLUSCategoryRepository()
+            document_repo = ONLUSDocumentRepository()
+            verification_repo = VerificationCheckRepository()
+            application_repo = ONLUSApplicationRepository()
+            organization_repo = ONLUSOrganizationRepository()
+
+            category_repo.create_indexes()
+            document_repo.create_indexes()
+            verification_repo.create_indexes()
+            application_repo.create_indexes()
+            organization_repo.create_indexes()
+
+            # Initialize admin module indexes
+            from app.admin.repositories.admin_repository import AdminRepository
+            from app.admin.repositories.metrics_repository import MetricsRepository
+            from app.admin.repositories.audit_repository import AuditRepository
+
+            admin_repo = AdminRepository()
+            metrics_repo = MetricsRepository()
+            audit_repo = AuditRepository()
+
+            admin_repo.create_indexes()
+            metrics_repo.create_indexes()
+            audit_repo.create_indexes()
 
             app.logger.info('Database initialized successfully')
     except Exception as e:
