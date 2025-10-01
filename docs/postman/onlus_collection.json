@@ -1,0 +1,1640 @@
+{
+  "info": {
+    "name": "GoodPlay ONLUS Registry & Verification System (GOO-17)",
+    "description": "Complete Postman collection for testing all ONLUS Registry & Verification System endpoints.\n\n## Collection Structure\n- **Public ONLUS Discovery**: Public endpoints for discovering and viewing ONLUS organizations\n- **User Application Management**: User endpoints for application submission and tracking\n- **User Document Management**: User endpoints for document upload and management\n- **Admin Application Review**: Administrative endpoints for application review process\n- **Admin ONLUS Management**: Administrative endpoints for ONLUS organization management\n\n## Authentication\n- Public endpoints: No authentication required\n- User endpoints: Bearer token authentication (login required)\n- Admin endpoints: Administrative privileges required\n\n## Environment Variables Required\n- `baseUrl`: API base URL (e.g., http://localhost:5000/api)\n- `access_token`: JWT access token for authenticated requests\n- `admin_token`: JWT access token with admin privileges\n- `test_user_id`: User ID for testing\n- `test_onlus_id`: ONLUS ID for testing\n- `test_application_id`: Application ID for testing\n- `test_document_id`: Document ID for testing\n\n## Before Running\n1. Set up environment variables\n2. Run authentication tests to get tokens\n3. Create test data using POST requests\n4. Use generated IDs in subsequent tests\n\n## Response Constants\nAll endpoints return constant message keys for UI localization. Check OpenAPI spec for complete list.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "description": "Base URL for the API"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "description": "JWT access token for authenticated requests"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "description": "JWT access token with admin privileges"
+    },
+    {
+      "key": "test_user_id",
+      "value": "",
+      "description": "User ID for testing"
+    },
+    {
+      "key": "test_onlus_id",
+      "value": "",
+      "description": "ONLUS ID for testing"
+    },
+    {
+      "key": "test_application_id",
+      "value": "",
+      "description": "Application ID for testing"
+    },
+    {
+      "key": "test_document_id",
+      "value": "",
+      "description": "Document ID for testing"
+    }
+  ],
+  "item": [
+    {
+      "name": "Public ONLUS Discovery",
+      "description": "Public endpoints for discovering and viewing ONLUS organizations. No authentication required.",
+      "item": [
+        {
+          "name": "Get All ONLUS Organizations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains organizations array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.organizations).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains pagination info\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                  "    pm.expect(jsonData.data.pagination).to.have.property('current_page');",
+                  "    pm.expect(jsonData.data.pagination).to.have.property('total_pages');",
+                  "});",
+                  "",
+                  "// Store first ONLUS ID for other tests",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data.organizations.length > 0) {",
+                  "    pm.environment.set(\"test_onlus_id\", jsonData.data.organizations[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus?page=1&limit=20&sort_by=name&sort_order=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number for pagination"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of organizations per page"
+                },
+                {
+                  "key": "category",
+                  "value": "healthcare",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "location",
+                  "value": "Milano",
+                  "description": "Filter by location",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "cancer",
+                  "description": "Search term",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "name",
+                  "description": "Sort criteria"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "asc",
+                  "description": "Sort order"
+                }
+              ]
+            },
+            "description": "Retrieve a paginated list of all approved and active ONLUS organizations with filtering and sorting options."
+          }
+        },
+        {
+          "name": "Get ONLUS by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains detailed ONLUS data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('organization_name');",
+                  "    pm.expect(jsonData.data).to.have.property('category');",
+                  "});",
+                  "",
+                  "pm.test(\"ONLUS has required public fields\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const onlus = jsonData.data;",
+                  "    pm.expect(onlus).to.have.property('organization_description');",
+                  "    pm.expect(onlus).to.have.property('location');",
+                  "    pm.expect(onlus).to.have.property('verified_status');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/{{test_onlus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "{{test_onlus_id}}"]
+            },
+            "description": "Retrieve detailed information about a specific ONLUS organization using its ID."
+          }
+        },
+        {
+          "name": "Get ONLUS Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains categories array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.categories).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Categories have required fields\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const categories = jsonData.data.categories;",
+                  "    if (categories.length > 0) {",
+                  "        pm.expect(categories[0]).to.have.property('category');",
+                  "        pm.expect(categories[0]).to.have.property('name');",
+                  "        pm.expect(categories[0]).to.have.property('description');",
+                  "        pm.expect(categories[0]).to.have.property('verification_requirements');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "categories"]
+            },
+            "description": "Retrieve list of all available ONLUS categories with descriptions and verification requirements."
+          }
+        },
+        {
+          "name": "Get Platform Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains statistics\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('total_organizations');",
+                  "    pm.expect(jsonData.data).to.have.property('category_breakdown');",
+                  "    pm.expect(jsonData.data).to.have.property('donation_statistics');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "statistics"]
+            },
+            "description": "Retrieve aggregate statistics about ONLUS organizations on the platform."
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Application Management",
+      "description": "User endpoints for ONLUS application submission and management. Authentication required.",
+      "item": [
+        {
+          "name": "Submit New Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains application ID\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('application_id');",
+                  "    pm.expect(jsonData.data.application_id).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Store application ID for other tests",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.application_id) {",
+                  "    pm.environment.set(\"test_application_id\", jsonData.data.application_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_name\": \"Test Foundation for Healthcare Research\",\n  \"organization_description\": \"A comprehensive research foundation dedicated to advancing healthcare through innovative research programs, clinical trials, and community health initiatives. Our mission focuses on improving patient outcomes and developing breakthrough treatments for complex medical conditions.\",\n  \"category\": \"healthcare\",\n  \"tax_id\": \"12345678901\",\n  \"legal_structure\": \"foundation\",\n  \"established_year\": 2010,\n  \"website\": \"https://www.testfoundation.it\",\n  \"contact_email\": \"info@testfoundation.it\",\n  \"contact_phone\": \"+39 02 1234 5678\",\n  \"legal_representative\": {\n    \"full_name\": \"Dr. Mario Rossi\",\n    \"position\": \"President\",\n    \"email\": \"president@testfoundation.it\",\n    \"phone\": \"+39 335 1234 567\"\n  },\n  \"address\": {\n    \"street\": \"Via Roma 123\",\n    \"city\": \"Milano\",\n    \"postal_code\": \"20121\",\n    \"region\": \"Lombardia\",\n    \"country\": \"Italia\"\n  },\n  \"programs\": [\n    {\n      \"name\": \"Cancer Research Program\",\n      \"description\": \"Innovative research program focusing on cancer treatment and prevention\",\n      \"beneficiaries\": \"Cancer patients and their families\",\n      \"annual_budget\": 500000.00\n    },\n    {\n      \"name\": \"Community Health Initiative\",\n      \"description\": \"Community-based health education and prevention programs\",\n      \"beneficiaries\": \"Local community members\",\n      \"annual_budget\": 250000.00\n    }\n  ],\n  \"beneficiaries_count\": 15000,\n  \"staff_count\": 25,\n  \"annual_budget\": 1500000.00,\n  \"funding_sources\": [\"donations\", \"grants\", \"corporate_partnerships\"],\n  \"bank_account\": {\n    \"iban\": \"IT60X0542811101000000123456\",\n    \"bank_name\": \"Banca Intesa Sanpaolo\",\n    \"account_holder\": \"Test Foundation for Healthcare Research\"\n  },\n  \"additional_information\": \"Our foundation has been recognized by the Ministry of Health for excellence in healthcare research and has established partnerships with major hospitals and research institutions across Italy.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications"]
+            },
+            "description": "Submit a new ONLUS application with complete organization information."
+          }
+        },
+        {
+          "name": "Get User Applications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains applications array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.applications).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains pagination info\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "submitted",
+                  "description": "Filter by status",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve all applications submitted by the current user."
+          }
+        },
+        {
+          "name": "Get Application Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains application details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('organization_name');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data).to.have.property('phase');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}"]
+            },
+            "description": "Get detailed information about a specific application."
+          }
+        },
+        {
+          "name": "Update Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains updated fields\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('updated_fields');",
+                  "    pm.expect(jsonData.data.updated_fields).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_description\": \"An updated comprehensive research foundation dedicated to advancing healthcare through innovative research programs, clinical trials, community health initiatives, and international collaborations. Our expanded mission focuses on improving patient outcomes and developing breakthrough treatments for complex medical conditions.\",\n  \"contact_phone\": \"+39 02 9876 5432\",\n  \"beneficiaries_count\": 18000,\n  \"annual_budget\": 1750000.00,\n  \"update_reason\": \"Updated contact information and expanded beneficiary reach due to new program launches\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}"]
+            },
+            "description": "Update application information (only possible in certain statuses)."
+          }
+        },
+        {
+          "name": "Get Application Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains status information\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('current_status');",
+                  "    pm.expect(jsonData.data).to.have.property('current_phase');",
+                  "    pm.expect(jsonData.data).to.have.property('progress_percentage');",
+                  "    pm.expect(jsonData.data).to.have.property('estimated_completion_date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}", "status"]
+            },
+            "description": "Get current status and timeline information for an application."
+          }
+        },
+        {
+          "name": "Withdraw Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains withdrawal info\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('withdrawal_date');",
+                  "    pm.expect(jsonData.data).to.have.property('application_id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"withdrawal_reason\": \"Organization has decided to postpone platform registration due to internal restructuring and will reapply after completing the reorganization process.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}"]
+            },
+            "description": "Withdraw a submitted application (only possible before final decision)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Document Management",
+      "description": "User endpoints for document upload and management. Authentication required.",
+      "item": [
+        {
+          "name": "Get Application Documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains documents array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.documents).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains requirements and guidelines\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('requirements');",
+                  "    pm.expect(jsonData.data).to.have.property('upload_guidelines');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}", "documents"],
+              "query": [
+                {
+                  "key": "document_type",
+                  "value": "legal",
+                  "description": "Filter by document type",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get list of all documents associated with an application."
+          }
+        },
+        {
+          "name": "Upload Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains document ID\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('document_id');",
+                  "    pm.expect(jsonData.data.document_id).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Store document ID for other tests",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.document_id) {",
+                  "    pm.environment.set(\"test_document_id\", jsonData.data.document_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "description": "Document file to upload (PDF, JPG, PNG, DOC, DOCX)",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "document_type",
+                  "value": "legal",
+                  "description": "Type of document",
+                  "type": "text"
+                },
+                {
+                  "key": "document_subtype",
+                  "value": "certificate_incorporation",
+                  "description": "Specific document subtype",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Certificate of incorporation from the Chamber of Commerce showing legal registration status",
+                  "description": "Optional description",
+                  "type": "text"
+                },
+                {
+                  "key": "expiration_date",
+                  "value": "2030-12-31",
+                  "description": "Document expiration date (if applicable)",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}", "documents"]
+            },
+            "description": "Upload a document for an application. Select a file in the form data before sending."
+          }
+        },
+        {
+          "name": "Get Document Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains document details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('filename');",
+                  "    pm.expect(jsonData.data).to.have.property('document_type');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data).to.have.property('verification_status');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}/documents/{{test_document_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}", "documents", "{{test_document_id}}"]
+            },
+            "description": "Get detailed information about a specific document."
+          }
+        },
+        {
+          "name": "Download Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has Content-Disposition header\", function () {",
+                  "    pm.expect(pm.response.headers.has('Content-Disposition')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response has appropriate Content-Type\", function () {",
+                  "    const contentType = pm.response.headers.get('Content-Type');",
+                  "    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];",
+                  "    pm.expect(validTypes).to.include(contentType);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}/documents/{{test_document_id}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}", "documents", "{{test_document_id}}", "download"]
+            },
+            "description": "Download the actual document file."
+          }
+        },
+        {
+          "name": "Delete Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains deletion info\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('document_id');",
+                  "    pm.expect(jsonData.data).to.have.property('deletion_date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/onlus/applications/{{test_application_id}}/documents/{{test_document_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["onlus", "applications", "{{test_application_id}}", "documents", "{{test_document_id}}"]
+            },
+            "description": "Delete a document from an application (only possible if not yet verified)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Application Review",
+      "description": "Administrative endpoints for ONLUS application review process. Admin authentication required.",
+      "item": [
+        {
+          "name": "Get All Applications (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains applications array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.applications).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains admin summary stats\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('summary_stats');",
+                  "    pm.expect(jsonData.data.summary_stats).to.have.property('total_applications');",
+                  "    pm.expect(jsonData.data.summary_stats).to.have.property('status_breakdown');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/applications?page=1&limit=20&sort_by=submitted_at&sort_order=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "applications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "under_review",
+                  "description": "Filter by status",
+                  "disabled": true
+                },
+                {
+                  "key": "phase",
+                  "value": "documentation",
+                  "description": "Filter by phase",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "high",
+                  "description": "Filter by priority",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "healthcare",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "risk_score_min",
+                  "value": "0",
+                  "description": "Minimum risk score",
+                  "disabled": true
+                },
+                {
+                  "key": "risk_score_max",
+                  "value": "50",
+                  "description": "Maximum risk score",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "submitted_at",
+                  "description": "Sort criteria"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "desc",
+                  "description": "Sort order"
+                }
+              ]
+            },
+            "description": "Get paginated list of all applications for administrative review with filtering and sorting."
+          }
+        },
+        {
+          "name": "Get Application Details (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains comprehensive admin data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('verification_checks');",
+                  "    pm.expect(jsonData.data).to.have.property('risk_assessment_details');",
+                  "    pm.expect(jsonData.data).to.have.property('reviewer_notes');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/applications/{{test_application_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "applications", "{{test_application_id}}"]
+            },
+            "description": "Get comprehensive application details for administrative review including sensitive information."
+          }
+        },
+        {
+          "name": "Assign Application to Reviewer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains assignment details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('assigned_to');",
+                  "    pm.expect(jsonData.data).to.have.property('assigned_at');",
+                  "    pm.expect(jsonData.data).to.have.property('deadline');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assigned_to\": \"{{test_user_id}}\",\n  \"assignment_reason\": \"Healthcare sector expertise required for comprehensive evaluation\",\n  \"priority\": \"normal\",\n  \"deadline\": \"2025-10-15\",\n  \"special_instructions\": \"Pay special attention to financial documentation and verify all healthcare licenses with relevant authorities\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/applications/{{test_application_id}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "applications", "{{test_application_id}}", "assign"]
+            },
+            "description": "Assign an application to a specific reviewer with deadline and instructions."
+          }
+        },
+        {
+          "name": "Submit Review Decision",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains decision details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('decision');",
+                  "    pm.expect(jsonData.data).to.have.property('decision_date');",
+                  "    pm.expect(jsonData.data).to.have.property('next_phase');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approve\",\n  \"decision_reason\": \"Application meets all requirements for healthcare organizations. Documentation is comprehensive and complete, financial statements demonstrate sustainability, and the organization shows strong operational capacity. All verification checks have passed successfully and the risk assessment indicates a low-risk profile appropriate for platform approval.\",\n  \"conditions\": [\n    {\n      \"condition\": \"Submit annual compliance reports\",\n      \"description\": \"Organization must submit annual compliance reports by March 31st each year to maintain active status\",\n      \"deadline\": \"2026-03-31\",\n      \"mandatory\": true\n    }\n  ],\n  \"recommendations\": [\n    \"Consider implementing additional financial controls for transparency\",\n    \"Expand board diversity to include more sector expertise\"\n  ],\n  \"next_phase\": \"onlus_activation\",\n  \"reviewer_confidence\": \"high\",\n  \"review_quality_score\": 9,\n  \"time_spent_hours\": 6.5,\n  \"external_consultations\": [\n    {\n      \"consultant\": \"Ministry of Health Registry Office\",\n      \"purpose\": \"Verify healthcare license status and compliance history\",\n      \"result\": \"Confirmed valid license and excellent compliance record\",\n      \"date\": \"2025-09-24\"\n    }\n  ],\n  \"follow_up_required\": true,\n  \"follow_up_actions\": [\n    {\n      \"action\": \"Schedule 6-month compliance review\",\n      \"responsibility\": \"Compliance Team\",\n      \"deadline\": \"2026-03-31\"\n    }\n  ],\n  \"internal_notes\": \"Exemplary application with strong governance structure and clear mission alignment. Organization demonstrates excellent financial management and operational capacity. Recommend as potential case study for future healthcare applications.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/applications/{{test_application_id}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "applications", "{{test_application_id}}", "review"]
+            },
+            "description": "Submit a comprehensive review decision for an application."
+          }
+        },
+        {
+          "name": "Request Additional Information",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains request details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('request_id');",
+                  "    pm.expect(jsonData.data).to.have.property('response_deadline');",
+                  "    pm.expect(jsonData.data).to.have.property('notification_sent');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"request_type\": \"documentation\",\n  \"specific_requests\": [\n    {\n      \"category\": \"financial\",\n      \"description\": \"Please provide audited financial statements for the last fiscal year as the current statements appear to be self-prepared\",\n      \"required\": true,\n      \"deadline\": \"2025-10-15\"\n    },\n    {\n      \"category\": \"legal\",\n      \"description\": \"Please submit updated bylaws that reflect the recent board composition changes mentioned in your application\",\n      \"required\": true,\n      \"deadline\": \"2025-10-10\"\n    },\n    {\n      \"category\": \"operational\",\n      \"description\": \"Please provide additional details about your impact measurement methodology and recent program evaluation results\",\n      \"required\": false,\n      \"deadline\": \"2025-10-20\"\n    }\n  ],\n  \"general_message\": \"Thank you for your comprehensive application. To complete our review, we need some additional documentation to verify certain aspects of your organization's operations and compliance status. Please provide the requested documents by the specified deadlines.\",\n  \"response_deadline\": \"2025-10-20\",\n  \"reviewer_notes\": \"Application is strong overall but requires updated financial audit and governance documentation to meet platform standards for healthcare organizations\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/applications/{{test_application_id}}/request-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "applications", "{{test_application_id}}", "request-info"]
+            },
+            "description": "Request specific additional information or documentation from the applicant."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin ONLUS Management",
+      "description": "Administrative endpoints for managing approved ONLUS organizations. Admin authentication required.",
+      "item": [
+        {
+          "name": "Get All ONLUS (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains organizations array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.organizations).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains admin summary stats\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('summary_stats');",
+                  "    pm.expect(jsonData.data.summary_stats).to.have.property('total_organizations');",
+                  "    pm.expect(jsonData.data.summary_stats).to.have.property('status_breakdown');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus?page=1&limit=20&sort_by=name&sort_order=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Filter by status",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "healthcare",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "verification_status",
+                  "value": "verified",
+                  "description": "Filter by verification status",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "foundation",
+                  "description": "Search term",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "name",
+                  "description": "Sort criteria"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "asc",
+                  "description": "Sort order"
+                }
+              ]
+            },
+            "description": "Get comprehensive list of all ONLUS organizations for administrative management."
+          }
+        },
+        {
+          "name": "Get ONLUS Details (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains comprehensive admin data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data).to.have.property('detailed_info');",
+                  "    pm.expect(jsonData.data).to.have.property('verification_history');",
+                  "    pm.expect(jsonData.data).to.have.property('compliance_tracking');",
+                  "    pm.expect(jsonData.data).to.have.property('donation_analytics');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/{{test_onlus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "{{test_onlus_id}}"]
+            },
+            "description": "Get comprehensive ONLUS details for administrative management including sensitive information."
+          }
+        },
+        {
+          "name": "Update ONLUS Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains update details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('updated_fields');",
+                  "    pm.expect(jsonData.data).to.have.property('update_date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"compliance_score\": 95,\n  \"next_verification_due\": \"2026-01-15\",\n  \"risk_flags\": [],\n  \"administrative_notes\": \"Updated compliance score after successful annual review. Organization continues to meet all platform standards.\",\n  \"internal_tags\": [\"high_performer\", \"case_study_candidate\", \"compliance_excellent\"],\n  \"priority_level\": \"normal\",\n  \"monitoring_frequency\": \"standard\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/{{test_onlus_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "{{test_onlus_id}}"]
+            },
+            "description": "Update ONLUS organization information with administrative privileges."
+          }
+        },
+        {
+          "name": "Suspend ONLUS Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains suspension details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('suspension_date');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data.status).to.equal('suspended');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suspension_reason\": \"Verification documents have expired and organization has not responded to renewal requests. Temporary suspension pending document update.\",\n  \"suspension_type\": \"pending_review\",\n  \"suspension_duration\": 30,\n  \"internal_notes\": \"Contacted organization on 2025-09-25 via email and phone. Awaiting response to document renewal request. Will follow up in 1 week if no response received.\",\n  \"notify_organization\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/{{test_onlus_id}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "{{test_onlus_id}}", "suspend"]
+            },
+            "description": "Suspend a ONLUS organization temporarily with specific reason and duration."
+          }
+        },
+        {
+          "name": "Reactivate ONLUS Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains reactivation details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('reactivation_date');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data.status).to.equal('active');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reactivation_reason\": \"All compliance issues have been resolved and updated documentation has been received and verified. Organization has demonstrated continued commitment to platform standards.\",\n  \"verification_completed\": true,\n  \"internal_notes\": \"Reviewed updated documents on 2025-09-28. All requirements met including updated bylaws, current financial statements, and renewed healthcare licenses. Organization maintains excellent compliance record.\",\n  \"notify_organization\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/onlus/{{test_onlus_id}}/reactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "onlus", "{{test_onlus_id}}", "reactivate"]
+            },
+            "description": "Reactivate a suspended ONLUS organization after resolving issues."
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Check if we need authentication for this request",
+          "const isPublicEndpoint = pm.request.url.getPath().startsWith('/onlus') && !pm.request.url.getPath().includes('/applications/');",
+          "const isAdminEndpoint = pm.request.url.getPath().includes('/admin/');",
+          "",
+          "// Set appropriate token based on endpoint type",
+          "if (isAdminEndpoint) {",
+          "    const adminToken = pm.environment.get('admin_token');",
+          "    if (adminToken) {",
+          "        pm.request.headers.add({",
+          "            key: 'Authorization',",
+          "            value: `Bearer ${adminToken}`",
+          "        });",
+          "    }",
+          "} else if (!isPublicEndpoint) {",
+          "    const accessToken = pm.environment.get('access_token');",
+          "    if (accessToken) {",
+          "        pm.request.headers.add({",
+          "            key: 'Authorization',",
+          "            value: `Bearer ${accessToken}`",
+          "        });",
+          "    }",
+          "}",
+          "",
+          "// Log request for debugging",
+          "console.log(`Making request to: ${pm.request.url.toString()}`);",
+          "console.log(`Method: ${pm.request.method}`);",
+          "console.log(`Public endpoint: ${isPublicEndpoint}`);",
+          "console.log(`Admin endpoint: ${isAdminEndpoint}`);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test to check response time",
+          "pm.test(\"Response time is less than 5000ms\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Global test to check response format",
+          "pm.test(\"Response is valid JSON\", function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "",
+          "// Log response for debugging",
+          "console.log(`Response status: ${pm.response.status}`);",
+          "console.log(`Response time: ${pm.response.responseTime}ms`);",
+          "",
+          "// Extract and log any error messages",
+          "if (pm.response.status >= 400) {",
+          "    try {",
+          "        const errorData = pm.response.json();",
+          "        console.log(`Error message: ${errorData.message || 'No message'}`);",
+          "        console.log(`Error details: ${errorData.error || 'No details'}`);",
+          "    } catch (e) {",
+          "        console.log('Could not parse error response as JSON');",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

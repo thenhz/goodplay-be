@@ -39,6 +39,8 @@ python app.py
 - 🔐 **JWT Authentication**: Secure user authentication and authorization
 - 📱 **Mobile-First**: RESTful API designed for mobile applications
 - 🌍 **Internationalization**: Constant-based message system for UI localization
+- 🤖 **Smart Allocation**: AI-powered funding allocation system for ONLUS
+- 📊 **Financial Control**: Comprehensive reporting and compliance monitoring
 
 ## 🏗️ Architecture
 
@@ -49,8 +51,8 @@ app/
 ├── core/            # Authentication, users, health
 ├── games/           # Game engine and management
 ├── social/          # Achievements, leaderboards
-├── donations/       # Wallet system, donations
-├── onlus/          # Charitable organization management
+├── donations/       # Wallet system, donations, impact tracking
+├── onlus/          # ONLUS registry, smart allocation, financial control
 ├── preferences/     # User preferences system
 └── admin/          # Administrative interface
 ```
@@ -329,6 +331,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **API Organization Guide**: [docs/API_ORGANIZATION.md](docs/API_ORGANIZATION.md)
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Architecture Guide**: [CLAUDE.md](CLAUDE.md)
+- **System Architecture**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Smart Allocation System**: [docs/GOO-19-SMART-ALLOCATION.md](docs/GOO-19-SMART-ALLOCATION.md)
 
 ### Community
 - **GitHub Issues**: Bug reports and feature requests

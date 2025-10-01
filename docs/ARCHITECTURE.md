@@ -1383,6 +1383,1300 @@ MONITORING_METRICS = {
 
 ---
 
-*Architecture documentation - GoodPlay Backend v1.2*
-*Last updated: September 27, 2025*
-*Includes GOO-14 Virtual Wallet, GOO-15 Donation Processing, and GOO-16 Impact Tracking*
+## 🏛️ **GOO-17: ONLUS Registry & Verification System Architecture**
+
+The ONLUS Registry & Verification System provides comprehensive management for non-profit organization registration, verification, and ongoing compliance monitoring within the GoodPlay platform.
+
+### **System Overview**
+
+GOO-17 implements a complete ONLUS (Non-profit Organization) lifecycle management system with:
+- **Multi-phase Application Workflow**: Draft → Submission → Review → Verification → Approval
+- **Document Management**: Upload, versioning, review, and lifecycle tracking
+- **Automated & Manual Verification**: Risk-based verification with fraud detection
+- **Compliance Monitoring**: Ongoing compliance scoring and review management
+- **Public Discovery**: Searchable directory with categorization and ratings
+
+### **Module Architecture**
+
+#### **5-Layer Component Architecture**
+
+```mermaid
+graph TB
+    A[Public APIs] --> B[Admin APIs]
+    B --> C[Service Layer]
+    C --> D[Repository Layer]
+    D --> E[Model Layer]
+
+    F[Document Management] --> C
+    G[Verification Engine] --> C
+    H[Compliance Monitor] --> C
+```
+
+#### **Core Components**
+
+**1. Model Layer** (`app/onlus/models/`):
+- **ONLUSCategory**: Category definitions with verification requirements
+- **ONLUSDocument**: Document lifecycle management with versioning
+- **VerificationCheck**: Automated and manual verification processes
+- **ONLUSApplication**: Multi-phase application workflow management
+- **ONLUSOrganization**: Verified organization profiles with compliance tracking
+
+**2. Repository Layer** (`app/onlus/repositories/`):
+- **ONLUSCategoryRepository**: Category management and requirement queries
+- **ONLUSDocumentRepository**: Document CRUD with expiration tracking
+- **VerificationCheckRepository**: Verification workflow and risk assessment
+- **ONLUSApplicationRepository**: Application lifecycle and statistics
+- **ONLUSOrganizationRepository**: Organization management and discovery
+
+**3. Service Layer** (`app/onlus/services/`):
+- **ApplicationService**: Complete application workflow orchestration
+- **VerificationService**: Verification engine with automated checks
+- **DocumentService**: Document management with review workflow
+- **ONLUSService**: Organization management and public discovery
+
+**4. Controller Layer** (`app/onlus/controllers/`):
+- **ApplicationController**: User application management (7 endpoints)
+- **AdminApplicationController**: Admin review workflow (13 endpoints)
+- **DocumentController**: Document operations (8 endpoints)
+- **ONLUSController**: Public organization APIs (9 endpoints)
+- **AdminONLUSController**: Admin organization management (10 endpoints)
+
+### **Application Workflow Architecture**
+
+#### **Multi-Phase Application Process**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: submit_application()
+    Submitted --> UnderReview: assign_reviewer()
+    UnderReview --> DocumentationPending: request_documents()
+    DocumentationPending --> DueDiligence: documents_approved()
+    DueDiligence --> Approved: final_approval()
+    DueDiligence --> Rejected: reject_application()
+    UnderReview --> Rejected: reject_application()
+    Submitted --> Rejected: reject_application()
+    Draft --> Withdrawn: withdraw_application()
+    Submitted --> Expired: 90_days_timeout()
+```
+
+#### **Application Service Orchestration**
+
+```python
+class ApplicationService:
+    def create_application(self, user_id: str, data: Dict) -> Tuple[bool, str, Dict]:
+        # 1. Validate application data
+        validation_result = self._validate_application_data(data)
+
+        # 2. Get category-specific requirements
+        requirements = self.category_repo.get_verification_requirements_for_category(
+            data['category']
+        )
+
+        # 3. Create application with requirements
+        application_data = {
+            **data,
+            'applicant_id': user_id,
+            'status': ApplicationStatus.DRAFT.value,
+            'phase': ApplicationPhase.INITIAL.value,
+            'required_documents': requirements,
+            'created_at': datetime.now(timezone.utc)
+        }
+
+        # 4. Save and return result
+        application_id = self.application_repo.create_application(application_data)
+        return True, "APPLICATION_CREATED_SUCCESS", {'application_id': application_id}
+```
+
+### **Document Management Architecture**
+
+#### **Document Lifecycle with Versioning**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant DocumentService
+    participant DocumentRepo
+    participant AdminReviewer
+
+    User->>DocumentService: upload_document()
+    DocumentService->>DocumentRepo: create_document(v1)
+    DocumentRepo->>DocumentService: document_created
+
+    AdminReviewer->>DocumentService: review_document(resubmit)
+    DocumentService->>User: notification(resubmission_required)
+
+    User->>DocumentService: upload_document(v2)
+    DocumentService->>DocumentRepo: create_document(v2, previous_version_id)
+    DocumentRepo->>DocumentService: document_created
+
+    AdminReviewer->>DocumentService: review_document(approve)
+    DocumentService->>DocumentRepo: update_document(approved)
+```
+
+#### **Document Version Management**
+
+```python
+class ONLUSDocument:
+    def update_version(self, previous_document: 'ONLUSDocument'):
+        """Update document version and link to previous version."""
+        self.version = previous_document.version + 1
+        self.previous_version_id = previous_document._id
+        self.is_current_version = True
+
+        # Mark previous version as superseded
+        previous_document.is_current_version = False
+```
+
+### **Verification Engine Architecture**
+
+#### **Risk-Based Verification System**
+
+```mermaid
+flowchart TD
+    A[Application Submitted] --> B[Initiate Verification Checks]
+    B --> C{Check Type}
+
+    C -->|Automated| D[Legal Status Check]
+    C -->|Automated| E[Tax Exempt Status]
+    C -->|Automated| F[Fraud Screening]
+    C -->|Manual| G[Background Check]
+    C -->|Manual| H[Financial Review]
+
+    D --> I[Risk Score Calculation]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J{Risk Level}
+    J -->|Low| K[Auto-Approve]
+    J -->|Medium| L[Manual Review Required]
+    J -->|High| M[Enhanced Due Diligence]
+    J -->|Critical| N[Auto-Reject]
+```
+
+#### **Verification Check Types**
+
+**Automated Checks**:
+- **Legal Status Verification**: Registry lookup and validation
+- **Tax Exempt Status**: Government database cross-reference
+- **Fraud Screening**: Pattern analysis and blacklist checking
+- **Financial Health**: Basic financial stability assessment
+
+**Manual Checks**:
+- **Background Check**: Leadership and board member verification
+- **Operational Assessment**: Site visits and operational validation
+- **Compliance Review**: Regulatory compliance verification
+- **Reference Verification**: Stakeholder and partner references
+
+#### **Risk Scoring Algorithm**
+
+```python
+class VerificationCheck:
+    def get_risk_score(self) -> float:
+        """Calculate risk score from verification results."""
+        if self.score is None:
+            return 3.0  # Unknown risk
+
+        # Convert 0-100 score to 1-5 risk scale (lower score = higher risk)
+        if self.score >= 90:
+            return 1.0  # Very low risk
+        elif self.score >= 75:
+            return 2.0  # Low risk
+        elif self.score >= 60:
+            return 3.0  # Medium risk
+        elif self.score >= 40:
+            return 4.0  # High risk
+        else:
+            return 5.0  # Very high risk
+```
+
+### **Organization Management Architecture**
+
+#### **Organization Lifecycle States**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active: application_approved()
+    Active --> Suspended: compliance_violation()
+    Active --> UnderReview: compliance_review_triggered()
+    Suspended --> Active: compliance_restored()
+    UnderReview --> Active: review_passed()
+    UnderReview --> Suspended: review_failed()
+    Active --> Inactive: voluntary_deactivation()
+    Suspended --> Deactivated: permanent_suspension()
+```
+
+#### **Compliance Monitoring System**
+
+```python
+class ONLUSOrganization:
+    def needs_compliance_review(self) -> bool:
+        """Check if organization needs compliance review."""
+        # Score-based review
+        if self.compliance_score < 70:
+            return True
+
+        # Time-based review (annual minimum)
+        if self.last_compliance_review:
+            days_since_review = (datetime.now(timezone.utc) - self.last_compliance_review).days
+            if days_since_review > 365:
+                return True
+
+        # Risk-based triggers
+        if self.total_donations_received > 100000 and days_since_review > 180:
+            return True
+
+        return False
+```
+
+### **API Architecture & Endpoints**
+
+#### **47 REST Endpoints Organized by Access Level**
+
+**Public APIs** (No authentication required):
+- `GET /api/onlus/organizations` - Browse organizations
+- `GET /api/onlus/organizations/{id}` - Organization details
+- `GET /api/onlus/organizations/featured` - Featured organizations
+- `GET /api/onlus/organizations/top-rated` - Top-rated organizations
+- `GET /api/onlus/categories` - Available categories
+- `GET /api/onlus/statistics` - Public statistics
+
+**User APIs** (Authentication required):
+- `POST /api/onlus/applications` - Create application
+- `PUT /api/onlus/applications/{id}` - Update application
+- `POST /api/onlus/applications/{id}/submit` - Submit for review
+- `GET /api/onlus/applications` - User's applications
+- `POST /api/onlus/applications/{id}/documents` - Upload documents
+- `GET /api/onlus/documents/{id}/download` - Download documents
+
+**Admin APIs** (Admin authentication required):
+- `GET /api/admin/onlus/applications` - Applications for review
+- `POST /api/admin/onlus/applications/{id}/assign` - Assign reviewer
+- `POST /api/admin/onlus/applications/{id}/verification/initiate` - Start verification
+- `POST /api/admin/onlus/applications/{id}/approve` - Final approval
+- `POST /api/admin/onlus/documents/{id}/review` - Review documents
+- `PUT /api/admin/onlus/organizations/{id}/status` - Update org status
+- `PUT /api/admin/onlus/organizations/{id}/compliance` - Update compliance
+
+#### **Security Architecture by Endpoint Type**
+
+**Public Endpoints**:
+- Rate limiting (100 requests/minute)
+- Response sanitization (no sensitive data)
+- Cache headers for performance
+
+**User Endpoints**:
+- JWT token validation
+- Resource ownership verification
+- Input sanitization and validation
+
+**Admin Endpoints**:
+- Admin role verification
+- Audit logging for all actions
+- Enhanced input validation
+- Session timeout enforcement
+
+### **Integration Architecture**
+
+#### **Cross-Module Integration Points**
+
+```python
+# Integration with GOO-14 Virtual Wallet
+def process_donation_to_onlus(user_id: str, onlus_id: str, amount: float):
+    # 1. Validate ONLUS eligibility
+    organization = self.onlus_service.get_organization(onlus_id)
+    if not organization.is_eligible_for_donations():
+        raise ValueError("Organization not eligible for donations")
+
+    # 2. Process donation through wallet system
+    donation_result = wallet_service.process_donation(user_id, amount, onlus_id)
+
+    # 3. Update ONLUS donation statistics
+    organization.update_donation_stats(amount, donation_result['is_new_donor'])
+
+    # 4. Generate receipt and compliance records
+    receipt = self.document_service.generate_donation_receipt(donation_result)
+
+    return donation_result, receipt
+```
+
+#### **Event-Driven Integrations**
+
+**ONLUS Events**:
+```python
+# Organization approval triggers multiple systems
+def trigger_organization_approved(organization_id: str):
+    # 1. Enable donation processing
+    wallet_service.enable_donation_target(organization_id)
+
+    # 2. Update impact tracking
+    impact_service.register_organization(organization_id)
+
+    # 3. Add to public directory
+    discovery_service.index_organization(organization_id)
+
+    # 4. Generate compliance monitoring schedule
+    compliance_service.schedule_monitoring(organization_id)
+```
+
+### **Database Architecture**
+
+#### **Collection Design**
+
+**onlus_applications**:
+```javascript
+{
+  _id: ObjectId,
+  applicant_id: String,           // User who submitted
+  organization_name: String,
+  tax_id: String,                 // Unique identifier
+  email: String,
+  category: String,               // ONLUSCategory enum
+  status: String,                 // ApplicationStatus enum
+  phase: String,                  // ApplicationPhase enum
+  priority: String,               // Priority enum
+  required_documents: [String],   // Document types required
+  submitted_documents: [String],  // Documents submitted
+  verification_checks: [ObjectId], // Related checks
+  created_at: Date,
+  submission_date: Date,
+  review_deadline: Date,
+  completion_percentage: Number
+}
+```
+
+**onlus_organizations**:
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  tax_id: String,                    // Indexed unique
+  category: String,
+  status: String,                    // OrganizationStatus enum
+  compliance_status: String,         // ComplianceStatus enum
+  compliance_score: Number,          // 0-100 score
+  verification_date: Date,
+  last_compliance_review: Date,
+  featured: Boolean,
+  featured_until: Date,
+  total_donations_received: Number,
+  total_donors: Number,
+  last_donation_date: Date,
+  bank_account_verified: Boolean,
+  created_at: Date,
+  updated_at: Date
+}
+```
+
+#### **Index Strategy**
+
+**Primary Indexes**:
+```python
+# Application queries
+applications.create_index([("status", 1), ("submission_date", -1)])
+applications.create_index([("assigned_reviewer", 1), ("status", 1)])
+
+# Organization discovery
+organizations.create_index([("category", 1), ("status", 1)])
+organizations.create_index([("featured", 1), ("featured_until", 1)])
+organizations.create_index([("compliance_score", -1), ("total_donations_received", -1)])
+
+# Text search
+organizations.create_index([("name", "text"), ("description", "text")])
+```
+
+### **Performance Optimization**
+
+#### **Caching Strategy**
+
+```python
+# Organization discovery cache
+@cache.memoize(timeout=300)  # 5 minutes
+def get_featured_organizations():
+    return self.organization_repo.get_featured_organizations()
+
+# Category requirements cache
+@cache.memoize(timeout=3600)  # 1 hour
+def get_category_requirements(category: str):
+    return self.category_repo.get_verification_requirements_for_category(category)
+```
+
+#### **Query Optimization**
+
+**Aggregation Pipelines for Statistics**:
+```python
+def get_organization_statistics(self):
+    pipeline = [
+        {
+            "$group": {
+                "_id": {"status": "$status"},
+                "count": {"$sum": 1},
+                "total_donations": {"$sum": "$total_donations_received"},
+                "total_donors": {"$sum": "$total_donors"}
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "by_status": {
+                    "$push": {
+                        "status": "$_id.status",
+                        "count": "$count",
+                        "total_donations": "$total_donations"
+                    }
+                },
+                "total_organizations": {"$sum": "$count"}
+            }
+        }
+    ]
+```
+
+### **Security & Compliance**
+
+#### **Data Protection**
+
+**Sensitive Data Handling**:
+```python
+def to_dict(self, include_sensitive: bool = False) -> Dict[str, Any]:
+    """Serialize with conditional sensitive data inclusion."""
+    base_data = {
+        'name': self.name,
+        'category': self.category,
+        'description': self.description,
+        'status': self.status
+    }
+
+    if include_sensitive:
+        base_data.update({
+            'tax_id': self.tax_id,
+            'compliance_score': self.compliance_score,
+            'legal_entity_type': self.legal_entity_type,
+            'bank_account': self.bank_account
+        })
+
+    return base_data
+```
+
+#### **Audit Trail**
+
+**Admin Action Logging**:
+```python
+@audit_log_action
+def approve_application(self, application_id: str, admin_id: str, conditions: List[str]):
+    # Log: WHO (admin_id) did WHAT (approve) on WHAT (application_id) WHEN (timestamp) WHY (conditions)
+    log_data = {
+        'action': 'APPROVE_APPLICATION',
+        'admin_id': admin_id,
+        'resource_type': 'ONLUS_APPLICATION',
+        'resource_id': application_id,
+        'conditions': conditions,
+        'timestamp': datetime.now(timezone.utc)
+    }
+    audit_logger.log_admin_action(log_data)
+```
+
+### **Monitoring & Analytics**
+
+#### **Key Performance Indicators**
+
+**Application Processing Metrics**:
+- Average application processing time
+- Application approval rate by category
+- Document review turnaround time
+- Verification check completion rates
+
+**Organization Health Metrics**:
+- Active organizations count by category
+- Compliance review completion rate
+- Average compliance scores
+- Donation eligibility percentage
+
+**System Performance Metrics**:
+- API response times by endpoint type
+- Database query performance
+- Document upload success rates
+- Search result relevance scores
+
+#### **Monitoring Dashboards**
+
+```python
+MONITORING_METRICS = {
+    'application_processing_time': {'threshold': '7_days', 'alert': 'high'},
+    'verification_completion_rate': {'threshold': '> 95%', 'alert': 'medium'},
+    'compliance_review_backlog': {'threshold': '< 50', 'alert': 'high'},
+    'document_upload_success_rate': {'threshold': '> 98%', 'alert': 'critical'},
+    'api_response_time_p95': {'threshold': '< 2s', 'alert': 'medium'}
+}
+```
+
+---
+
+## 🏦 **GOO-19: Smart Allocation & Financial Control Architecture**
+
+The Smart Allocation & Financial Control system represents the capstone of the ONLUS management platform, providing sophisticated donation allocation algorithms, comprehensive financial reporting, and continuous compliance monitoring.
+
+### **System Overview**
+
+GOO-19 completes the ONLUS ecosystem by adding:
+- **Smart Allocation Engine**: Multi-factor weighted scoring for optimal donation distribution
+- **Financial Reporting System**: Comprehensive analytics and multi-format report generation
+- **Compliance Monitoring**: Real-time assessment with 6-category scoring system
+- **Audit Trail System**: Complete transaction tracking with cryptographic integrity
+
+### **Module Architecture Integration**
+
+```mermaid
+graph TB
+    A[GOO-17: ONLUS Registry] --> D[GOO-19: Smart Allocation]
+    B[GOO-15: Donation Processing] --> D
+    C[GOO-16: Impact Tracking] --> D
+
+    D --> E[Allocation Engine]
+    D --> F[Financial Reporting]
+    D --> G[Compliance Monitoring]
+    D --> H[Audit Trail]
+
+    E --> I[Multi-Factor Scoring]
+    F --> J[Dashboard Analytics]
+    G --> K[Real-time Assessment]
+    H --> L[Integrity Verification]
+```
+
+### **Core Components Architecture**
+
+#### **1. Smart Allocation Engine** (`app/onlus/services/allocation_engine_service.py`)
+
+**Multi-Factor Scoring Algorithm**:
+```python
+def calculate_allocation_score(self, request_data: Dict) -> float:
+    """Calculate allocation score using 6-factor weighted algorithm."""
+
+    # Factor weights (total = 1.0)
+    WEIGHTS = {
+        'funding_gap': 0.25,        # Current funding needs vs. available resources
+        'urgency': 0.20,            # Project urgency and deadline pressure
+        'performance': 0.20,        # Historical impact and efficiency
+        'preferences': 0.15,        # Donor preference alignment
+        'efficiency': 0.10,         # Cost-effectiveness ratio
+        'seasonal': 0.10            # Seasonal and contextual factors
+    }
+
+    # Calculate individual factor scores (0-100 scale)
+    funding_gap_score = self._calculate_funding_gap_score(request_data)
+    urgency_score = self._calculate_urgency_score(request_data)
+    performance_score = self._calculate_performance_score(request_data)
+    preferences_score = self._calculate_preferences_score(request_data)
+    efficiency_score = self._calculate_efficiency_score(request_data)
+    seasonal_score = self._calculate_seasonal_score(request_data)
+
+    # Weighted final score
+    final_score = (
+        funding_gap_score * WEIGHTS['funding_gap'] +
+        urgency_score * WEIGHTS['urgency'] +
+        performance_score * WEIGHTS['performance'] +
+        preferences_score * WEIGHTS['preferences'] +
+        efficiency_score * WEIGHTS['efficiency'] +
+        seasonal_score * WEIGHTS['seasonal']
+    )
+
+    return round(final_score, 2)
+```
+
+**Allocation Request Processing Workflow**:
+```mermaid
+sequenceDiagram
+    participant ONLUS
+    participant AllocationEngine
+    participant FundingPool
+    participant DonorPrefs
+    participant AuditTrail
+
+    ONLUS->>AllocationEngine: submit_allocation_request()
+    AllocationEngine->>AllocationEngine: calculate_allocation_score()
+    AllocationEngine->>FundingPool: check_available_funds()
+    FundingPool->>AllocationEngine: funds_status
+    AllocationEngine->>DonorPrefs: check_preference_alignment()
+    DonorPrefs->>AllocationEngine: alignment_score
+    AllocationEngine->>AuditTrail: log_allocation_decision()
+    AllocationEngine->>ONLUS: allocation_result
+```
+
+#### **2. Financial Reporting System** (`app/onlus/services/financial_reporting_service.py`)
+
+**Multi-Format Report Generation**:
+```python
+class FinancialReportingService:
+    SUPPORTED_FORMATS = ['pdf', 'csv', 'json']
+    REPORT_TYPES = [
+        'monthly', 'quarterly', 'annual',
+        'donor_statement', 'onlus_statement', 'audit_report'
+    ]
+
+    def generate_periodic_report(self, report_type: str, start_date: datetime,
+                               end_date: datetime, entity_id: str = None,
+                               report_format: str = 'pdf') -> Tuple[bool, str, Dict]:
+        """Generate comprehensive periodic financial reports."""
+
+        # 1. Data aggregation and validation
+        report_data = self._aggregate_financial_data(report_type, start_date, end_date, entity_id)
+
+        # 2. Analytics and trend calculation
+        analytics = self._calculate_financial_analytics(report_data)
+
+        # 3. Format-specific generation
+        if report_format == 'pdf':
+            file_content = self._generate_pdf_report(report_data, analytics)
+        elif report_format == 'csv':
+            file_content = self._generate_csv_report(report_data)
+        else:  # json
+            file_content = self._generate_json_report(report_data, analytics)
+
+        # 4. Report metadata and storage
+        report_metadata = self._create_report_metadata(report_type, report_format, file_content)
+
+        return True, "REPORT_GENERATION_SUCCESS", report_metadata
+```
+
+**Real-time Analytics Dashboard**:
+```python
+def get_analytics_dashboard_data(self, period_days: int = 30) -> Dict:
+    """Generate real-time financial analytics for dashboard."""
+
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=period_days)
+
+    # Key Performance Indicators
+    dashboard_data = {
+        'financial_overview': {
+            'total_donations': self._get_total_donations(start_date, end_date),
+            'total_allocations': self._get_total_allocations(start_date, end_date),
+            'pending_requests': self._get_pending_requests_count(),
+            'avg_processing_time': self._calculate_avg_processing_time()
+        },
+        'allocation_metrics': {
+            'allocation_efficiency': self._calculate_allocation_efficiency(),
+            'top_performing_onlus': self._get_top_performing_onlus(limit=10),
+            'allocation_trends': self._get_allocation_trends(period_days)
+        },
+        'donor_analytics': {
+            'new_donors': self._get_new_donors_count(start_date, end_date),
+            'retention_rate': self._calculate_donor_retention_rate(),
+            'avg_donation_amount': self._calculate_avg_donation_amount()
+        }
+    }
+
+    return dashboard_data
+```
+
+#### **3. Compliance Monitoring System** (`app/onlus/services/compliance_monitoring_service.py`)
+
+**6-Category Compliance Assessment**:
+```python
+def conduct_comprehensive_assessment(self, onlus_id: str,
+                                   assessment_period_months: int = 12) -> Tuple[bool, str, Dict]:
+    """Perform comprehensive compliance assessment with 6-category scoring."""
+
+    # Category weights for overall score calculation
+    CATEGORY_WEIGHTS = {
+        'financial_transparency': 0.20,     # Financial reporting quality
+        'regulatory_compliance': 0.20,      # Legal and regulatory adherence
+        'operational_efficiency': 0.15,     # Operational metrics and efficiency
+        'governance_quality': 0.15,         # Leadership and governance
+        'impact_effectiveness': 0.15,       # Impact measurement and results
+        'stakeholder_engagement': 0.15      # Community and stakeholder relations
+    }
+
+    # Calculate individual category scores
+    category_scores = {}
+    for category, weight in CATEGORY_WEIGHTS.items():
+        score = self._assess_category(onlus_id, category, assessment_period_months)
+        category_scores[category] = score
+
+    # Calculate weighted overall score
+    overall_score = sum(score * CATEGORY_WEIGHTS[category]
+                       for category, score in category_scores.items())
+
+    # Determine compliance level
+    compliance_level = self._determine_compliance_level(overall_score)
+
+    # Generate assessment report
+    assessment_data = {
+        'onlus_id': onlus_id,
+        'overall_score': round(overall_score, 2),
+        'compliance_level': compliance_level,
+        'category_scores': category_scores,
+        'assessment_period_months': assessment_period_months,
+        'improvement_recommendations': self._generate_recommendations(category_scores),
+        'assessment_date': datetime.now(timezone.utc)
+    }
+
+    return True, "COMPLIANCE_ASSESSMENT_SUCCESS", assessment_data
+```
+
+**Real-time Monitoring System**:
+```python
+def monitor_real_time_compliance(self, max_alerts: int = 100) -> Tuple[bool, str, Dict]:
+    """Execute real-time compliance monitoring across all organizations."""
+
+    # Get all active organizations
+    active_organizations = self.get_active_organizations()
+
+    monitoring_results = {
+        'monitoring_session_id': str(uuid.uuid4()),
+        'total_organizations_checked': len(active_organizations),
+        'alerts_generated': 0,
+        'high_risk_organizations': 0,
+        'critical_issues_found': 0,
+        'alerts': []
+    }
+
+    for organization in active_organizations:
+        # Check for compliance triggers
+        alerts = self._check_compliance_triggers(organization)
+
+        for alert in alerts:
+            if len(monitoring_results['alerts']) >= max_alerts:
+                break
+
+            monitoring_results['alerts'].append(alert)
+            monitoring_results['alerts_generated'] += 1
+
+            if alert['urgency'] in ['high', 'critical']:
+                monitoring_results['high_risk_organizations'] += 1
+
+            if alert['urgency'] == 'critical':
+                monitoring_results['critical_issues_found'] += 1
+
+    return True, "REAL_TIME_MONITORING_SUCCESS", monitoring_results
+```
+
+#### **4. Audit Trail System** (`app/onlus/services/audit_trail_service.py`)
+
+**Cryptographic Integrity Verification**:
+```python
+def create_audit_entry(self, action_type: str, entity_type: str, entity_id: str,
+                      user_id: str, action_data: Dict, ip_address: str = None) -> str:
+    """Create audit trail entry with cryptographic integrity."""
+
+    # Create audit entry data
+    audit_data = {
+        'entry_id': str(uuid.uuid4()),
+        'action_type': action_type,
+        'entity_type': entity_type,
+        'entity_id': entity_id,
+        'user_id': user_id,
+        'action_data': action_data,
+        'ip_address': ip_address,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'session_id': self._get_current_session_id()
+    }
+
+    # Generate integrity hash
+    integrity_hash = self._generate_integrity_hash(audit_data)
+    audit_data['integrity_hash'] = integrity_hash
+
+    # Store audit entry
+    audit_id = self.audit_repo.create_audit_entry(audit_data)
+
+    # Update audit chain
+    self._update_audit_chain(audit_id, integrity_hash)
+
+    return audit_id
+
+def _generate_integrity_hash(self, audit_data: Dict) -> str:
+    """Generate SHA-256 integrity hash for audit entry."""
+    # Create deterministic string representation
+    audit_string = json.dumps(audit_data, sort_keys=True, default=str)
+
+    # Generate SHA-256 hash
+    hash_object = hashlib.sha256(audit_string.encode('utf-8'))
+    return hash_object.hexdigest()
+```
+
+### **Database Collections Architecture**
+
+#### **New Collections for GOO-19**
+
+**allocation_requests** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "onlus_id": "uuid",                    // Target ONLUS organization
+  "requested_amount": 5000.0,            // Amount requested in EUR
+  "approved_amount": 4500.0,             // Amount approved (may differ)
+  "allocation_score": 85.5,              // Calculated allocation score (0-100)
+  "status": "approved",                  // draft|submitted|pending_review|approved|rejected|allocated|completed
+  "priority_level": "high",              // low|medium|high|urgent|emergency
+  "project_description": "Emergency relief fund for flood victims",
+  "deadline": ISODate("2024-02-15"),     // Project deadline
+  "scoring_factors": {                   // Individual factor scores
+    "funding_gap": 88.0,
+    "urgency": 95.0,
+    "performance": 78.0,
+    "preferences": 82.0,
+    "efficiency": 75.0,
+    "seasonal": 85.0
+  },
+  "approval_conditions": ["Financial audit required", "Progress reports monthly"],
+  "allocated_at": ISODate,
+  "created_at": ISODate,
+  "updated_at": ISODate
+}
+```
+
+**allocation_results** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "request_id": ObjectId,                // Reference to allocation request
+  "allocated_amount": 4500.0,           // Actually allocated amount
+  "execution_status": "completed",       // pending|in_progress|completed|failed|cancelled
+  "donor_breakdown": [                   // Breakdown by donor contributions
+    {
+      "donor_id": "donor_789",
+      "amount": 1500.0,
+      "percentage": 33.33
+    }
+  ],
+  "transaction_ids": ["txn_123", "txn_456"], // Related transaction references
+  "efficiency_ratio": 0.92,             // Allocation efficiency metric
+  "impact_metrics": {                    // Expected vs actual impact
+    "beneficiaries_expected": 100,
+    "beneficiaries_actual": 108
+  },
+  "executed_at": ISODate,
+  "created_at": ISODate
+}
+```
+
+**financial_reports** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "report_id": "report_789",             // Unique report identifier
+  "report_type": "quarterly",            // monthly|quarterly|annual|donor_statement|onlus_statement|audit_report
+  "report_format": "pdf",                // pdf|csv|json
+  "status": "completed",                 // pending|processing|completed|failed|cancelled
+  "file_path": "/reports/2024/Q1/quarterly_report_789.pdf",
+  "file_size": 2048576,                  // File size in bytes
+  "start_date": ISODate("2024-01-01"),
+  "end_date": ISODate("2024-03-31"),
+  "generated_for_id": "onlus_123",       // Entity ID (ONLUS or donor)
+  "report_data": {                       // Structured report data
+    "total_donations": 125000.0,
+    "total_allocations": 95000.0,
+    "efficiency_metrics": {
+      "avg_processing_time": 2.5,
+      "allocation_success_rate": 0.94
+    }
+  },
+  "access_permissions": ["admin_456", "onlus_123"], // Who can access
+  "download_count": 3,
+  "last_downloaded_at": ISODate,
+  "is_confidential": false,
+  "generated_at": ISODate,
+  "expires_at": ISODate
+}
+```
+
+**compliance_scores** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "score_id": "score_456",               // Unique score identifier
+  "onlus_id": "onlus_123",              // Target ONLUS organization
+  "overall_score": 87.5,                 // Overall compliance score (0-100)
+  "compliance_level": "good",            // excellent|good|satisfactory|needs_improvement|critical
+  "category_scores": {                   // Individual category scores
+    "financial_transparency": 90.0,
+    "regulatory_compliance": 85.0,
+    "operational_efficiency": 88.5,
+    "governance_quality": 87.0,
+    "impact_effectiveness": 89.0,
+    "stakeholder_engagement": 85.5
+  },
+  "compliance_issues": [                 // Open compliance issues
+    {
+      "issue_id": "issue_123",
+      "issue_type": "documentation_incomplete",
+      "description": "Annual financial statement not submitted",
+      "severity": "medium",              // low|medium|high|critical
+      "status": "open",                  // open|in_progress|resolved|dismissed
+      "created_at": ISODate,
+      "due_date": ISODate
+    }
+  ],
+  "monitoring_alerts": [                 // Active monitoring alerts
+    {
+      "alert_id": "alert_456",
+      "alert_type": "compliance_threshold",
+      "message": "Compliance score below 80%",
+      "urgency": "medium",               // low|medium|high|critical
+      "triggered_at": ISODate,
+      "is_dismissed": false
+    }
+  ],
+  "improvement_recommendations": [       // Suggested improvements
+    "Submit annual financial statements",
+    "Update board member information",
+    "Complete governance training"
+  ],
+  "assessment_period_months": 12,
+  "is_current": true,                    // Whether this is the current/latest score
+  "assessment_date": ISODate,
+  "assessor_id": "admin_456",           // ID of the assessor
+  "verification": {
+    "is_verified": false,
+    "verified_by": null,
+    "verification_date": null,
+    "verification_notes": null
+  },
+  "created_at": ISODate
+}
+```
+
+**audit_trail** Collection:
+```javascript
+{
+  "_id": ObjectId,
+  "entry_id": "audit_789",              // Unique audit entry identifier
+  "action_type": "allocation_approved",  // Type of action performed
+  "entity_type": "allocation_request",   // Type of entity affected
+  "entity_id": "req_123",               // ID of the affected entity
+  "user_id": "admin_456",               // User who performed the action
+  "action_data": {                      // Detailed action information
+    "previous_status": "pending_review",
+    "new_status": "approved",
+    "approved_amount": 4500.0,
+    "conditions": ["Monthly progress reports required"]
+  },
+  "ip_address": "192.168.1.100",       // User's IP address
+  "session_id": "session_789",          // User session identifier
+  "integrity_hash": "a1b2c3d4e5f6...", // SHA-256 integrity hash
+  "previous_entry_hash": "f6e5d4c3b2a1...", // Hash of previous audit entry
+  "timestamp": ISODate,
+  "metadata": {
+    "user_agent": "Mozilla/5.0...",
+    "system_version": "v1.2.0",
+    "processing_time_ms": 125
+  }
+}
+```
+
+### **Performance Optimization Architecture**
+
+#### **Database Index Strategy**
+```python
+# Allocation optimization indexes
+allocation_requests.create_index([("allocation_score", -1), ("status", 1)])
+allocation_requests.create_index([("onlus_id", 1), ("status", 1), ("created_at", -1)])
+allocation_requests.create_index([("deadline", 1), ("priority_level", 1)])
+
+# Financial reporting indexes
+financial_reports.create_index([("report_type", 1), ("status", 1), ("generated_at", -1)])
+financial_reports.create_index([("generated_for_id", 1), ("report_type", 1)])
+
+# Compliance monitoring indexes
+compliance_scores.create_index([("onlus_id", 1), ("is_current", 1)])
+compliance_scores.create_index([("overall_score", 1), ("compliance_level", 1)])
+compliance_scores.create_index([("assessment_date", -1), ("is_current", 1)])
+
+# Audit trail indexes
+audit_trail.create_index([("entity_type", 1), ("entity_id", 1), ("timestamp", -1)])
+audit_trail.create_index([("user_id", 1), ("action_type", 1), ("timestamp", -1)])
+audit_trail.create_index([("timestamp", -1)], {"expireAfterSeconds": 2592000})  # 30 days TTL
+```
+
+#### **Caching Strategy**
+```python
+# Redis caching for frequently accessed data
+CACHE_KEYS = {
+    'allocation_scores': 'allocation:onlus:{onlus_id}:score',         # TTL: 30 minutes
+    'financial_dashboard': 'financial:dashboard:{period}',            # TTL: 15 minutes
+    'compliance_summary': 'compliance:onlus:{onlus_id}:summary',     # TTL: 10 minutes
+    'audit_summary': 'audit:user:{user_id}:summary',                # TTL: 60 minutes
+    'top_performers': 'allocation:top_performers:{period}',          # TTL: 1 hour
+}
+```
+
+### **API Architecture**
+
+#### **33 New REST Endpoints**
+
+**Smart Allocation Endpoints** (8 endpoints):
+```python
+POST   /api/onlus/allocations/request                    # Create allocation request
+GET    /api/onlus/allocations/{request_id}               # Get request details
+POST   /api/onlus/allocations/{request_id}/approve       # Approve request (admin)
+POST   /api/onlus/allocations/{request_id}/reject        # Reject request (admin)
+POST   /api/onlus/allocations/batch/process              # Batch processing (admin)
+GET    /api/onlus/allocations/emergency                  # Emergency allocations
+POST   /api/onlus/allocations/{request_id}/execute       # Execute allocation
+GET    /api/onlus/allocations/statistics                 # Allocation statistics
+```
+
+**Financial Reporting Endpoints** (8 endpoints):
+```python
+POST   /api/onlus/financial/reports                      # Generate report
+GET    /api/onlus/financial/reports                      # List reports
+GET    /api/onlus/financial/reports/{report_id}          # Get specific report
+POST   /api/onlus/financial/reports/{report_id}/export   # Export report data
+GET    /api/onlus/financial/analytics/dashboard          # Analytics dashboard
+POST   /api/onlus/financial/donor/{donor_id}/statement   # Generate donor statement
+POST   /api/onlus/financial/onlus/{onlus_id}/summary     # Generate ONLUS summary
+GET    /api/onlus/financial/reports/statistics           # Reports statistics
+```
+
+**Compliance Monitoring Endpoints** (17 endpoints):
+```python
+POST   /api/onlus/compliance/assessment/{onlus_id}       # Conduct assessment
+GET    /api/onlus/compliance/score/{onlus_id}/current    # Get current score
+GET    /api/onlus/compliance/score/{onlus_id}/history    # Get score history
+POST   /api/onlus/compliance/monitoring/real-time        # Real-time monitoring
+GET    /api/onlus/compliance/dashboard                   # Compliance dashboard
+GET    /api/onlus/compliance/high-risk                   # High-risk organizations
+GET    /api/onlus/compliance/critical-issues             # Critical issues
+POST   /api/onlus/compliance/score/{score_id}/issue      # Add compliance issue
+POST   /api/onlus/compliance/score/{score_id}/issue/{issue_id}/resolve  # Resolve issue
+POST   /api/onlus/compliance/score/{score_id}/alert      # Add monitoring alert
+POST   /api/onlus/compliance/score/{score_id}/alert/{alert_id}/dismiss  # Dismiss alert
+POST   /api/onlus/compliance/score/{score_id}/verify     # Verify assessment
+GET    /api/onlus/compliance/statistics                  # Compliance statistics
+GET    /api/onlus/compliance/trends                      # Compliance trends
+GET    /api/onlus/compliance/alerts/report               # Alerts report
+GET    /api/onlus/compliance/assessment-due              # Assessments due
+GET    /api/onlus/compliance/top-performers              # Top performers
+```
+
+### **Security Architecture**
+
+#### **Multi-Layer Security Implementation**
+
+**1. Input Validation Layer**:
+```python
+def validate_allocation_request(self, data: Dict) -> Optional[str]:
+    """Validate allocation request input data."""
+
+    # Required field validation
+    required_fields = ['onlus_id', 'requested_amount', 'project_description']
+    for field in required_fields:
+        if not data.get(field):
+            return f"MISSING_REQUIRED_FIELD: {field}"
+
+    # Amount validation
+    amount = data.get('requested_amount')
+    if not isinstance(amount, (int, float)) or amount <= 0:
+        return "INVALID_AMOUNT_RANGE"
+
+    if amount > 1000000:  # Max 1M EUR per request
+        return "AMOUNT_EXCEEDS_MAXIMUM"
+
+    # Description validation
+    description = data.get('project_description', '')
+    if len(description) < 50 or len(description) > 2000:
+        return "INVALID_DESCRIPTION_LENGTH"
+
+    return None
+```
+
+**2. Authorization Layer**:
+```python
+@admin_required
+@rate_limit(limit=10, per=60)  # 10 requests per minute for admins
+def approve_allocation_request(current_user, request_id):
+    """Approve allocation request - Admin only."""
+
+    # Verify admin has allocation approval permissions
+    if not current_user.has_permission('allocation_approval'):
+        return error_response("INSUFFICIENT_PERMISSIONS", status_code=403)
+
+    # Check for conflicts of interest
+    if self._has_conflict_of_interest(current_user['user_id'], request_id):
+        return error_response("CONFLICT_OF_INTEREST", status_code=403)
+```
+
+**3. Data Integrity Layer**:
+```python
+def verify_audit_trail_integrity(self, start_date: datetime, end_date: datetime) -> Dict:
+    """Verify audit trail integrity using hash chains."""
+
+    audit_entries = self.audit_repo.get_entries_by_date_range(start_date, end_date)
+    integrity_report = {
+        'total_entries': len(audit_entries),
+        'verified_entries': 0,
+        'integrity_violations': [],
+        'chain_breaks': []
+    }
+
+    previous_hash = None
+    for entry in audit_entries:
+        # Verify individual entry hash
+        calculated_hash = self._calculate_entry_hash(entry)
+        if calculated_hash != entry['integrity_hash']:
+            integrity_report['integrity_violations'].append({
+                'entry_id': entry['entry_id'],
+                'expected_hash': entry['integrity_hash'],
+                'calculated_hash': calculated_hash
+            })
+        else:
+            integrity_report['verified_entries'] += 1
+
+        # Verify hash chain
+        if previous_hash and entry['previous_entry_hash'] != previous_hash:
+            integrity_report['chain_breaks'].append({
+                'entry_id': entry['entry_id'],
+                'expected_previous': previous_hash,
+                'actual_previous': entry['previous_entry_hash']
+            })
+
+        previous_hash = entry['integrity_hash']
+
+    return integrity_report
+```
+
+### **Integration Points with Existing Modules**
+
+#### **GOO-19 → GOO-17 Integration**:
+```python
+# ONLUS verification status affects allocation eligibility
+def check_allocation_eligibility(self, onlus_id: str) -> Tuple[bool, str]:
+    """Check if ONLUS is eligible for allocation."""
+
+    # Get ONLUS from registry (GOO-17)
+    organization = self.onlus_service.get_organization(onlus_id)
+    if not organization:
+        return False, "ONLUS_NOT_FOUND"
+
+    # Check verification status
+    if organization.status != OrganizationStatus.ACTIVE.value:
+        return False, "ONLUS_NOT_ACTIVE"
+
+    # Check compliance status
+    if organization.compliance_status == ComplianceStatus.SUSPENDED.value:
+        return False, "ONLUS_COMPLIANCE_SUSPENDED"
+
+    # Check compliance score threshold
+    if organization.compliance_score < 60:
+        return False, "ONLUS_COMPLIANCE_SCORE_TOO_LOW"
+
+    return True, "ALLOCATION_ELIGIBLE"
+```
+
+#### **GOO-19 → GOO-15 Integration**:
+```python
+# Allocation execution triggers donation processing
+def execute_allocation(self, allocation_result_id: str) -> Tuple[bool, str, Dict]:
+    """Execute approved allocation through donation system."""
+
+    allocation_result = self.allocation_result_repo.get_result_by_id(allocation_result_id)
+
+    # Process through GOO-15 donation system
+    for donor_allocation in allocation_result.donor_breakdown:
+        donation_data = {
+            'user_id': donor_allocation['donor_id'],
+            'amount': donor_allocation['amount'],
+            'onlus_id': allocation_result.onlus_id,
+            'allocation_reference': allocation_result_id
+        }
+
+        success, message, result = self.donation_service.process_automatic_donation(donation_data)
+        if not success:
+            # Rollback and report failure
+            return False, f"DONATION_PROCESSING_FAILED: {message}", None
+
+    # Update allocation result
+    allocation_result.mark_completed()
+
+    return True, "ALLOCATION_EXECUTED_SUCCESS", allocation_result.to_dict()
+```
+
+### **Monitoring & Observability**
+
+#### **Key Performance Indicators**
+```python
+MONITORING_METRICS = {
+    # Allocation Performance
+    'allocation_scoring_time': {'threshold': '< 500ms', 'alert': 'medium'},
+    'allocation_approval_rate': {'threshold': '> 80%', 'alert': 'low'},
+    'emergency_allocation_time': {'threshold': '< 1hour', 'alert': 'critical'},
+
+    # Financial Reporting
+    'report_generation_time': {'threshold': '< 5min', 'alert': 'high'},
+    'dashboard_load_time': {'threshold': '< 2s', 'alert': 'medium'},
+    'report_accuracy_rate': {'threshold': '> 99%', 'alert': 'critical'},
+
+    # Compliance Monitoring
+    'compliance_assessment_completion': {'threshold': '< 2hours', 'alert': 'high'},
+    'real_time_monitoring_latency': {'threshold': '< 10s', 'alert': 'medium'},
+    'critical_issues_resolution_time': {'threshold': '< 24hours', 'alert': 'critical'},
+
+    # System Health
+    'audit_trail_integrity_rate': {'threshold': '100%', 'alert': 'critical'},
+    'api_error_rate': {'threshold': '< 0.1%', 'alert': 'high'},
+    'database_query_time_p95': {'threshold': '< 1s', 'alert': 'medium'}
+}
+```
+
+#### **Alerting Configuration**
+```python
+# Real-time alerting for critical events
+CRITICAL_ALERTS = {
+    'allocation_fraud_detected': {
+        'notification_channels': ['email', 'slack', 'sms'],
+        'escalation_time': '5_minutes',
+        'severity': 'critical'
+    },
+    'compliance_critical_violation': {
+        'notification_channels': ['email', 'slack'],
+        'escalation_time': '15_minutes',
+        'severity': 'high'
+    },
+    'audit_integrity_breach': {
+        'notification_channels': ['email', 'slack', 'sms', 'pagerduty'],
+        'escalation_time': 'immediate',
+        'severity': 'critical'
+    }
+}
+```
+
+### **Deployment Considerations**
+
+#### **Environment Configuration**
+```bash
+# GOO-19 specific environment variables
+ALLOCATION_SCORING_CACHE_TTL=1800
+FINANCIAL_REPORT_RETENTION_DAYS=2555  # 7 years
+COMPLIANCE_ASSESSMENT_TIMEOUT=7200
+AUDIT_TRAIL_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+MAX_ALLOCATION_AMOUNT=1000000
+EMERGENCY_ALLOCATION_THRESHOLD=24  # hours
+REAL_TIME_MONITORING_INTERVAL=300  # 5 minutes
+```
+
+#### **Background Job Configuration**
+```python
+# Scheduled tasks for GOO-19
+@scheduler.task('cron', hour=0, minute=0)  # Daily at midnight
+def daily_compliance_monitoring():
+    ComplianceMonitoringService().monitor_real_time_compliance()
+
+@scheduler.task('cron', hour=6, minute=0, day=1)  # Monthly reports
+def generate_monthly_financial_reports():
+    FinancialReportingService().generate_monthly_reports()
+
+@scheduler.task('interval', minutes=15)  # Allocation scoring updates
+def update_allocation_scores():
+    AllocationEngineService().recalculate_pending_scores()
+
+@scheduler.task('interval', minutes=5)  # Audit trail integrity checks
+def verify_audit_integrity():
+    AuditTrailService().verify_recent_integrity()
+```
+
+---
+
+*Architecture documentation - GoodPlay Backend v1.3*
+*Last updated: September 29, 2025*
+*Includes GOO-14 Virtual Wallet, GOO-15 Donation Processing, GOO-16 Impact Tracking, GOO-17 ONLUS Registry, and GOO-19 Smart Allocation & Financial Control*

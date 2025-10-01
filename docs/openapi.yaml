@@ -38,6 +38,7 @@ info:
     - **Games Module**: [games.yaml](./games.yaml) - Game engine, sessions, modes, challenges & teams
     - **Leaderboards Module**: [leaderboards.yaml](./leaderboards.yaml) - Impact scores & rankings
     - **Donations Module**: [openapi_donations.yaml](./openapi_donations.yaml) - Virtual wallet, donations & payments (GOO-15)
+    - **ONLUS Module**: [onlus.yaml](./onlus.yaml) - ONLUS management, allocation & financial control (GOO-17, GOO-18, GOO-19)
 
   version: 1.0.0
   contact:
@@ -107,6 +108,26 @@ tags:
     description: AML, KYC, and regulatory compliance management
   - name: Admin - Financial Analytics
     description: Financial analytics, reporting, and forecasting
+
+  # ONLUS Module Tags (GOO-17, GOO-18, GOO-19)
+  - name: Public ONLUS
+    description: Public ONLUS discovery and search
+  - name: ONLUS Applications
+    description: User application submission and management
+  - name: Document Management
+    description: Document management and verification
+  - name: Admin Applications
+    description: Administrative application review
+  - name: Admin ONLUS
+    description: Administrative ONLUS management
+  - name: Smart Allocation
+    description: Smart donation allocation and scoring (GOO-19)
+  - name: Financial Reporting
+    description: Financial reporting and analytics (GOO-19)
+  - name: Compliance Monitoring
+    description: Compliance monitoring and assessment (GOO-19)
+  - name: Impact Tracking
+    description: Impact tracking and community reporting (GOO-18)
 
   # Other Feature Tags
   - name: Achievements
@@ -276,6 +297,28 @@ paths:
   /api/social/admin/system/stats:
     $ref: './leaderboards.yaml#/paths/~1api~1social~1admin~1system~1stats'
 
+  # Import ONLUS module paths (GOO-17, GOO-18, GOO-19)
+  /api/onlus/allocations/request:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1allocations~1request'
+  /api/onlus/allocations/{request_id}:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1allocations~1{request_id}'
+  /api/onlus/allocations/{request_id}/approve:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1allocations~1{request_id}~1approve'
+  /api/onlus/financial/reports:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1financial~1reports'
+  /api/onlus/financial/reports/{report_id}:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1financial~1reports~1{report_id}'
+  /api/onlus/financial/analytics/dashboard:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1financial~1analytics~1dashboard'
+  /api/onlus/compliance/assessment/{onlus_id}:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1compliance~1assessment~1{onlus_id}'
+  /api/onlus/compliance/score/{onlus_id}/current:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1compliance~1score~1{onlus_id}~1current'
+  /api/onlus/compliance/monitoring/real-time:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1compliance~1monitoring~1real-time'
+  /api/onlus/compliance/dashboard:
+    $ref: './onlus.yaml#/paths/~1api~1onlus~1compliance~1dashboard'
+
 components:
   # Import schemas from all modules
   schemas:
@@ -332,6 +375,16 @@ components:
       $ref: './leaderboards.yaml#/components/schemas/PrivacySettings'
     RankingHealthStatus:
       $ref: './leaderboards.yaml#/components/schemas/RankingHealthStatus'
+
+    # ONLUS schemas (GOO-17, GOO-18, GOO-19)
+    AllocationRequest:
+      $ref: './onlus.yaml#/components/schemas/AllocationRequest'
+    AllocationResult:
+      $ref: './onlus.yaml#/components/schemas/AllocationResult'
+    FinancialReport:
+      $ref: './onlus.yaml#/components/schemas/FinancialReport'
+    ComplianceScore:
+      $ref: './onlus.yaml#/components/schemas/ComplianceScore'
 
     # Common schemas
     PaginationInfo:

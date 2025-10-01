@@ -31,6 +31,7 @@ def create_app(config_name=None):
     from app.social import register_social_module
     from app.games import create_games_blueprint, create_modes_blueprint, create_challenges_blueprint, create_teams_blueprint, init_games_module
     from app.donations.controllers import wallet_bp, donation_bp, rates_bp, payment_bp, batch_bp, compliance_bp, financial_admin_bp
+    from app.onlus import register_onlus_blueprints
     from app.admin.controllers import admin_bp, dashboard_bp, user_mgmt_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -65,11 +66,6 @@ def create_app(config_name=None):
     app.register_blueprint(compliance_bp)
     app.register_blueprint(financial_admin_bp)
 
-    # Register admin module
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(dashboard_bp)
-    app.register_blueprint(user_mgmt_bp)
-
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():
         init_games_module()
@@ -100,6 +96,15 @@ def init_db(app):
             from app.donations.repositories.payment_intent_repository import PaymentIntentRepository
             from app.donations.repositories.batch_operation_repository import BatchOperationRepository
             from app.donations.repositories.batch_donation_repository import BatchDonationRepository
+            from app.donations.repositories.impact_story_repository import ImpactStoryRepository
+            from app.donations.repositories.impact_metric_repository import ImpactMetricRepository
+            from app.donations.repositories.impact_update_repository import ImpactUpdateRepository
+            from app.donations.repositories.community_report_repository import CommunityReportRepository
+            from app.onlus.repositories.onlus_category_repository import ONLUSCategoryRepository
+            from app.onlus.repositories.onlus_document_repository import ONLUSDocumentRepository
+            from app.onlus.repositories.verification_check_repository import VerificationCheckRepository
+            from app.onlus.repositories.onlus_application_repository import ONLUSApplicationRepository
+            from app.onlus.repositories.onlus_organization_repository import ONLUSOrganizationRepository
 
             user_repo = UserRepository()
             user_repo.create_indexes()
@@ -112,6 +117,10 @@ def init_db(app):
             payment_intent_repo = PaymentIntentRepository()
             batch_operation_repo = BatchOperationRepository()
             batch_donation_repo = BatchDonationRepository()
+            impact_story_repo = ImpactStoryRepository()
+            impact_metric_repo = ImpactMetricRepository()
+            impact_update_repo = ImpactUpdateRepository()
+            community_report_repo = CommunityReportRepository()
 
             wallet_repo.create_indexes()
             transaction_repo.create_indexes()
@@ -120,19 +129,6 @@ def init_db(app):
             payment_intent_repo.create_indexes()
             batch_operation_repo.create_indexes()
             batch_donation_repo.create_indexes()
-
-            # Initialize admin module indexes
-            from app.admin.repositories.admin_repository import AdminRepository
-            from app.admin.repositories.metrics_repository import MetricsRepository
-            from app.admin.repositories.audit_repository import AuditRepository
-
-            admin_repo = AdminRepository()
-            metrics_repo = MetricsRepository()
-            audit_repo = AuditRepository()
-
-            admin_repo.create_indexes()
-            metrics_repo.create_indexes()
-            audit_repo.create_indexes()
 
             app.logger.info('Database initialized successfully')
     except Exception as e:
