@@ -1,18 +1,17 @@
+from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
-from app.core.database import get_db
 from app.core.repositories.base_repository import BaseRepository
 from app.onlus.models.funding_pool import FundingPool, FundingPoolStatus, FundingPoolType
 import os
 
 
-class FundingPoolRepository(BaseRepository[FundingPool]):
+class FundingPoolRepository(BaseRepository):
     """Repository for managing funding pool data operations."""
 
     def __init__(self):
-        super().__init__()
-        self.collection_name = 'funding_pools'
+        super().__init__('funding_pools')
 
     def create_indexes(self):
         """Create database indexes for funding pools."""

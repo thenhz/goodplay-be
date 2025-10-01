@@ -1,18 +1,17 @@
+from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
-from app.core.database import get_db
 from app.core.repositories.base_repository import BaseRepository
 from app.onlus.models.compliance_score import ComplianceScore, ComplianceLevel, ComplianceCategory, RiskLevel
 import os
 
 
-class ComplianceScoreRepository(BaseRepository[ComplianceScore]):
+class ComplianceScoreRepository(BaseRepository):
     """Repository for managing compliance score data operations."""
 
     def __init__(self):
-        super().__init__()
-        self.collection_name = 'compliance_scores'
+        super().__init__('compliance_scores')
 
     def create_indexes(self):
         """Create database indexes for compliance scores."""

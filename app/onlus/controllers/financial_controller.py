@@ -3,8 +3,8 @@ from typing import Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
 import traceback
 
-from app.core.auth_decorators import auth_required, admin_required
-from app.core.response_helpers import success_response, error_response
+from app.core.utils.decorators import auth_required, admin_required
+from app.core.utils.responses import success_response, error_response
 from app.onlus.services.financial_reporting_service import FinancialReportingService
 from app.onlus.services.audit_trail_service import AuditTrailService
 

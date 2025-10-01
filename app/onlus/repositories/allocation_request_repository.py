@@ -1,18 +1,17 @@
+from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
-from app.core.database import get_db
 from app.core.repositories.base_repository import BaseRepository
 from app.onlus.models.allocation_request import AllocationRequest, AllocationRequestStatus, AllocationPriority
 import os
 
 
-class AllocationRequestRepository(BaseRepository[AllocationRequest]):
+class AllocationRequestRepository(BaseRepository):
     """Repository for managing allocation request data operations."""
 
     def __init__(self):
-        super().__init__()
-        self.collection_name = 'allocation_requests'
+        super().__init__('allocation_requests')
 
     def create_indexes(self):
         """Create database indexes for allocation requests."""

@@ -1,18 +1,17 @@
+from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
-from app.core.database import get_db
 from app.core.repositories.base_repository import BaseRepository
 from app.onlus.models.financial_report import FinancialReport, ReportType, ReportStatus, ReportFormat
 import os
 
 
-class FinancialReportRepository(BaseRepository[FinancialReport]):
+class FinancialReportRepository(BaseRepository):
     """Repository for managing financial report data operations."""
 
     def __init__(self):
-        super().__init__()
-        self.collection_name = 'financial_reports'
+        super().__init__('financial_reports')
 
     def create_indexes(self):
         """Create database indexes for financial reports."""

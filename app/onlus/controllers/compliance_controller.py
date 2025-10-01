@@ -2,14 +2,14 @@ from flask import Blueprint, request, current_app
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
 
-from app.core.auth_decorators import auth_required, admin_required
-from app.core.response_helpers import success_response, error_response
+from app.core.utils.decorators import auth_required, admin_required
+from app.core.utils.responses import success_response, error_response
 from app.onlus.services.compliance_monitoring_service import ComplianceMonitoringService
 from app.onlus.services.audit_trail_service import AuditTrailService
 
 
 # Create Blueprint
-compliance_bp = Blueprint('compliance', __name__, url_prefix='/api/onlus/compliance')
+compliance_bp = Blueprint('onlus_compliance', __name__, url_prefix='/api/onlus/compliance')
 
 # Initialize services
 compliance_service = ComplianceMonitoringService()
