@@ -1,37 +1,12 @@
 # Social Challenges & Friend Interactions API (GOO-13)
 # This module contains social challenge functionality
 
-# Message Constants for Social Challenges Module
-social_challenges_constants: &social_challenges_constants
-  - `CHALLENGE_CREATED_SUCCESS` - Challenge created successfully
-  - `CHALLENGE_JOINED_SUCCESS` - Successfully joined challenge
-  - `CHALLENGE_LEFT_SUCCESS` - Successfully left challenge
-  - `CHALLENGE_STARTED_SUCCESS` - Challenge started successfully
-  - `CHALLENGE_CANCELLED_SUCCESS` - Challenge cancelled successfully
-  - `PROGRESS_UPDATED_SUCCESS` - Progress updated successfully
-  - `CHEER_SENT_SUCCESS` - Cheer sent successfully
-  - `COMMENT_SENT_SUCCESS` - Comment sent successfully
-  - `INTERACTION_LIKED_SUCCESS` - Interaction liked successfully
-  - `REPLY_ADDED_SUCCESS` - Reply added successfully
-  - `CHALLENGES_DISCOVERED_SUCCESS` - Challenges discovered successfully
-  - `RECOMMENDATIONS_GENERATED_SUCCESS` - Challenge recommendations generated
-  - `SEARCH_COMPLETED_SUCCESS` - Challenge search completed
-  - `ACTIVITY_FEED_RETRIEVED_SUCCESS` - Activity feed retrieved successfully
-  - `ACHIEVEMENTS_RETRIEVED_SUCCESS` - Achievements retrieved successfully
-  - `LEADERBOARD_RETRIEVED_SUCCESS` - Leaderboard retrieved successfully
-  - `CHALLENGE_NOT_FOUND` - Challenge not found
-  - `CHALLENGE_FULL` - Challenge is full
-  - `CHALLENGE_EXPIRED` - Challenge has expired
-  - `NOT_PARTICIPANT` - User is not a participant
-  - `ALREADY_JOINED` - User already joined challenge
-  - `CREATOR_CANNOT_LEAVE` - Creator cannot leave challenge
-  - `CHALLENGE_DATA_REQUIRED` - Challenge data required
-  - `TARGET_USER_REQUIRED` - Target user required
-  - `COMMENT_DATA_REQUIRED` - Comment data required
-  - `REPLY_CONTENT_REQUIRED` - Reply content required
-  - `SEARCH_QUERY_REQUIRED` - Search query required
-  - `INTERACTION_NOT_FOUND` - Interaction not found
-  - `NOT_AUTHORIZED` - Not authorized for this action
+openapi: 3.1.0
+
+info:
+  title: GoodPlay Social Challenges API
+  version: 1.0.0
+  description: Social challenges, friend competitions, and collaborative activities
 
 # API Paths
 paths:
@@ -888,8 +863,23 @@ components:
           type: boolean
         message:
           type: string
+          description: Constant message key for UI localization
+          enum:
+            - CHALLENGE_NOT_FOUND
+            - CHALLENGE_FULL
+            - CHALLENGE_EXPIRED
+            - NOT_PARTICIPANT
+            - ALREADY_JOINED
+            - CREATOR_CANNOT_LEAVE
+            - CHALLENGE_DATA_REQUIRED
+            - TARGET_USER_REQUIRED
+            - INTERACTION_NOT_FOUND
+            - NOT_AUTHORIZED
+            - INTERNAL_SERVER_ERROR
         data:
-          type: object
+          anyOf:
+            - type: object
+            - type: "null"
 
     CreateChallengeRequest:
       type: object

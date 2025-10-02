@@ -1,35 +1,12 @@
 # Social Impact Score & Leaderboards API (GOO-12)
 # This module contains all endpoints and schemas for the leaderboard system
 
-# Message Constants for Leaderboards Module
-leaderboards_constants: &leaderboards_constants
-  - `IMPACT_SCORE_RETRIEVED_SUCCESS` - Impact score retrieved successfully
-  - `IMPACT_SCORE_REFRESHED_SUCCESS` - Impact score refreshed successfully
-  - `IMPACT_SCORE_HISTORY_RETRIEVED_SUCCESS` - Impact score history retrieved successfully
-  - `LEADERBOARD_RETRIEVED_SUCCESS` - Leaderboard retrieved successfully
-  - `LEADERBOARD_SUMMARY_RETRIEVED_SUCCESS` - Leaderboard summary retrieved successfully
-  - `FRIENDS_LEADERBOARD_RETRIEVED_SUCCESS` - Friends leaderboard retrieved successfully
-  - `LEADERBOARD_POSITIONS_RETRIEVED_SUCCESS` - User leaderboard positions retrieved successfully
-  - `LEADERBOARD_STATISTICS_RETRIEVED_SUCCESS` - Leaderboard statistics retrieved successfully
-  - `TOP_PERFORMERS_RETRIEVED_SUCCESS` - Top performers retrieved successfully
-  - `PRIVACY_SETTINGS_UPDATED_SUCCESS` - Privacy settings updated successfully
-  - `PRIVACY_SETTINGS_RETRIEVED_SUCCESS` - Privacy settings retrieved successfully
-  - `RANKING_UPDATE_TRIGGERED_SUCCESS` - Ranking update triggered successfully
-  - `RANKING_HEALTH_RETRIEVED_SUCCESS` - Ranking health status retrieved successfully
-  - `IMPACT_SCORES_RECALCULATION_COMPLETED` - Impact scores recalculation completed
-  - `LEADERBOARDS_REFRESH_COMPLETED` - Leaderboards refresh completed
-  - `FULL_RANKING_RECALCULATION_COMPLETED` - Full ranking recalculation completed
-  - `RANKING_OPTIMIZATION_COMPLETED` - Ranking optimization completed
-  - `BACKGROUND_UPDATES_STARTED` - Background updates started
-  - `BACKGROUND_UPDATES_STOPPED` - Background updates stopped
-  - `LEADERBOARD_CLEARED_SUCCESS` - Leaderboard cleared successfully
-  - `SYSTEM_STATISTICS_RETRIEVED_SUCCESS` - System statistics retrieved successfully
-  - `INVALID_LEADERBOARD_TYPE` - Invalid leaderboard type
-  - `INVALID_PERIOD` - Invalid period
-  - `INVALID_VISIBILITY_LEVEL` - Invalid visibility level
-  - `USER_IMPACT_SCORE_NOT_FOUND` - User impact score not found
-  - `LEADERBOARD_STATISTICS_NOT_FOUND` - Leaderboard statistics not found
-  - `FRIENDS_DATA_NOT_AVAILABLE` - No friends data available
+openapi: 3.1.0
+
+info:
+  title: GoodPlay Leaderboards API
+  version: 1.0.0
+  description: Social impact score tracking and leaderboards system
 
 # API Paths
 paths:
@@ -662,6 +639,27 @@ paths:
 # Components
 components:
   schemas:
+    # Core API Response
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          enum:
+            - INVALID_LEADERBOARD_TYPE
+            - INVALID_PERIOD
+            - USER_IMPACT_SCORE_NOT_FOUND
+            - INTERNAL_SERVER_ERROR
+        data:
+          anyOf:
+            - type: object
+            - type: "null"
+
     # Core Response Schemas
     ImpactScoreResponse:
       type: object
@@ -689,12 +687,14 @@ components:
           type: object
           properties:
             global:
-              type: integer
-              nullable: true
+              anyOf:
+                - type: integer
+                - type: "null"
               description: Global ranking position
             weekly:
-              type: integer
-              nullable: true
+              anyOf:
+                - type: integer
+                - type: "null"
               description: Weekly ranking position
         trend:
           $ref: '#/components/schemas/ScoreTrend'
@@ -764,8 +764,9 @@ components:
           type: number
           format: float
         rank:
-          type: integer
-          nullable: true
+          anyOf:
+            - type: integer
+            - type: "null"
         period:
           type: string
         gaming_component:
@@ -799,8 +800,9 @@ components:
         pagination:
           $ref: '#/components/schemas/PaginationInfo'
         user_position:
-          $ref: '#/components/schemas/UserPosition'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/UserPosition'
+            - type: "null"
         last_updated:
           type: string
           format: date-time
@@ -850,16 +852,18 @@ components:
       type: object
       properties:
         avatar_url:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
         level:
           type: integer
         badge_count:
           type: integer
         member_since:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
 
     UserPosition:
       type: object
@@ -919,8 +923,9 @@ components:
         display_name:
           type: string
         stats:
-          $ref: '#/components/schemas/LeaderboardStatistics'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/LeaderboardStatistics'
+            - type: "null"
 
     LeaderboardStatistics:
       type: object
@@ -1000,8 +1005,9 @@ components:
         global_rank:
           type: integer
         weekly_rank:
-          type: integer
-          nullable: true
+          anyOf:
+            - type: integer
+            - type: "null"
         percentile:
           type: number
           format: float
@@ -1100,8 +1106,9 @@ components:
           type: string
           format: date-time
         error:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
 
     BatchOperationStats:
       type: object
@@ -1133,3 +1140,50 @@ components:
         timestamp:
           type: string
           format: date-time
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "UNAUTHORIZED"
+
+    Forbidden:
+      description: Access denied - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "ACCESS_DENIED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "NOT_FOUND"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            message: "INTERNAL_SERVER_ERROR"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

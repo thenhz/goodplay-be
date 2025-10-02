@@ -1,60 +1,12 @@
 # Impact Tracking & Reporting API (GOO-16)
 # Complete API specification for impact tracking, story unlocking, and transparency features
 
-# Message Constants for Impact Module
-impact_constants: &impact_constants
-  # Impact Tracking Operations
-  - `IMPACT_TRACKING_SUCCESS` - Impact tracking completed successfully
-  - `IMPACT_TRACKING_ERROR` - Error tracking impact
-  - `USER_IMPACT_SUMMARY_SUCCESS` - User impact summary retrieved successfully
-  - `USER_IMPACT_SUMMARY_ERROR` - Error retrieving user impact summary
-  - `DONATION_IMPACT_DETAILS_SUCCESS` - Donation impact details retrieved successfully
-  - `DONATION_IMPACT_DETAILS_ERROR` - Error retrieving donation impact details
-  - `USER_TIMELINE_SUCCESS` - User impact timeline retrieved successfully
+openapi: 3.1.0
 
-  # Story Unlocking Operations
-  - `STORIES_RETRIEVED_SUCCESS` - Stories retrieved successfully
-  - `STORIES_RETRIEVAL_ERROR` - Error retrieving stories
-  - `STORY_PROGRESS_SUCCESS` - Story progress retrieved successfully
-  - `STORY_PROGRESS_ERROR` - Error retrieving story progress
-  - `NEXT_STORIES_SUCCESS` - Next unlockable stories retrieved successfully
-  - `NEXT_STORIES_ERROR` - Error retrieving next stories
-  - `STORY_NOT_FOUND` - Story not found
-  - `STORY_UNLOCKED_SUCCESS` - Story unlocked successfully
-
-  # Community & Dashboard Operations
-  - `COMMUNITY_STATS_SUCCESS` - Community statistics retrieved successfully
-  - `COMMUNITY_STATS_ERROR` - Error retrieving community statistics
-  - `LEADERBOARD_SUCCESS` - Leaderboard retrieved successfully
-  - `LEADERBOARD_ERROR` - Error retrieving leaderboard
-  - `DASHBOARD_DATA_SUCCESS` - Dashboard data retrieved successfully
-  - `DASHBOARD_DATA_ERROR` - Error retrieving dashboard data
-
-  # ONLUS Impact Operations
-  - `ONLUS_VISUALIZATION_SUCCESS` - ONLUS visualization data retrieved successfully
-  - `ONLUS_VISUALIZATION_ERROR` - Error retrieving ONLUS visualization
-  - `ONLUS_UPDATES_SUCCESS` - ONLUS updates retrieved successfully
-  - `METRIC_UPDATED_SUCCESS` - Impact metric updated successfully
-  - `METRIC_CREATED_SUCCESS` - Impact metric created successfully
-  - `METRIC_UPDATE_ERROR` - Error updating metric
-
-  # Report Operations
-  - `MONTHLY_REPORT_SUCCESS` - Monthly report retrieved successfully
-  - `ANNUAL_REPORT_SUCCESS` - Annual report retrieved successfully
-  - `REPORT_NOT_FOUND` - Report not found
-  - `REAL_TIME_REPORT_GENERATED` - Real-time report generated successfully
-  - `REAL_TIME_REPORT_ERROR` - Error generating real-time report
-
-  # Impact Update Operations
-  - `IMPACT_UPDATE_CREATED_SUCCESS` - Impact update created successfully
-  - `IMPACT_UPDATE_CREATION_ERROR` - Error creating impact update
-
-  # Validation Errors
-  - `ONLUS_ID_REQUIRED` - ONLUS ID is required
-  - `REPORT_TYPE_REQUIRED` - Report type is required
-  - `INVALID_MONTH` - Invalid month specified
-  - `INVALID_YEAR` - Invalid year specified
-  - `UNSUPPORTED_REPORT_TYPE` - Unsupported report type
+info:
+  title: GoodPlay Impact Tracking API
+  version: 1.0.0
+  description: Impact tracking, story unlocking, and transparency reporting
 
 # API Paths
 paths:
@@ -562,6 +514,32 @@ paths:
 # Components
 components:
   schemas:
+    # Core API Response
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          description: Constant message key for UI localization
+          enum:
+            - IMPACT_TRACKING_ERROR
+            - USER_IMPACT_SUMMARY_ERROR
+            - STORIES_RETRIEVAL_ERROR
+            - STORY_NOT_FOUND
+            - COMMUNITY_STATS_ERROR
+            - METRIC_UPDATE_ERROR
+            - REPORT_NOT_FOUND
+            - INTERNAL_SERVER_ERROR
+        data:
+          anyOf:
+            - type: object
+            - type: "null"
+
     UserImpactSummary:
       type: object
       properties:
@@ -790,6 +768,136 @@ components:
           items:
             type: string
             format: uri
+
+    CommunityStatistics:
+      type: object
+      properties:
+        total_donations:
+          type: number
+        total_donors:
+          type: integer
+        total_onlus_supported:
+          type: integer
+        average_donation:
+          type: number
+        top_contributors:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+              username:
+                type: string
+              total_donated:
+                type: number
+        recent_milestones:
+          type: array
+          items:
+            type: object
+            properties:
+              milestone:
+                type: string
+              reached_at:
+                type: string
+                format: date-time
+
+    UserTimeline:
+      type: object
+      properties:
+        user_id:
+          type: string
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              event_type:
+                type: string
+              description:
+                type: string
+              metadata:
+                type: object
+
+    DonationImpactDetails:
+      type: object
+      properties:
+        donation_id:
+          type: string
+        amount:
+          type: number
+        onlus_name:
+          type: string
+        project_name:
+          type: string
+        impact_metrics:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    CommunityLeaderboard:
+      type: object
+      properties:
+        leaderboard_type:
+          type: string
+        period:
+          type: string
+        rankings:
+          type: array
+          items:
+            type: object
+            properties:
+              rank:
+                type: integer
+              user_id:
+                type: string
+              username:
+                type: string
+              score:
+                type: number
+              total_donated:
+                type: number
+
+    DashboardData:
+      type: object
+      properties:
+        total_impact:
+          type: object
+        recent_donations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DonationImpactDetails'
+        user_timeline:
+          $ref: '#/components/schemas/UserTimeline'
+        leaderboard:
+          $ref: '#/components/schemas/CommunityLeaderboard'
+        statistics:
+          type: object
+
+    OnlusImpactMetrics:
+      type: object
+      properties:
+        onlus_id:
+          type: string
+        onlus_name:
+          type: string
+        total_received:
+          type: number
+        total_beneficiaries:
+          type: integer
+        projects_count:
+          type: integer
+        impact_stories_count:
+          type: integer
+        metrics:
+          type: object
+        last_updated:
+          type: string
+          format: date-time
 
   responses:
     Forbidden:

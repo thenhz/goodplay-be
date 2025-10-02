@@ -1,37 +1,12 @@
 # Social Features & Relationships API (GOO-7)
 # This module contains social graph and relationship functionality
 
-# Message Constants for Social Module
-social_constants: &social_constants
-  - `FRIEND_REQUEST_SENT_SUCCESS` - Friend request sent successfully
-  - `FRIEND_REQUEST_ALREADY_FRIENDS` - Users are already friends
-  - `FRIEND_REQUEST_ALREADY_SENT` - Friend request already sent
-  - `FRIEND_REQUEST_USER_BLOCKED` - Cannot send request to blocked user
-  - `FRIEND_REQUEST_NOT_ALLOWED` - User privacy settings don't allow requests
-  - `FRIEND_REQUEST_ACCEPTED_SUCCESS` - Friend request accepted successfully
-  - `FRIEND_REQUEST_DECLINED_SUCCESS` - Friend request declined successfully
-  - `FRIEND_REQUEST_NOT_FOUND` - Friend request not found
-  - `FRIEND_REQUEST_NOT_PENDING` - Friend request is not in pending state
-  - `FRIEND_REQUEST_NOT_AUTHORIZED` - User not authorized for this request
-  - `FRIEND_REMOVED_SUCCESS` - Friend removed successfully
-  - `FRIEND_RELATIONSHIP_NOT_FOUND` - Friend relationship not found
-  - `FRIENDS_LIST_SUCCESS` - Friends list retrieved successfully
-  - `FRIEND_REQUESTS_SUCCESS` - Friend requests retrieved successfully
-  - `USER_BLOCKED_SUCCESS` - User blocked successfully
-  - `USER_ALREADY_BLOCKED` - User is already blocked
-  - `USER_UNBLOCKED_SUCCESS` - User unblocked successfully
-  - `USER_NOT_BLOCKED` - User is not blocked
-  - `BLOCKED_USERS_SUCCESS` - Blocked users list retrieved successfully
-  - `SEARCH_USERS_SUCCESS` - User search completed successfully
-  - `SEARCH_NO_RESULTS` - No users found matching search criteria
-  - `SEARCH_QUERY_TOO_SHORT` - Search query must be at least 2 characters
-  - `SEARCH_USERS_FAILED` - User search failed
-  - `FRIEND_SUGGESTIONS_SUCCESS` - Friend suggestions retrieved successfully
-  - `FRIEND_SUGGESTIONS_FAILED` - Failed to retrieve friend suggestions
-  - `RELATIONSHIP_STATUS_SUCCESS` - Relationship status retrieved successfully
-  - `SOCIAL_STATS_SUCCESS` - Social statistics retrieved successfully
-  - `TARGET_USER_NOT_FOUND` - Target user not found
-  - `CANNOT_INTERACT_WITH_SELF` - Cannot perform this action on yourself
+openapi: 3.1.0
+
+info:
+  title: GoodPlay Social API
+  version: 1.0.0
+  description: Social relationships, friend management, and user discovery
 
 # API Paths
 paths:
@@ -417,6 +392,56 @@ paths:
 # Components
 components:
   schemas:
+    # Core response structure
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          description: Constant message key for UI localization
+          enum:
+            # Friend operations
+            - FRIEND_REQUEST_SEND_FAILED
+            - FRIEND_REQUEST_ALREADY_FRIENDS
+            - FRIEND_REQUEST_ALREADY_SENT
+            - FRIEND_REQUEST_USER_BLOCKED
+            - FRIEND_REQUEST_NOT_ALLOWED
+            - FRIEND_REQUEST_ACCEPT_FAILED
+            - FRIEND_REQUEST_DECLINE_FAILED
+            - FRIEND_REQUEST_NOT_FOUND
+            - FRIEND_REQUEST_NOT_PENDING
+            - FRIEND_RELATIONSHIP_NOT_FOUND
+            - FRIEND_REMOVE_FAILED
+            - FRIENDS_LIST_FAILED
+            - FRIEND_REQUESTS_FAILED
+            # Blocking operations
+            - USER_ALREADY_BLOCKED
+            - USER_NOT_BLOCKED
+            - USER_BLOCK_FAILED
+            - USER_UNBLOCK_FAILED
+            - BLOCKED_USERS_FAILED
+            # Search & discovery
+            - SEARCH_USERS_FAILED
+            - SEARCH_QUERY_TOO_SHORT
+            - FRIEND_SUGGESTIONS_FAILED
+            # Social stats
+            - SOCIAL_STATS_FAILED
+            - RELATIONSHIP_STATUS_FAILED
+            # Validation
+            - TARGET_USER_NOT_FOUND
+            - CANNOT_INTERACT_WITH_SELF
+            - USER_NOT_FOUND
+            - SEARCH_QUERY_REQUIRED
+        data:
+          anyOf:
+            - type: object
+            - type: 'null'
+
     # Friends Management
     FriendsList:
       type: object
@@ -446,6 +471,24 @@ components:
           format: date-time
         mutual_friends_count:
           type: integer
+
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          anyOf:
+            - type: string
+            - type: 'null'
+        level:
+          type: integer
+        impact_score:
+          type: number
 
     FriendRequestsList:
       type: object
@@ -605,3 +648,9 @@ components:
           type: boolean
         has_prev:
           type: boolean
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

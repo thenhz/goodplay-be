@@ -1,63 +1,12 @@
 # Game Engine & Session Management API (GOO-8 & GOO-9)
 # This module contains game engine, sessions, challenges, teams, and tournaments
 
-# Message Constants for Games Module
-games_constants: &games_constants
-  # Game Engine (GOO-8)
-  - `GAMES_RETRIEVED_SUCCESS` - Games list retrieved successfully
-  - `GAMES_SEARCH_SUCCESS` - Game search completed successfully
-  - `GAME_CATEGORIES_RETRIEVED_SUCCESS` - Game categories retrieved successfully
-  - `GAMES_STATS_RETRIEVED_SUCCESS` - Game statistics retrieved successfully
-  - `GAME_INFO_RETRIEVED_SUCCESS` - Game information retrieved successfully
-  - `GAME_PLUGIN_INSTALLED_SUCCESS` - Game plugin installed successfully
-  - `GAME_PLUGIN_UNINSTALLED_SUCCESS` - Game plugin uninstalled successfully
-  - `GAME_PLUGIN_VALIDATED_SUCCESS` - Game plugin validated successfully
-  - `GAME_RATING_SUCCESS` - Game rated successfully
-  - `GAME_SESSION_STARTED_SUCCESS` - Game session started successfully
-  - `GAME_SESSION_ENDED_SUCCESS` - Game session ended successfully
-  - `SESSION_RETRIEVED_SUCCESS` - Session information retrieved successfully
-  - `SESSION_STATE_UPDATED_SUCCESS` - Session state updated successfully
-  - `MOVE_VALIDATED_SUCCESS` - Move validated and recorded successfully
-  - `SESSION_PAUSED_SUCCESS` - Session paused successfully
-  - `SESSION_RESUMED_SUCCESS` - Session resumed successfully
-  - `USER_SESSIONS_RETRIEVED_SUCCESS` - User sessions retrieved successfully
-  - `USER_SESSION_STATS_RETRIEVED_SUCCESS` - User session statistics retrieved successfully
-  - `GAME_NOT_FOUND` - Game not found
-  - `GAME_NOT_ACTIVE` - Game is not active
-  - `ACTIVE_SESSION_EXISTS` - User already has active session for this game
-  - `GAME_PLUGIN_NOT_FOUND` - Game plugin not found
-  - `PLUGIN_SESSION_START_FAILED` - Plugin failed to start session
-  - `SESSION_CREATION_FAILED` - Failed to create session
-  - `SESSION_NOT_FOUND` - Session not found
-  - `SESSION_ALREADY_ENDED` - Session already ended
-  - `SESSION_NOT_ACTIVE` - Session is not active
-  - `SESSION_ACCESS_DENIED` - User not authorized to access this session
-  - `INVALID_END_REASON` - Invalid session end reason
-  - `SESSION_STATE_REQUIRED` - Session state is required
-  - `MOVE_DATA_REQUIRED` - Move data is required
-  - `INVALID_MOVE` - Move is not valid
-  - `SESSION_NOT_PAUSED` - Session is not paused
-  - `SEARCH_QUERY_TOO_SHORT` - Search query too short
-  - `PLUGIN_FILE_REQUIRED` - Plugin file is required
-  - `PLUGIN_FILE_EMPTY` - Plugin file is empty
-  - `INVALID_RATING_VALUE` - Rating value must be between 1.0 and 5.0
+openapi: 3.1.0
 
-  # Enhanced Session Management (GOO-9)
-  - `SESSION_SYNC_SUCCESS` - Session synchronized successfully
-  - `SYNC_CONFLICT_SERVER_WINS` - Sync conflict resolved - server state maintained
-  - `SESSION_PROVIDED_SUCCESS` - Session provided for device successfully
-  - `SYNC_CONFLICT_RESOLVED` - Synchronization conflict resolved successfully
-  - `NO_SYNC_CONFLICTS` - No synchronization conflicts detected
-  - `SYNC_CONFLICTS_DETECTED` - Synchronization conflicts detected
-  - `ACTIVE_SESSIONS_RETRIEVED_SUCCESS` - Active sessions retrieved successfully
-  - `SYNC_DATA_REQUIRED` - Synchronization data is required
-  - `CONFLICT_RESOLUTION_DATA_REQUIRED` - Conflict resolution data is required
-  - `INVALID_RESOLUTION_STRATEGY` - Invalid conflict resolution strategy
-  - `ACTIVE_SESSIONS_RETRIEVAL_FAILED` - Failed to retrieve active sessions
-  - `SESSION_SYNC_FAILED` - Session synchronization failed
-  - `SESSION_PROVISION_FAILED` - Session provision for device failed
-  - `SYNC_CONFLICT_RESOLUTION_FAILED` - Sync conflict resolution failed
-  - `SYNC_CONFLICT_CHECK_FAILED` - Sync conflict check failed
+info:
+  title: GoodPlay Games & Sessions API
+  version: 1.0.0
+  description: Game engine, session management, and synchronization system
 
 # API Paths
 paths:
@@ -443,6 +392,98 @@ paths:
 # Components
 components:
   schemas:
+    # Core response structure
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+        message:
+          type: string
+          description: Constant message key for UI localization
+          enum:
+            # Game operations
+            - GAME_NOT_FOUND
+            - GAME_NOT_ACTIVE
+            - GAME_RETRIEVAL_FAILED
+            - GAMES_RETRIEVAL_FAILED
+            - GAMES_SEARCH_FAILED
+            - GAMES_STATS_RETRIEVAL_FAILED
+            - GAME_CATEGORIES_RETRIEVAL_FAILED
+            - GAME_INFO_RETRIEVAL_FAILED
+            - GAME_CREATION_FAILED
+            - GAME_DELETION_FAILED
+            - GAME_HAS_NO_PLUGIN
+            # Plugin operations
+            - GAME_PLUGIN_NOT_FOUND
+            - GAME_PLUGIN_INSTALLATION_FAILED
+            - GAME_PLUGIN_UNINSTALLATION_FAILED
+            - GAME_PLUGIN_VALIDATION_FAILED
+            - PLUGIN_FILE_REQUIRED
+            - PLUGIN_FILE_EMPTY
+            - PLUGIN_NOT_FOUND_AFTER_INSTALL
+            - PLUGIN_SESSION_START_FAILED
+            - PLUGIN_STATE_UPDATE_REJECTED
+            # Session operations
+            - SESSION_NOT_FOUND
+            - SESSION_NOT_ACTIVE
+            - SESSION_ALREADY_ENDED
+            - SESSION_NOT_PAUSED
+            - SESSION_ACCESS_DENIED
+            - SESSION_CREATION_FAILED
+            - SESSION_RETRIEVAL_FAILED
+            - SESSION_STATE_UPDATE_FAILED
+            - SESSION_END_UPDATE_FAILED
+            - SESSION_PAUSE_FAILED
+            - SESSION_RESUME_FAILED
+            - GAME_SESSION_START_FAILED
+            - GAME_SESSION_END_FAILED
+            - ACTIVE_SESSION_EXISTS
+            - ACTIVE_SESSIONS_RETRIEVED_SUCCESS
+            - ACTIVE_SESSIONS_RETRIEVAL_FAILED
+            - USER_SESSIONS_RETRIEVAL_FAILED
+            - USER_SESSION_STATS_RETRIEVAL_FAILED
+            # Session sync operations
+            - SESSION_SYNC_FAILED
+            - SESSION_PROVISION_FAILED
+            - SYNC_DATA_REQUIRED
+            - SYNC_UPDATE_FAILED
+            - SYNC_CONFLICT_RESOLUTION_FAILED
+            - SYNC_CONFLICT_CHECK_FAILED
+            - CONFLICT_RESOLUTION_DATA_REQUIRED
+            - INVALID_RESOLUTION_STRATEGY
+            # Move validation
+            - MOVE_DATA_REQUIRED
+            - MOVE_VALIDATION_FAILED
+            - MOVE_RECORDING_FAILED
+            - INVALID_MOVE
+            # Rating operations
+            - GAME_RATING_FAILED
+            - GAME_RATING_UPDATE_FAILED
+            - RATING_REQUIRED
+            - INVALID_RATING_VALUE
+            # Validation errors
+            - SESSION_STATE_REQUIRED
+            - INVALID_END_REASON
+            - SEARCH_QUERY_REQUIRED
+            - SEARCH_QUERY_TOO_SHORT
+            - INVALID_PAGE_NUMBER
+            - INVALID_LIMIT_VALUE
+            - INVALID_SORT_FIELD
+            - INVALID_QUERY_PARAMETERS
+            # General errors
+            - INTERNAL_SERVER_ERROR
+            - NOT_FOUND
+        data:
+          description: Optional response data
+          anyOf:
+            - type: object
+            - type: "null"
+
     # Game Management
     GamesList:
       type: object
@@ -541,17 +582,20 @@ components:
           type: string
           format: date-time
         ended_at:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         paused_at:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         resumed_at:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         device_info:
           $ref: '#/components/schemas/DeviceInfo'
         sync_version:
@@ -634,8 +678,9 @@ components:
           type: string
           enum: [success, conflict_resolved, conflict_detected]
         conflict_info:
-          $ref: '#/components/schemas/ConflictInfo'
-          nullable: true
+          anyOf:
+            - $ref: '#/components/schemas/ConflictInfo'
+            - type: "null"
         new_sync_version:
           type: integer
 
@@ -740,6 +785,103 @@ components:
           type: integer
         total_sessions:
           type: integer
+
+    GameMode:
+      type: object
+      properties:
+        mode_name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        config:
+          type: object
+          additionalProperties: true
+
+    Challenge:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+        challenge_type:
+          type: string
+          enum: ['1v1', 'NvN']
+        game_id:
+          type: string
+        challenger_id:
+          type: string
+        challenged_id:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, active, completed, cancelled]
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        game_config:
+          type: object
+          additionalProperties: true
+
+    GlobalTeam:
+      type: object
+      properties:
+        team_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        icon_url:
+          type: string
+        member_count:
+          type: integer
+        total_score:
+          type: number
+          format: float
+        rank:
+          type: integer
+        is_active:
+          type: boolean
+
+    PaginationInfo:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+        page:
+          type: integer
+          description: Current page number
+        per_page:
+          type: integer
+          description: Items per page
+        total_pages:
+          type: integer
+          description: Total number of pages
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
 
   # Game Modes Endpoints
   /api/modes/current:
@@ -1300,78 +1442,3 @@ components:
           description: Invalid score or user not in team
         '401':
           description: Authentication required
-
-    GameMode:
-      type: object
-      properties:
-        mode_name:
-          type: string
-        display_name:
-          type: string
-        description:
-          type: string
-        is_active:
-          type: boolean
-        start_date:
-          type: string
-          format: date-time
-        end_date:
-          type: string
-          format: date-time
-        config:
-          type: object
-          additionalProperties: true
-
-    Challenge:
-      type: object
-      properties:
-        challenge_id:
-          type: string
-        challenge_type:
-          type: string
-          enum: ['1v1', 'NvN']
-        game_id:
-          type: string
-        challenger_id:
-          type: string
-        challenged_id:
-          type: string
-        participants:
-          type: array
-          items:
-            type: string
-        status:
-          type: string
-          enum: [pending, active, completed, cancelled]
-        created_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        game_config:
-          type: object
-          additionalProperties: true
-
-    GlobalTeam:
-      type: object
-      properties:
-        team_id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        color:
-          type: string
-        icon_url:
-          type: string
-        member_count:
-          type: integer
-        total_score:
-          type: number
-          format: float
-        rank:
-          type: integer
-        is_active:
-          type: boolean

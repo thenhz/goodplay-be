@@ -1,83 +1,12 @@
 # Donations & Virtual Wallet API
 # This module contains donation and wallet functionality for GOO-14
 
-# Message Constants for Donations Module
-donations_constants: &donations_constants
-  # Wallet Operations
-  - `WALLET_RETRIEVED_SUCCESS` - Wallet retrieved successfully
-  - `WALLET_NOT_FOUND` - Wallet not found
-  - `WALLET_CREATION_SUCCESS` - Wallet created successfully
-  - `WALLET_UPDATE_SUCCESS` - Wallet updated successfully
-  - `WALLET_STATISTICS_SUCCESS` - Wallet statistics retrieved successfully
-  - `WALLET_RETRIEVAL_ERROR` - Error retrieving wallet
-  - `WALLET_UPDATE_FAILED` - Failed to update wallet
-  - `WALLET_STATISTICS_ERROR` - Error retrieving wallet statistics
+openapi: 3.1.0
 
-  # Credit Operations
-  - `CREDITS_ADDED_SUCCESS` - Credits added successfully
-  - `CREDITS_CALCULATED_SUCCESS` - Credits calculated successfully
-  - `CREDIT_ESTIMATION_SUCCESS` - Credit estimation successful
-  - `SESSION_CONVERSION_SUCCESS` - Session converted to credits successfully
-  - `CREDITS_ADD_FAILED` - Failed to add credits
-  - `CREDITS_ADD_ERROR` - Error adding credits
-  - `CREDIT_CALCULATION_ERROR` - Error calculating credits
-  - `CREDIT_ESTIMATION_ERROR` - Error estimating credits
-  - `SESSION_CONVERSION_ERROR` - Error converting session to credits
-
-  # Transaction Operations
-  - `TRANSACTION_HISTORY_RETRIEVED_SUCCESS` - Transaction history retrieved
-  - `TRANSACTION_NOT_FOUND` - Transaction not found
-  - `TRANSACTION_ACCESS_DENIED` - Access denied to transaction
-  - `TRANSACTION_NOT_DONATION` - Transaction is not a donation
-  - `TRANSACTION_HISTORY_ERROR` - Error retrieving transaction history
-
-  # Donation Operations
-  - `DONATION_SUCCESS` - Donation processed successfully
-  - `DONATION_FAILED` - Donation processing failed
-  - `DONATION_ERROR` - Error processing donation
-  - `DONATION_DEDUCTION_FAILED` - Failed to deduct donation amount
-  - `INSUFFICIENT_CREDITS` - Insufficient credits for donation
-  - `AMOUNT_MUST_BE_POSITIVE` - Amount must be positive
-
-  # Auto-Donation Operations
-  - `AUTO_DONATION_SUCCESS` - Auto-donation processed successfully
-  - `AUTO_DONATION_NOT_ELIGIBLE` - Not eligible for auto-donation
-  - `AUTO_DONATION_ERROR` - Error processing auto-donation
-  - `AUTO_DONATION_SETTINGS_UPDATED_SUCCESS` - Auto-donation settings updated
-  - `AUTO_DONATION_SETTINGS_INVALID` - Invalid auto-donation settings
-  - `AUTO_DONATION_SETTINGS_UPDATE_ERROR` - Error updating auto-donation settings
-
-  # Receipt Operations
-  - `RECEIPT_RETRIEVED_SUCCESS` - Receipt retrieved successfully
-  - `RECEIPT_RETRIEVAL_ERROR` - Error retrieving receipt
-
-  # Conversion Rate Operations
-  - `CONVERSION_RATE_RETRIEVED_SUCCESS` - Conversion rate retrieved successfully
-  - `CONVERSION_RATE_NOT_AVAILABLE` - No conversion rate available
-  - `CONVERSION_RATE_RETRIEVAL_ERROR` - Error retrieving conversion rate
-  - `MULTIPLIERS_RETRIEVED_SUCCESS` - Multipliers retrieved successfully
-  - `MULTIPLIERS_RETRIEVAL_ERROR` - Error retrieving multipliers
-
-  # Session Validation
-  - `SESSION_INVALID_PLAY_DURATION` - Invalid play duration
-  - `SESSION_DURATION_TOO_LONG` - Session duration too long
-  - `SESSION_DURATION_TOO_SHORT` - Session duration too short
-  - `SESSION_USER_ID_REQUIRED` - Session user ID required
-  - `SESSION_SESSION_ID_REQUIRED` - Session ID required
-  - `SESSION_PLAY_DURATION_MS_REQUIRED` - Play duration required
-
-  # Fraud Detection
-  - `FRAUD_DETECTION_TRIGGERED` - Fraud detection triggered
-  - `SUSPICIOUS_ACTIVITY_DETECTED` - Suspicious activity detected
-
-  # Validation Errors
-  - `INVALID_DURATION` - Invalid duration specified
-  - `WALLET_DATA_INVALID_FORMAT` - Invalid wallet data format
-  - `WALLET_USER_ID_REQUIRED` - Wallet user ID required
-  - `WALLET_BALANCE_INVALID` - Invalid wallet balance
-  - `WALLET_AUTO_DONATION_SETTINGS_INVALID` - Invalid auto-donation settings
-  - `WALLET_AUTO_DONATION_THRESHOLD_INVALID` - Invalid auto-donation threshold
-  - `WALLET_AUTO_DONATION_PERCENTAGE_INVALID` - Invalid auto-donation percentage
+info:
+  title: GoodPlay Donations & Wallet API
+  version: 1.0.0
+  description: Donation processing, virtual wallet management, and credit conversion system
 
 # API Paths
 paths:
@@ -469,7 +398,7 @@ paths:
 # Components
 components:
   schemas:
-    # Core response structure (inherited from core.yaml)
+    # Core response structure
     ApiResponse:
       type: object
       required:
@@ -482,10 +411,49 @@ components:
         message:
           type: string
           description: Constant message key for UI localization
+          enum:
+            # Wallet operations
+            - WALLET_RETRIEVED_SUCCESS
+            - WALLET_NOT_FOUND
+            - WALLET_UPDATE_FAILED
+            - WALLET_STATISTICS_ERROR
+            - WALLET_RETRIEVAL_ERROR
+            # Credit operations
+            - CREDITS_ADDED_SUCCESS
+            - CREDITS_ADD_ERROR
+            - CREDIT_CALCULATION_ERROR
+            - SESSION_CONVERSION_ERROR
+            # Transaction operations
+            - TRANSACTION_HISTORY_RETRIEVED_SUCCESS
+            - TRANSACTION_NOT_FOUND
+            - TRANSACTION_ACCESS_DENIED
+            - TRANSACTION_HISTORY_ERROR
+            # Donation operations
+            - DONATION_SUCCESS
+            - DONATION_ERROR
+            - DONATION_DEDUCTION_FAILED
+            - INSUFFICIENT_CREDITS
+            - AMOUNT_MUST_BE_POSITIVE
+            # Payment operations
+            - PAYMENT_FAILED
+            - PAYMENT_PROCESSING_ERROR
+            - PAYMENT_INTENT_NOT_FOUND
+            # Fraud detection
+            - FRAUD_DETECTION_TRIGGERED
+            - SUSPICIOUS_ACTIVITY_DETECTED
+            # Compliance
+            - COMPLIANCE_CHECK_INITIATION_ERROR
+            - COMPLIANCE_ALERTS_RETRIEVED
+            # General errors
+            - INTERNAL_SERVER_ERROR
+            - DATA_REQUIRED
+            - USER_NOT_FOUND
+            - INVALID_AMOUNT
         data:
-          type: object
           description: Optional response data
-          nullable: true
+          anyOf:
+            - type: object
+            - type: "null"
 
     # Wallet schemas
     WalletInfo:
@@ -554,9 +522,10 @@ components:
           maximum: 100
           description: Percentage of excess to donate
         preferred_onlus_id:
-          type: string
-          nullable: true
           description: Preferred ONLUS for auto-donations
+          anyOf:
+            - type: string
+            - type: "null"
         round_up_enabled:
           type: boolean
           description: Whether to round up donations
@@ -588,15 +557,18 @@ components:
           type: number
           format: float
         source_type:
-          type: string
           enum: [gameplay, tournament, challenge, daily_bonus, streak_bonus, referral, manual]
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
         game_session_id:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
         onlus_id:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
         status:
           type: string
           enum: [pending, completed, failed, cancelled, refunded]
@@ -608,9 +580,10 @@ components:
           type: string
           format: date-time
         processed_at:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
 
     TransactionHistory:
       type: object
@@ -690,8 +663,9 @@ components:
               type: number
               format: float
             auto_donation:
-              type: object
-              nullable: true
+              anyOf:
+                - type: object
+                - type: "null"
         session_id:
           type: string
 
@@ -794,13 +768,15 @@ components:
           type: number
           format: float
         valid_from:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         valid_until:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
         description:
           type: string
 

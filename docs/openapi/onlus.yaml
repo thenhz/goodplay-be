@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: GoodPlay ONLUS Registry & Verification System API
   description: |
@@ -2563,6 +2563,108 @@ components:
     # =============================================================================
     # BASIC RESPONSE SCHEMAS
     # =============================================================================
+
+    # Core API Response with message constants
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          description: Constant message key for UI localization
+          enum:
+            # Application operations
+            - APPLICATION_SUBMITTED_SUCCESS
+            - APPLICATION_RETRIEVED_SUCCESS
+            - APPLICATION_UPDATED_SUCCESS
+            - APPLICATION_WITHDRAWN_SUCCESS
+            - APPLICATION_APPROVED_SUCCESS
+            - APPLICATION_REJECTED_SUCCESS
+            - APPLICATION_NOT_FOUND
+            - APPLICATION_CREATION_FAILED
+            - APPLICATION_UPDATE_FAILED
+            - APPLICATION_ACCESS_DENIED
+            - APPLICATION_NOT_REVIEWABLE
+            - APPLICATION_INCOMPLETE
+            - APPLICATION_WITHDRAWAL_FAILED
+            - APPLICATION_WITHDRAWAL_NOT_ALLOWED
+            - APPLICATION_UPDATE_NOT_ALLOWED
+            - APPLICATION_REJECTION_FAILED
+            - APPLICATION_RETRIEVAL_FAILED
+            - APPLICATION_STATISTICS_RETRIEVAL_FAILED
+            - APPLICATION_DOCUMENTS_RETRIEVAL_FAILED
+            - APPLICATION_PROGRESS_RETRIEVAL_FAILED
+            - APPLICATION_NOT_UNDER_REVIEW
+            - APPLICATION_NOT_APPROVED
+            - ADMIN_APPLICATIONS_RETRIEVAL_FAILED
+            # ONLUS operations
+            - ONLUS_RETRIEVED_SUCCESS
+            - ONLUS_UPDATED_SUCCESS
+            - ONLUS_CREATED_SUCCESS
+            - ONLUS_NOT_FOUND
+            - ONLUS_UPDATE_FAILED
+            # Document operations
+            - DOCUMENT_UPLOADED_SUCCESS
+            - DOCUMENT_RETRIEVED_SUCCESS
+            - DOCUMENT_DELETED_SUCCESS
+            - DOCUMENT_NOT_FOUND
+            - DOCUMENT_UPLOAD_FAILED
+            - DOCUMENT_ACCESS_DENIED
+            - FILE_UPLOAD_FAILED
+            - INVALID_FILE_TYPE
+            - FILE_TOO_LARGE
+            # Verification operations
+            - VERIFICATION_COMPLETED_SUCCESS
+            - VERIFICATION_FAILED
+            - ASSESSMENT_DUE_SCORES_SUCCESS
+            - ASSESSMENT_DUE_SCORES_FAILED
+            - ASSESSMENT_VERIFICATION_FAILED
+            # Allocation operations
+            - ALLOCATION_REQUEST_CREATED_SUCCESS
+            - ALLOCATION_REQUEST_RETRIEVED_SUCCESS
+            - ALLOCATION_REQUEST_CREATION_FAILED
+            - ALLOCATION_REQUEST_RETRIEVAL_FAILED
+            - ALLOCATION_REQUEST_PROCESSING_FAILED
+            - ALLOCATION_SCORE_CALCULATED_SUCCESS
+            - ALLOCATION_SCORE_CALCULATION_FAILED
+            - ALLOCATION_SCORE_BELOW_THRESHOLD
+            - ALLOCATION_RECOMMENDATIONS_SUCCESS
+            - ALLOCATION_RECOMMENDATIONS_FAILED
+            - ALLOCATION_RESULT_RETRIEVED_SUCCESS
+            - ALLOCATION_RESULT_RETRIEVAL_FAILED
+            - ALLOCATION_RESULT_NOT_FOUND
+            - ALLOCATION_RESULT_CREATION_FAILED
+            - ALLOCATION_STATISTICS_SUCCESS
+            - ALLOCATION_STATISTICS_FAILED
+            - ALLOCATION_EXECUTION_FAILED
+            - ALLOCATION_NOT_SCHEDULED
+            - ALLOCATION_REQUEST_AUDIT_FAILED
+            - ALLOCATION_PROCESSING_AUDIT_FAILED
+            - ALLOCATION_EXECUTION_AUDIT_FAILED
+            # Audit operations
+            - AUDIT_ENTRY_CREATION_FAILED
+            - AUDIT_REPORT_CREATION_FAILED
+            - AUDIT_REPORT_GENERATION_FAILED
+            - AUDIT_MAINTENANCE_FAILED
+            # Financial operations
+            - ANALYTICS_DASHBOARD_FAILED
+            # Compliance operations
+            - COMPLIANCE_CHECK_PASSED
+            - COMPLIANCE_VIOLATION_DETECTED
+            # General errors
+            - INTERNAL_SERVER_ERROR
+            - DATA_REQUIRED
+            - ACCESS_DENIED
+            - VALIDATION_ERROR
+            - UNAUTHORIZED_ACCESS
+        data:
+          anyOf:
+            - type: object
+            - type: "null"
 
     ErrorResponse:
       type: object
