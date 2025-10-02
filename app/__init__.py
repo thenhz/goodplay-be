@@ -35,7 +35,7 @@ def create_app(config_name=None):
     from app.admin.controllers import admin_bp, dashboard_bp, user_mgmt_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_bp, url_prefix='/api/user')
+    app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(preferences_blueprint)
 
     # Register social module

@@ -1,84 +1,12 @@
 # Core Authentication & User Management API
 # This module contains core platform functionality
 
-# Message Constants for Core Module
-core_constants: &core_constants
-  # Authentication
-  - `USER_REGISTRATION_SUCCESS` - User registration success
-  - `USER_LOGIN_SUCCESS` - User login success
-  - `USER_LOGOUT_SUCCESS` - User logout success
-  - `TOKEN_REFRESH_SUCCESS` - Token refresh success
-  - `PASSWORD_CHANGED_SUCCESS` - Password changed successfully
-  - `TOKEN_VALID` - Token validation successful
-  - `ACCOUNT_DELETED_SUCCESS` - Account deleted successfully
-  - `PROFILE_RETRIEVED_SUCCESS` - Profile retrieved success
-  - `PROFILE_UPDATED_SUCCESS` - Profile updated success
-  - `EMAIL_ALREADY_REGISTERED` - Email already registered
-  - `INVALID_EMAIL_FORMAT` - Invalid email format
-  - `PASSWORD_TOO_WEAK` - Password must be at least 6 characters
-  - `CREDENTIALS_REQUIRED` - Email and password required
-  - `INVALID_CREDENTIALS` - Invalid login credentials
-  - `ACCOUNT_DISABLED` - Account disabled
-  - `ACCOUNT_NOT_VERIFIED` - Account not verified
-  - `USER_NOT_FOUND` - User not found
-  - `TOKEN_INVALID` - Invalid token
-  - `TOKEN_EXPIRED` - Token expired
-  - `CURRENT_PASSWORD_INCORRECT` - Current password is incorrect
-  - `NEW_PASSWORD_TOO_WEAK` - New password must be at least 6 characters long
-  - `PASSWORD_CHANGE_FAILED` - Failed to update password
-  - `TOKEN_VALIDATION_FAILED` - Token validation failed
-  - `ACCOUNT_DELETION_FAILED` - Failed to delete account
+openapi: 3.1.0
 
-  # User Profile and Stats
-  - `SOCIAL_PROFILE_UPDATED_SUCCESS` - Social profile updated successfully
-  - `GAMING_STATS_RETRIEVED_SUCCESS` - Gaming stats retrieved successfully
-  - `WALLET_RETRIEVED_SUCCESS` - Wallet information retrieved successfully
-  - `GAMING_STATS_UPDATED_SUCCESS` - Gaming stats updated successfully
-  - `CREDITS_ADDED_SUCCESS` - Credits added successfully
-  - `DONATION_SUCCESS` - Donation successful
-  - `AMOUNT_MUST_BE_POSITIVE` - Amount must be positive
-  - `INSUFFICIENT_CREDITS` - Insufficient credits
-  - `DONATION_FAILED` - Donation failed
-  - `UPDATE_FAILED` - User not found or update failed
-  - `PROFILE_UPDATE_ERROR` - Error updating profile
-  - `SOCIAL_PROFILE_UPDATE_ERROR` - Error updating social profile
-  - `GAMING_STATS_UPDATE_ERROR` - Error updating gaming stats
-  - `CREDITS_ADD_ERROR` - Error adding credits
-  - `DONATION_ERROR` - Error processing donation
-  - `INVALID_PRIVACY_LEVEL` - Invalid privacy level
-  - `DISPLAY_NAME_LENGTH_INVALID` - Display name must be between 2 and 50 characters
-
-  # Preferences
-  - `PREFERENCES_RETRIEVED_SUCCESS` - Preferences retrieved successfully
-  - `PREFERENCES_UPDATED_SUCCESS` - Preferences updated successfully
-  - `PREFERENCES_CATEGORY_RETRIEVED_SUCCESS` - Category preferences retrieved
-  - `PREFERENCES_CATEGORY_UPDATED_SUCCESS` - Category preferences updated
-  - `PREFERENCES_RESET_SUCCESS` - Preferences reset to defaults
-  - `DEFAULT_PREFERENCES_RETRIEVED_SUCCESS` - Default preferences template retrieved
-  - `PREFERENCES_CATEGORY_INVALID` - Invalid preference category
-  - `PREFERENCES_DATA_REQUIRED` - Preferences data required
-  - `GAMING_DIFFICULTY_INVALID` - Invalid gaming difficulty level
-  - `NOTIFICATION_FREQUENCY_INVALID` - Invalid notification frequency
-  - `PRIVACY_VISIBILITY_INVALID` - Invalid privacy visibility setting
-  - `DONATION_PERCENTAGE_INVALID` - Invalid donation percentage
-
-  # System
-  - `SYSTEM_HEALTH_OK` - API health check success
-  - `OPERATION_SUCCESS` - Operation completed successfully
-  - `OPERATION_FAILED` - Operation failed
-  - `DATA_REQUIRED` - Data required
-  - `INVALID_REQUEST` - Invalid request
-  - `UNAUTHORIZED_ACCESS` - Authentication required
-  - `FORBIDDEN_ACTION` - Forbidden action
-  - `RESOURCE_NOT_FOUND` - Resource not found
-  - `INTERNAL_SERVER_ERROR` - Internal server error
-  - `VALIDATION_ERROR` - Validation error
-  - `DATABASE_ERROR` - Database error
-
-  # Decorator Messages
-  - `INVALID_TOKEN_OR_USER_DISABLED` - Invalid token or user disabled
-  - `AUTHENTICATION_ERROR` - Authentication error
-  - `ADMIN_ACCESS_REQUIRED` - Admin access required
+info:
+  title: GoodPlay Core API
+  version: 1.0.0
+  description: Core authentication, user management, and preferences API
 
 # API Paths
 paths:
@@ -88,18 +16,26 @@ paths:
       tags:
         - Authentication
       summary: Register new user
-      description: Create a new user account with email and password
+      description: |
+        Create a new user account with email and password.
+
+        **Possible response messages:**
+        - Success: `USER_REGISTRATION_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `EMAIL_ALREADY_REGISTERED`, `INVALID_EMAIL_FORMAT`, `PASSWORD_TOO_WEAK`, `CREDENTIALS_REQUIRED`, `INTERNAL_SERVER_ERROR`
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRegistration'
-            example:
-              email: "user@example.com"
-              password: "securepassword123"
-              first_name: "John"
-              last_name: "Doe"
+            examples:
+              valid_registration:
+                summary: Valid registration request
+                value:
+                  email: "user@example.com"
+                  password: "securepassword123"
+                  first_name: "John"
+                  last_name: "Doe"
       responses:
         '201':
           description: User registered successfully
@@ -111,15 +47,30 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/UserProfile'
-              example:
-                success: true
-                message: "USER_REGISTRATION_SUCCESS"
-                data:
-                  user_id: "64f8b2c1234567890abcdef1"
-                  email: "user@example.com"
-                  first_name: "John"
-                  last_name: "Doe"
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+                          tokens:
+                            $ref: '#/components/schemas/AuthTokens'
+              examples:
+                success:
+                  summary: Successful registration
+                  value:
+                    success: true
+                    message: "USER_REGISTRATION_SUCCESS"
+                    data:
+                      user:
+                        user_id: "64f8b2c1234567890abcdef1"
+                        email: "user@example.com"
+                        first_name: "John"
+                        last_name: "Doe"
+                        is_active: true
+                        role: "user"
+                      tokens:
+                        access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                        refresh_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                        token_type: "Bearer"
         '400':
           description: Registration failed
           content:
@@ -128,33 +79,61 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
               examples:
                 email_exists:
+                  summary: Email already registered
                   value:
                     success: false
                     message: "EMAIL_ALREADY_REGISTERED"
                 invalid_email:
+                  summary: Invalid email format
                   value:
                     success: false
                     message: "INVALID_EMAIL_FORMAT"
                 weak_password:
+                  summary: Password too weak
                   value:
                     success: false
                     message: "PASSWORD_TOO_WEAK"
+                missing_data:
+                  summary: Missing required data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/auth/login:
     post:
       tags:
         - Authentication
       summary: User login
-      description: Authenticate user and return JWT tokens
+      description: |
+        Authenticate user and return JWT tokens.
+
+        **Possible response messages:**
+        - Success: `USER_LOGIN_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `CREDENTIALS_REQUIRED`, `INVALID_CREDENTIALS`, `ACCOUNT_DISABLED`, `ACCOUNT_NOT_VERIFIED`, `INTERNAL_SERVER_ERROR`
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserLogin'
-            example:
-              email: "user@example.com"
-              password: "securepassword123"
+            examples:
+              valid_login:
+                summary: Valid login request
+                value:
+                  email: "user@example.com"
+                  password: "securepassword123"
       responses:
         '200':
           description: Login successful
@@ -166,7 +145,28 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/AuthTokens'
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+                          tokens:
+                            $ref: '#/components/schemas/AuthTokens'
+              examples:
+                success:
+                  summary: Successful login
+                  value:
+                    success: true
+                    message: "USER_LOGIN_SUCCESS"
+                    data:
+                      user:
+                        user_id: "64f8b2c1234567890abcdef1"
+                        email: "user@example.com"
+                        first_name: "John"
+                        last_name: "Doe"
+                      tokens:
+                        access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                        refresh_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                        token_type: "Bearer"
         '401':
           description: Login failed
           content:
@@ -175,20 +175,56 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
               examples:
                 invalid_credentials:
+                  summary: Invalid credentials
                   value:
                     success: false
                     message: "INVALID_CREDENTIALS"
                 account_disabled:
+                  summary: Account disabled
                   value:
                     success: false
                     message: "ACCOUNT_DISABLED"
+                account_not_verified:
+                  summary: Account not verified
+                  value:
+                    success: false
+                    message: "ACCOUNT_NOT_VERIFIED"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/auth/logout:
     post:
       tags:
         - Authentication
       summary: User logout
-      description: Logout user and invalidate tokens
+      description: |
+        Logout user and invalidate tokens.
+
+        **Possible response messages:**
+        - Success: `USER_LOGOUT_SUCCESS`
+        - Errors: `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       responses:
@@ -198,16 +234,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-              example:
-                success: true
-                message: "USER_LOGOUT_SUCCESS"
+              examples:
+                success:
+                  summary: Successful logout
+                  value:
+                    success: true
+                    message: "USER_LOGOUT_SUCCESS"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid or expired token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+                auth_error:
+                  summary: Authentication error
+                  value:
+                    success: false
+                    message: "AUTHENTICATION_ERROR"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/auth/change-password:
     put:
       tags:
         - Authentication
       summary: Change password
-      description: Change user password with current password verification
+      description: |
+        Change user password with current password verification.
+
+        **Possible response messages:**
+        - Success: `PASSWORD_CHANGED_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `CREDENTIALS_REQUIRED`, `USER_NOT_FOUND`, `CURRENT_PASSWORD_INCORRECT`, `NEW_PASSWORD_TOO_WEAK`, `PASSWORD_CHANGE_FAILED`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       requestBody:
@@ -227,9 +300,12 @@ paths:
                   type: string
                   minLength: 6
                   description: New password (minimum 6 characters)
-            example:
-              current_password: "oldpassword123"
-              new_password: "newpassword456"
+            examples:
+              valid_request:
+                summary: Valid password change
+                value:
+                  current_password: "oldpassword123"
+                  new_password: "newpassword456"
       responses:
         '200':
           description: Password changed successfully
@@ -237,9 +313,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-              example:
-                success: true
-                message: "PASSWORD_CHANGED_SUCCESS"
+              examples:
+                success:
+                  summary: Password changed
+                  value:
+                    success: true
+                    message: "PASSWORD_CHANGED_SUCCESS"
         '400':
           description: Password change failed
           content:
@@ -248,20 +327,61 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
               examples:
                 current_incorrect:
+                  summary: Current password incorrect
                   value:
                     success: false
                     message: "CURRENT_PASSWORD_INCORRECT"
                 weak_password:
+                  summary: New password too weak
                   value:
                     success: false
                     message: "NEW_PASSWORD_TOO_WEAK"
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                missing_credentials:
+                  summary: Missing credentials
+                  value:
+                    success: false
+                    message: "CREDENTIALS_REQUIRED"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/auth/validate-token:
     get:
       tags:
         - Authentication
       summary: Validate token
-      description: Validate current JWT token
+      description: |
+        Validate current JWT token.
+
+        **Possible response messages:**
+        - Success: `TOKEN_VALID`
+        - Errors: `TOKEN_INVALID`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       responses:
@@ -281,28 +401,56 @@ paths:
                             type: string
                           email:
                             type: string
-              example:
-                success: true
-                message: "TOKEN_VALID"
-                data:
-                  user_id: "64f8b2c1234567890abcdef1"
-                  email: "user@example.com"
+              examples:
+                success:
+                  summary: Valid token
+                  value:
+                    success: true
+                    message: "TOKEN_VALID"
+                    data:
+                      user_id: "64f8b2c1234567890abcdef1"
+                      email: "user@example.com"
         '401':
           description: Token is invalid
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-              example:
-                success: false
-                message: "TOKEN_INVALID"
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "TOKEN_INVALID"
+                disabled_user:
+                  summary: User disabled
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/auth/delete-account:
     delete:
       tags:
         - Authentication
       summary: Delete account
-      description: Delete user account (soft delete)
+      description: |
+        Delete user account (soft delete).
+
+        **Possible response messages:**
+        - Success: `ACCOUNT_DELETED_SUCCESS`
+        - Errors: `USER_NOT_FOUND`, `ACCOUNT_DELETION_FAILED`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       responses:
@@ -312,25 +460,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-              example:
-                success: true
-                message: "ACCOUNT_DELETED_SUCCESS"
+              examples:
+                success:
+                  summary: Account deleted
+                  value:
+                    success: true
+                    message: "ACCOUNT_DELETED_SUCCESS"
         '404':
           description: User not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-              example:
-                success: false
-                message: "USER_NOT_FOUND"
+              examples:
+                not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "USER_NOT_FOUND"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/auth/refresh:
     post:
       tags:
         - Authentication
       summary: Refresh access token
-      description: Get new access token using refresh token
+      description: |
+        Get new access token using refresh token.
+
+        **Possible response messages:**
+        - Success: `TOKEN_REFRESH_SUCCESS`
+        - Errors: `USER_NOT_FOUND`, `INTERNAL_SERVER_ERROR`
       requestBody:
         required: true
         content:
@@ -342,6 +525,12 @@ paths:
               properties:
                 refresh_token:
                   type: string
+                  description: JWT refresh token
+            examples:
+              valid_request:
+                summary: Valid refresh request
+                value:
+                  refresh_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
       responses:
         '200':
           description: Token refreshed successfully
@@ -353,7 +542,42 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/AuthTokens'
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+              examples:
+                success:
+                  summary: Token refreshed
+                  value:
+                    success: true
+                    message: "TOKEN_REFRESH_SUCCESS"
+                    data:
+                      access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+        '401':
+          description: Refresh failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                user_not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "USER_NOT_FOUND"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   # User Management Endpoints
   /api/users/profile:
@@ -361,7 +585,12 @@ paths:
       tags:
         - User Management
       summary: Get user profile
-      description: Retrieve current user's profile information
+      description: |
+        Retrieve current user's profile information.
+
+        **Possible response messages:**
+        - Success: `PROFILE_RETRIEVED_SUCCESS`
+        - Errors: `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       responses:
@@ -375,13 +604,59 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/UserProfile'
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+              examples:
+                success:
+                  summary: Profile retrieved
+                  value:
+                    success: true
+                    message: "PROFILE_RETRIEVED_SUCCESS"
+                    data:
+                      user:
+                        user_id: "64f8b2c1234567890abcdef1"
+                        email: "user@example.com"
+                        first_name: "John"
+                        last_name: "Doe"
+                        is_active: true
+                        role: "user"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
     put:
       tags:
         - User Management
       summary: Update user profile
-      description: Update current user's profile information
+      description: |
+        Update current user's profile information.
+
+        **Possible response messages:**
+        - Success: `PROFILE_UPDATED_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `USER_NOT_FOUND`, `UPDATE_FAILED`, `PROFILE_UPDATE_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       requestBody:
@@ -390,6 +665,20 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserProfileUpdate'
+            examples:
+              basic_update:
+                summary: Update basic info
+                value:
+                  first_name: "Jane"
+                  last_name: "Smith"
+              full_update:
+                summary: Update with preferences
+                value:
+                  first_name: "Jane"
+                  last_name: "Smith"
+                  preferences:
+                    gaming:
+                      difficulty_level: "hard"
       responses:
         '200':
           description: Profile updated successfully
@@ -401,7 +690,643 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/UserProfile'
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+              examples:
+                success:
+                  summary: Profile updated
+                  value:
+                    success: true
+                    message: "PROFILE_UPDATED_SUCCESS"
+                    data:
+                      user:
+                        user_id: "64f8b2c1234567890abcdef1"
+                        email: "user@example.com"
+                        first_name: "Jane"
+                        last_name: "Smith"
+        '400':
+          description: Update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                update_failed:
+                  summary: Update failed
+                  value:
+                    success: false
+                    message: "UPDATE_FAILED"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/users/social-profile:
+    put:
+      tags:
+        - User Management
+      summary: Update user social profile
+      description: |
+        Update current user's social profile (display name, privacy level).
+
+        **Possible response messages:**
+        - Success: `SOCIAL_PROFILE_UPDATED_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `INVALID_PRIVACY_LEVEL`, `DISPLAY_NAME_LENGTH_INVALID`, `UPDATE_FAILED`, `SOCIAL_PROFILE_UPDATE_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                  description: User display name
+                privacy_level:
+                  type: string
+                  enum: [public, friends, private]
+                  description: Profile privacy level
+            examples:
+              update_display_name:
+                summary: Update display name
+                value:
+                  display_name: "JohnGamer123"
+              update_privacy:
+                summary: Update privacy level
+                value:
+                  privacy_level: "friends"
+              full_update:
+                summary: Update both
+                value:
+                  display_name: "JohnGamer123"
+                  privacy_level: "public"
+      responses:
+        '200':
+          description: Social profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+              examples:
+                success:
+                  summary: Profile updated
+                  value:
+                    success: true
+                    message: "SOCIAL_PROFILE_UPDATED_SUCCESS"
+                    data:
+                      user:
+                        user_id: "64f8b2c1234567890abcdef1"
+                        email: "user@example.com"
+                        social_profile:
+                          display_name: "JohnGamer123"
+                          privacy_level: "public"
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                invalid_privacy:
+                  summary: Invalid privacy level
+                  value:
+                    success: false
+                    message: "INVALID_PRIVACY_LEVEL"
+                invalid_display_name:
+                  summary: Display name too short/long
+                  value:
+                    success: false
+                    message: "DISPLAY_NAME_LENGTH_INVALID"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/users/gaming-stats:
+    get:
+      tags:
+        - User Management
+      summary: Get user gaming statistics
+      description: |
+        Retrieve current user's gaming statistics.
+
+        **Possible response messages:**
+        - Success: `GAMING_STATS_RETRIEVED_SUCCESS`
+        - Errors: `USER_NOT_FOUND`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Gaming stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          gaming_stats:
+                            $ref: '#/components/schemas/GamingStats'
+                          impact_score:
+                            type: object
+              examples:
+                success:
+                  summary: Stats retrieved
+                  value:
+                    success: true
+                    message: "GAMING_STATS_RETRIEVED_SUCCESS"
+                    data:
+                      gaming_stats:
+                        total_play_time: 1200
+                        games_played: 45
+                        favorite_category: "puzzle"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "USER_NOT_FOUND"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+    put:
+      tags:
+        - User Management
+      summary: Update gaming statistics
+      description: |
+        Update user gaming statistics.
+
+        **Possible response messages:**
+        - Success: `GAMING_STATS_UPDATED_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `UPDATE_FAILED`, `GAMING_STATS_UPDATE_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                play_time:
+                  type: integer
+                  description: Play time in minutes
+                game_category:
+                  type: string
+                  description: Game category
+            examples:
+              update_stats:
+                summary: Update stats
+                value:
+                  play_time: 30
+                  game_category: "puzzle"
+      responses:
+        '200':
+          description: Gaming stats updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+              examples:
+                success:
+                  summary: Stats updated
+                  value:
+                    success: true
+                    message: "GAMING_STATS_UPDATED_SUCCESS"
+                    data:
+                      user:
+                        gaming_stats:
+                          total_play_time: 1230
+                          games_played: 46
+        '400':
+          description: Update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/users/wallet:
+    get:
+      tags:
+        - User Management
+      summary: Get user wallet
+      description: |
+        Retrieve current user's wallet information.
+
+        **Possible response messages:**
+        - Success: `WALLET_RETRIEVED_SUCCESS`
+        - Errors: `USER_NOT_FOUND`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          wallet_credits:
+                            $ref: '#/components/schemas/WalletCredits'
+              examples:
+                success:
+                  summary: Wallet retrieved
+                  value:
+                    success: true
+                    message: "WALLET_RETRIEVED_SUCCESS"
+                    data:
+                      wallet_credits:
+                        current_balance: 25.50
+                        total_earned: 100.00
+                        total_donated: 74.50
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "USER_NOT_FOUND"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/users/credits:
+    post:
+      tags:
+        - User Management
+      summary: Add credits to user wallet
+      description: |
+        Add credits to user's wallet.
+
+        **Possible response messages:**
+        - Success: `CREDITS_ADDED_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `AMOUNT_MUST_BE_POSITIVE`, `UPDATE_FAILED`, `CREDITS_ADD_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  description: Amount of credits to add
+                transaction_type:
+                  type: string
+                  default: "earned"
+                  description: Type of transaction
+            examples:
+              add_credits:
+                summary: Add credits
+                value:
+                  amount: 10.50
+                  transaction_type: "earned"
+      responses:
+        '200':
+          description: Credits added successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+              examples:
+                success:
+                  summary: Credits added
+                  value:
+                    success: true
+                    message: "CREDITS_ADDED_SUCCESS"
+                    data:
+                      user:
+                        wallet_credits:
+                          current_balance: 36.00
+                          total_earned: 110.50
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                invalid_amount:
+                  summary: Invalid amount
+                  value:
+                    success: false
+                    message: "AMOUNT_MUST_BE_POSITIVE"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/users/donate:
+    post:
+      tags:
+        - User Management
+      summary: Donate credits to ONLUS
+      description: |
+        Donate user credits to a specific ONLUS organization.
+
+        **Possible response messages:**
+        - Success: `DONATION_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `AMOUNT_MUST_BE_POSITIVE`, `USER_NOT_FOUND`, `INSUFFICIENT_CREDITS`, `DONATION_FAILED`, `DONATION_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  description: Amount to donate
+                onlus_id:
+                  type: string
+                  description: ONLUS organization ID (optional)
+            examples:
+              donate_to_onlus:
+                summary: Donate to specific ONLUS
+                value:
+                  amount: 20.00
+                  onlus_id: "64f8b2c1234567890abcdef9"
+      responses:
+        '200':
+          description: Donation successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/UserProfile'
+              examples:
+                success:
+                  summary: Donation successful
+                  value:
+                    success: true
+                    message: "DONATION_SUCCESS"
+                    data:
+                      user:
+                        wallet_credits:
+                          current_balance: 16.00
+                          total_donated: 94.50
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                invalid_amount:
+                  summary: Invalid amount
+                  value:
+                    success: false
+                    message: "AMOUNT_MUST_BE_POSITIVE"
+                insufficient_credits:
+                  summary: Insufficient credits
+                  value:
+                    success: false
+                    message: "INSUFFICIENT_CREDITS"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   # Preferences Endpoints
   /api/preferences:
@@ -409,7 +1334,12 @@ paths:
       tags:
         - User Preferences
       summary: Get user preferences
-      description: Retrieve all user preferences
+      description: |
+        Retrieve all user preferences.
+
+        **Possible response messages:**
+        - Success: `PREFERENCES_RETRIEVED_SUCCESS`
+        - Errors: `USER_NOT_FOUND`, `PREFERENCES_RETRIEVAL_FAILED`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       responses:
@@ -423,13 +1353,59 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/UserPreferences'
+                        type: object
+                        properties:
+                          preferences:
+                            $ref: '#/components/schemas/UserPreferences'
+              examples:
+                success:
+                  summary: Preferences retrieved
+                  value:
+                    success: true
+                    message: "PREFERENCES_RETRIEVED_SUCCESS"
+                    data:
+                      preferences:
+                        gaming:
+                          difficulty_level: "medium"
+                          tutorial_enabled: true
+                        notifications:
+                          push_enabled: true
+                          frequency: "daily"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
     put:
       tags:
         - User Preferences
       summary: Update user preferences
-      description: Update user preferences
+      description: |
+        Update user preferences.
+
+        **Possible response messages:**
+        - Success: `PREFERENCES_UPDATED_SUCCESS`
+        - Errors: `PREFERENCES_DATA_REQUIRED`, `USER_NOT_FOUND`, `PREFERENCES_UPDATE_FAILED`, `GAMING_DIFFICULTY_INVALID`, `NOTIFICATION_FREQUENCY_INVALID`, `PRIVACY_VISIBILITY_INVALID`, `DONATION_PERCENTAGE_INVALID`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       requestBody:
@@ -438,20 +1414,100 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserPreferences'
+            examples:
+              update_gaming:
+                summary: Update gaming preferences
+                value:
+                  gaming:
+                    difficulty_level: "hard"
+                    tutorial_enabled: false
+              full_update:
+                summary: Update all preferences
+                value:
+                  gaming:
+                    difficulty_level: "hard"
+                    tutorial_enabled: false
+                  notifications:
+                    push_enabled: true
+                    frequency: "weekly"
+                  privacy:
+                    profile_visibility: "friends"
+                  donations:
+                    auto_donate_enabled: true
+                    auto_donate_percentage: 10
       responses:
         '200':
           description: Preferences updated successfully
           content:
             application/json:
               schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          preferences:
+                            $ref: '#/components/schemas/UserPreferences'
+              examples:
+                success:
+                  summary: Preferences updated
+                  value:
+                    success: true
+                    message: "PREFERENCES_UPDATED_SUCCESS"
+                    data:
+                      preferences:
+                        gaming:
+                          difficulty_level: "hard"
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "PREFERENCES_DATA_REQUIRED"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   /api/preferences/{category}:
     get:
       tags:
         - User Preferences
       summary: Get preferences by category
-      description: Retrieve preferences for a specific category
+      description: |
+        Retrieve preferences for a specific category.
+
+        **Possible response messages:**
+        - Success: `PREFERENCES_CATEGORY_RETRIEVED_SUCCESS`
+        - Errors: `PREFERENCES_CATEGORY_INVALID`, `PREFERENCES_CATEGORY_RETRIEVAL_FAILED`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       parameters:
@@ -461,6 +1517,7 @@ paths:
           schema:
             type: string
             enum: [gaming, notifications, privacy, donations]
+          description: Preference category
       responses:
         '200':
           description: Category preferences retrieved
@@ -473,12 +1530,69 @@ paths:
                     properties:
                       data:
                         type: object
+                        properties:
+                          category:
+                            type: string
+                          preferences:
+                            type: object
+              examples:
+                gaming_category:
+                  summary: Gaming preferences
+                  value:
+                    success: true
+                    message: "PREFERENCES_CATEGORY_RETRIEVED_SUCCESS"
+                    data:
+                      category: "gaming"
+                      preferences:
+                        difficulty_level: "medium"
+                        tutorial_enabled: true
+        '400':
+          description: Invalid category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_category:
+                  summary: Invalid category
+                  value:
+                    success: false
+                    message: "PREFERENCES_CATEGORY_INVALID"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
     put:
       tags:
         - User Preferences
       summary: Update preferences by category
-      description: Update preferences for a specific category
+      description: |
+        Update preferences for a specific category.
+
+        **Possible response messages:**
+        - Success: `PREFERENCES_CATEGORY_UPDATED_SUCCESS`
+        - Errors: `PREFERENCES_CATEGORY_DATA_REQUIRED`, `PREFERENCES_CATEGORY_INVALID`, `USER_NOT_FOUND`, `PREFERENCES_CATEGORY_UPDATE_FAILED`, `GAMING_DIFFICULTY_INVALID`, `NOTIFICATION_FREQUENCY_INVALID`, `PRIVACY_VISIBILITY_INVALID`, `DONATION_PERCENTAGE_INVALID`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       parameters:
@@ -488,19 +1602,93 @@ paths:
           schema:
             type: string
             enum: [gaming, notifications, privacy, donations]
+          description: Preference category
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+            examples:
+              update_gaming:
+                summary: Update gaming category
+                value:
+                  difficulty_level: "hard"
+                  tutorial_enabled: false
+              update_notifications:
+                summary: Update notifications category
+                value:
+                  push_enabled: false
+                  frequency: "weekly"
       responses:
         '200':
           description: Category preferences updated
           content:
             application/json:
               schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          preferences:
+                            $ref: '#/components/schemas/UserPreferences'
+                          updated_category:
+                            type: string
+              examples:
+                success:
+                  summary: Category updated
+                  value:
+                    success: true
+                    message: "PREFERENCES_CATEGORY_UPDATED_SUCCESS"
+                    data:
+                      updated_category: "gaming"
+                      preferences:
+                        gaming:
+                          difficulty_level: "hard"
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "PREFERENCES_CATEGORY_DATA_REQUIRED"
+                invalid_category:
+                  summary: Invalid category
+                  value:
+                    success: false
+                    message: "PREFERENCES_CATEGORY_INVALID"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
 
   # Health Check
   /api/health:
@@ -508,17 +1696,29 @@ paths:
       tags:
         - Health
       summary: API health check
-      description: Check if the API is running and healthy
+      description: |
+        Check if the API is running and healthy.
+
+        **Possible response messages:**
+        - Success: System health status message
       responses:
         '200':
           description: API is healthy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
-              example:
-                success: true
-                message: "SYSTEM_HEALTH_OK"
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+              examples:
+                healthy:
+                  summary: API is healthy
+                  value:
+                    status: "healthy"
+                    message: "API is running"
 
 # Components
 components:
@@ -536,10 +1736,82 @@ components:
         message:
           type: string
           description: Constant message key for UI localization
+          enum:
+            # Authentication success messages
+            - USER_REGISTRATION_SUCCESS
+            - USER_LOGIN_SUCCESS
+            - USER_LOGOUT_SUCCESS
+            - TOKEN_REFRESH_SUCCESS
+            - PASSWORD_CHANGED_SUCCESS
+            - TOKEN_VALID
+            - ACCOUNT_DELETED_SUCCESS
+            - PROFILE_RETRIEVED_SUCCESS
+            # User management success messages
+            - PROFILE_UPDATED_SUCCESS
+            - SOCIAL_PROFILE_UPDATED_SUCCESS
+            - GAMING_STATS_RETRIEVED_SUCCESS
+            - WALLET_RETRIEVED_SUCCESS
+            - GAMING_STATS_UPDATED_SUCCESS
+            - CREDITS_ADDED_SUCCESS
+            - DONATION_SUCCESS
+            # Preferences success messages
+            - PREFERENCES_RETRIEVED_SUCCESS
+            - PREFERENCES_UPDATED_SUCCESS
+            - PREFERENCES_CATEGORY_RETRIEVED_SUCCESS
+            - PREFERENCES_CATEGORY_UPDATED_SUCCESS
+            - PREFERENCES_RESET_SUCCESS
+            - DEFAULT_PREFERENCES_RETRIEVED_SUCCESS
+            # Authentication error messages
+            - DATA_REQUIRED
+            - EMAIL_ALREADY_REGISTERED
+            - INVALID_EMAIL_FORMAT
+            - PASSWORD_TOO_WEAK
+            - CREDENTIALS_REQUIRED
+            - INVALID_CREDENTIALS
+            - ACCOUNT_DISABLED
+            - ACCOUNT_NOT_VERIFIED
+            - USER_NOT_FOUND
+            - TOKEN_INVALID
+            - CURRENT_PASSWORD_INCORRECT
+            - NEW_PASSWORD_TOO_WEAK
+            - PASSWORD_CHANGE_FAILED
+            - ACCOUNT_DELETION_FAILED
+            # User management error messages
+            - UPDATE_FAILED
+            - PROFILE_UPDATE_ERROR
+            - SOCIAL_PROFILE_UPDATE_ERROR
+            - GAMING_STATS_UPDATE_ERROR
+            - CREDITS_ADD_ERROR
+            - DONATION_ERROR
+            - AMOUNT_MUST_BE_POSITIVE
+            - INSUFFICIENT_CREDITS
+            - DONATION_FAILED
+            - INVALID_PRIVACY_LEVEL
+            - DISPLAY_NAME_LENGTH_INVALID
+            # Preferences error messages
+            - PREFERENCES_DATA_REQUIRED
+            - PREFERENCES_CATEGORY_DATA_REQUIRED
+            - PREFERENCES_CATEGORY_INVALID
+            - PREFERENCES_RETRIEVAL_FAILED
+            - PREFERENCES_UPDATE_FAILED
+            - PREFERENCES_CATEGORY_RETRIEVAL_FAILED
+            - PREFERENCES_CATEGORY_UPDATE_FAILED
+            - PREFERENCES_RESET_FAILED
+            - GAMING_DIFFICULTY_INVALID
+            - NOTIFICATION_FREQUENCY_INVALID
+            - PRIVACY_VISIBILITY_INVALID
+            - DONATION_PERCENTAGE_INVALID
+            # Decorator messages
+            - INVALID_TOKEN_OR_USER_DISABLED
+            - AUTHENTICATION_ERROR
+            - ADMIN_ACCESS_REQUIRED
+            # System messages
+            - INTERNAL_SERVER_ERROR
         data:
-          type: object
           description: Optional response data
-          nullable: true
+          anyOf:
+            - type: object
+            - type: "null"
 
     # Authentication schemas
     UserRegistration:
@@ -584,9 +1856,9 @@ components:
         refresh_token:
           type: string
           description: JWT refresh token
-        expires_in:
-          type: integer
-          description: Access token expiration time in seconds
+        token_type:
+          type: string
+          description: Token type (Bearer)
 
     # User management schemas
     UserProfile:
@@ -604,6 +1876,8 @@ components:
           type: string
         is_active:
           type: boolean
+        is_verified:
+          type: boolean
         role:
           type: string
           enum: [user, admin]
@@ -616,6 +1890,8 @@ components:
           $ref: '#/components/schemas/SocialProfile'
         wallet_credits:
           $ref: '#/components/schemas/WalletCredits'
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
 
     UserProfileUpdate:
       type: object
@@ -624,6 +1900,16 @@ components:
           type: string
         last_name:
           type: string
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        social_profile:
+          type: object
+          properties:
+            display_name:
+              type: string
+            privacy_level:
+              type: string
+              enum: [public, friends, private]
 
     GamingStats:
       type: object
@@ -634,18 +1920,22 @@ components:
         games_played:
           type: integer
         favorite_category:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: "null"
         last_activity:
-          type: string
-          format: date-time
-          nullable: true
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
 
     SocialProfile:
       type: object
       properties:
         display_name:
           type: string
+          minLength: 2
+          maxLength: 50
         privacy_level:
           type: string
           enum: [public, friends, private]
@@ -756,9 +2046,10 @@ components:
           type: number
           format: float
         monthly_goal:
-          type: number
-          format: float
-          nullable: true
+          anyOf:
+            - type: number
+              format: float
+            - type: "null"
         impact_sharing:
           type: boolean
 
