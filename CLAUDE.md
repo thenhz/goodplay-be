@@ -224,18 +224,23 @@ Database entities and schemas are defined in each module's `models/` directory:
 ### Adding New Endpoints (Modular Approach)
 1. **Choose Module** - Determine which module the feature belongs to (core, games, social, donations, onlus, admin)
 2. **Create Model** (if needed) in `app/{module}/models/`
+   - 🚨 **IMPORTANT**: Call `serialize_model_dates()` in `to_dict()` method to ensure ISO 8601 date formatting
+   - Example: `return serialize_model_dates(user_dict)` at the end of `to_dict()`
 3. **Create Repository** in `app/{module}/repositories/` extending `BaseRepository`
 4. **Create Service** in `app/{module}/services/` with business logic
 5. **Create Controller** in `app/{module}/controllers/` with route handlers
+   - Use `success_response()` and `error_response()` - they auto-serialize dates
 6. **Register Blueprint** in module's `__init__.py` and main `app/__init__.py`
 7. **Update Documentation**:
    - Add endpoint to appropriate `docs/openapi/{module}.yaml` file
    - Add request to appropriate `docs/postman/{module}_collection.json`
    - Include all possible response constants in OpenAPI examples
+   - **Ensure datetime examples use ISO 8601 format**: `2025-10-02T09:36:40.123456+00:00`
 8. **Test Implementation**:
    - Write unit tests for new service methods
    - Test endpoints using Postman collection
    - Verify OpenAPI documentation matches implementation
+   - **Verify datetime fields are in ISO 8601 format** in API responses
 
 
 ### Code Standards
@@ -245,6 +250,7 @@ Database entities and schemas are defined in each module's `models/` directory:
 - Implement proper error handling with try/catch
 - Use structured logging via `current_app.logger`
 - Validate input data in services layer
+- **🚨 CRITICAL**: All datetime fields MUST be serialized to ISO 8601 format (see [ISO 8601 Serialization Guide](docs/ISO8601_SERIALIZATION.md))
 
 ### API Response Standards (🚨 CRITICAL FOR UI LOCALIZATION)
 

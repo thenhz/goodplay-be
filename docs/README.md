@@ -4,6 +4,12 @@ This directory contains comprehensive API documentation for the GoodPlay backend
 
 ## 📁 Documentation Structure
 
+### Development Guides & Standards
+
+- **[ISO 8601 Serialization Guide](./ISO8601_SERIALIZATION.md)** - DateTime formatting standard (complete guide)
+- **[ISO 8601 Implementation Summary](./ISO8601_IMPLEMENTATION_SUMMARY.md)** - Quick reference & migration checklist
+- **[ISO 8601 Usage Examples](./examples/iso8601_usage_example.py)** - Practical code examples
+
 ### OpenAPI Specifications
 
 - **[openapi.yaml](./openapi.yaml)** - Main API specification file
@@ -111,7 +117,9 @@ npx @openapitools/openapi-generator-cli generate \
 - Session timeout management
 - Comprehensive audit logging
 
-## 📝 Response Constants
+## 📝 Response Standards
+
+### Message Constants
 
 All APIs use constant message keys for UI localization:
 
@@ -124,6 +132,33 @@ All APIs use constant message keys for UI localization:
 ```
 
 Constants are documented in each module's OpenAPI specification under the `*_constants` section.
+
+### DateTime Format (ISO 8601)
+
+**🚨 CRITICAL**: All datetime fields MUST be in ISO 8601 format:
+
+**Format**: `YYYY-MM-DDTHH:MM:SS.ffffff+TZ`
+**Example**: `2025-10-02T09:36:40.123456+00:00`
+
+```json
+{
+  "success": true,
+  "message": "USER_REGISTRATION_SUCCESS",
+  "data": {
+    "user_id": "12345",
+    "created_at": "2025-10-02T09:36:40.123456+00:00",
+    "updated_at": "2025-10-02T09:36:40.123456+00:00"
+  }
+}
+```
+
+**Why ISO 8601?**
+- ✅ International standard supported by all programming languages
+- ✅ Includes timezone information (no ambiguity)
+- ✅ Easy to parse: `new Date(isoString)` in JavaScript
+- ✅ Matches OpenAPI specification
+
+**For Developers**: See [ISO 8601 Serialization Guide](./ISO8601_SERIALIZATION.md) for implementation details.
 
 ### Admin Constants Examples
 - `ADMIN_LOGIN_SUCCESS`

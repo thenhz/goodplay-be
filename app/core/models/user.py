@@ -5,7 +5,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class User:
     def __init__(self, email, password_hash=None, first_name=None, last_name=None,
                  is_active=True, role='user', _id=None, created_at=None, updated_at=None,
-                 gaming_stats=None, impact_score=0, preferences=None, social_profile=None, wallet_credits=None):
+                 gaming_stats=None, impact_score=0, preferences=None, social_profile=None, wallet_credits=None,
+                 is_verified=False, verification_token=None, verification_token_expires_at=None):
         self._id = _id
         self.email = email.lower()
         self.first_name = first_name
@@ -13,6 +14,9 @@ class User:
         self.password_hash = password_hash
         self.is_active = is_active
         self.role = role
+        self.is_verified = is_verified
+        self.verification_token = verification_token
+        self.verification_token_expires_at = verification_token_expires_at
         self.created_at = created_at or datetime.now(timezone.utc)
         self.updated_at = updated_at or datetime.now(timezone.utc)
 
@@ -84,12 +88,15 @@ class User:
         return check_password_hash(self.password_hash, password)
     
     def to_dict(self, include_sensitive=False):
+        from app.core.utils.json_encoder import serialize_model_dates
+
         user_dict = {
             '_id': str(self._id) if self._id else None,
             'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'is_active': self.is_active,
+            'is_verified': self.is_verified,
             'role': self.role,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
@@ -102,6 +109,11 @@ class User:
 
         if include_sensitive:
             user_dict['password_hash'] = self.password_hash
+            user_dict['verification_token'] = self.verification_token
+            user_dict['verification_token_expires_at'] = self.verification_token_expires_at
+
+        # Serialize all datetime fields to ISO 8601 format
+        user_dict = serialize_model_dates(user_dict)
 
         return {k: v for k, v in user_dict.items() if v is not None}
     
@@ -116,10 +128,13 @@ class User:
             first_name=data.get('first_name'),
             last_name=data.get('last_name'),
             is_active=data.get('is_active', True),
+            is_verified=data.get('is_verified', False),
             role=data.get('role', 'user'),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at'),
             password_hash=data.get('password_hash') if include_sensitive else None,
+            verification_token=data.get('verification_token') if include_sensitive else None,
+            verification_token_expires_at=data.get('verification_token_expires_at') if include_sensitive else None,
             gaming_stats=data.get('gaming_stats'),
             impact_score=data.get('impact_score', 0),
             preferences=data.get('preferences'),

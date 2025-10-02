@@ -207,3 +207,31 @@ class UserRepository(BaseRepository):
             }
         }
         return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
+
+    def set_verification_token(self, user_id: str, token: str, expires_at) -> bool:
+        """Set email verification token and expiry for a user"""
+        update_data = {
+            "$set": {
+                "verification_token": token,
+                "verification_token_expires_at": expires_at,
+                "updated_at": self._get_current_time()
+            }
+        }
+        return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
+
+    def find_by_verification_token(self, token: str) -> Optional[User]:
+        """Find user by verification token"""
+        user_data = self.find_one({"verification_token": token})
+        return User.from_dict(user_data, include_sensitive=True) if user_data else None
+
+    def verify_user_email(self, user_id: str) -> bool:
+        """Mark user as verified and clear verification token"""
+        update_data = {
+            "$set": {
+                "is_verified": True,
+                "verification_token": None,
+                "verification_token_expires_at": None,
+                "updated_at": self._get_current_time()
+            }
+        }
+        return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0

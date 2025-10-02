@@ -145,3 +145,46 @@ def delete_account(current_user):
         current_app.logger.error(f"Delete account endpoint error: {str(e)}")
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
+
+@auth_bp.route('/verify-email', methods=['POST'])
+def verify_email():
+    """Verify user email with verification token"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return error_response("DATA_REQUIRED")
+
+        token = data.get('token', '').strip()
+
+        if not token:
+            return error_response("VERIFICATION_TOKEN_REQUIRED")
+
+        success, message, result = auth_service.verify_email(token)
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Verify email endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@auth_bp.route('/resend-verification', methods=['POST'])
+@auth_required
+def resend_verification(current_user):
+    """Resend verification email to current user"""
+    try:
+        success, message, result = auth_service.resend_verification_email(current_user.get_id())
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Resend verification endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+

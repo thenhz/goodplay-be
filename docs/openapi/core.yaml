@@ -503,6 +503,163 @@ paths:
                     success: false
                     message: "INTERNAL_SERVER_ERROR"
 
+  /api/auth/verify-email:
+    post:
+      tags:
+        - Authentication
+      summary: Verify email address
+      description: |
+        Verify user email address using verification token sent via email.
+
+        **Possible response messages:**
+        - Success: `EMAIL_VERIFICATION_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `VERIFICATION_TOKEN_REQUIRED`, `VERIFICATION_TOKEN_INVALID`, `EMAIL_ALREADY_VERIFIED`, `VERIFICATION_TOKEN_EXPIRED`, `EMAIL_VERIFICATION_FAILED`, `INTERNAL_SERVER_ERROR`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Email verification token from email
+            examples:
+              valid_token:
+                summary: Valid verification token
+                value:
+                  token: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          email:
+                            type: string
+                          is_verified:
+                            type: boolean
+              examples:
+                success:
+                  summary: Email verified
+                  value:
+                    success: true
+                    message: "EMAIL_VERIFICATION_SUCCESS"
+                    data:
+                      email: "user@example.com"
+                      is_verified: true
+        '400':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid or expired token
+                  value:
+                    success: false
+                    message: "VERIFICATION_TOKEN_INVALID"
+                already_verified:
+                  summary: Already verified
+                  value:
+                    success: false
+                    message: "EMAIL_ALREADY_VERIFIED"
+                token_expired:
+                  summary: Token expired
+                  value:
+                    success: false
+                    message: "VERIFICATION_TOKEN_EXPIRED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/auth/resend-verification:
+    post:
+      tags:
+        - Authentication
+      summary: Resend verification email
+      description: |
+        Resend email verification link to authenticated user.
+
+        **Possible response messages:**
+        - Success: `VERIFICATION_EMAIL_SENT`
+        - Errors: `USER_NOT_FOUND`, `EMAIL_ALREADY_VERIFIED`, `VERIFICATION_EMAIL_FAILED`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Verification email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                success:
+                  summary: Email sent
+                  value:
+                    success: true
+                    message: "VERIFICATION_EMAIL_SENT"
+        '400':
+          description: Cannot send verification email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                already_verified:
+                  summary: Already verified
+                  value:
+                    success: false
+                    message: "EMAIL_ALREADY_VERIFIED"
+                send_failed:
+                  summary: Email send failed
+                  value:
+                    success: false
+                    message: "VERIFICATION_EMAIL_FAILED"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "INVALID_TOKEN_OR_USER_DISABLED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
   /api/auth/refresh:
     post:
       tags:

@@ -2,14 +2,18 @@ from typing import Optional, Dict, Tuple
 from flask import current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
 import re
+import secrets
+from datetime import datetime, timezone, timedelta
 from werkzeug.security import generate_password_hash
 
 from app.core.models.user import User
 from app.core.repositories.user_repository import UserRepository
+from app.core.services.email_service import EmailService
 
 class AuthService:
     def __init__(self):
         self.user_repository = UserRepository()
+        self.email_service = EmailService()
     
     def register_user(self, email: str, password: str, 
                      first_name: str = None, 
@@ -27,22 +31,37 @@ class AuthService:
                 email=email,
                 password_hash=generate_password_hash(password),
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                is_verified=False
             )
-            
+
             user_id = self.user_repository.create_user(user)
             user._id = user_id
-            
+
+            # Generate verification token
+            verification_token = secrets.token_urlsafe(32)
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+
+            # Save verification token
+            self.user_repository.set_verification_token(user_id, verification_token, expires_at)
+
+            # Send verification email
+            email_sent = self.email_service.send_verification_email(email, verification_token, first_name)
+
+            if not email_sent:
+                current_app.logger.warning(f"Failed to send verification email to {email}")
+
             tokens = self._generate_tokens(user)
             user_data = user.to_dict()
-            
+
             current_app.logger.info(f"User registered: {email}")
-            
+
             return True, "USER_REGISTRATION_SUCCESS", {
                 "user": user_data,
-                "tokens": tokens
+                "tokens": tokens,
+                "verification_email_sent": email_sent
             }
-            
+
         except Exception as e:
             current_app.logger.error(f"Registration error: {str(e)}")
             return False, "INTERNAL_SERVER_ERROR", None
@@ -204,5 +223,77 @@ class AuthService:
 
         except Exception as e:
             current_app.logger.error(f"Account deletion error: {str(e)}")
+            return False, "INTERNAL_SERVER_ERROR", None
+
+    def verify_email(self, token: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Verify user email using verification token"""
+        try:
+            if not token:
+                return False, "VERIFICATION_TOKEN_REQUIRED", None
+
+            # Find user by verification token
+            user = self.user_repository.find_by_verification_token(token)
+
+            if not user:
+                return False, "VERIFICATION_TOKEN_INVALID", None
+
+            # Check if already verified
+            if user.is_verified:
+                return False, "EMAIL_ALREADY_VERIFIED", None
+
+            # Check if token expired
+            if user.verification_token_expires_at and user.verification_token_expires_at < datetime.now(timezone.utc):
+                return False, "VERIFICATION_TOKEN_EXPIRED", None
+
+            # Verify user
+            success = self.user_repository.verify_user_email(str(user._id))
+
+            if success:
+                current_app.logger.info(f"Email verified for user: {user.email}")
+                return True, "EMAIL_VERIFICATION_SUCCESS", {
+                    "email": user.email,
+                    "is_verified": True
+                }
+            else:
+                return False, "EMAIL_VERIFICATION_FAILED", None
+
+        except Exception as e:
+            current_app.logger.error(f"Email verification error: {str(e)}")
+            return False, "INTERNAL_SERVER_ERROR", None
+
+    def resend_verification_email(self, user_id: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Resend verification email to user"""
+        try:
+            user = self.user_repository.find_user_by_id(user_id)
+
+            if not user:
+                return False, "USER_NOT_FOUND", None
+
+            if user.is_verified:
+                return False, "EMAIL_ALREADY_VERIFIED", None
+
+            # Generate new verification token
+            verification_token = secrets.token_urlsafe(32)
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+
+            # Save verification token
+            self.user_repository.set_verification_token(user_id, verification_token, expires_at)
+
+            # Send verification email
+            email_sent = self.email_service.send_verification_email(
+                user.email,
+                verification_token,
+                user.first_name
+            )
+
+            if email_sent:
+                current_app.logger.info(f"Verification email resent to: {user.email}")
+                return True, "VERIFICATION_EMAIL_SENT", None
+            else:
+                current_app.logger.error(f"Failed to resend verification email to: {user.email}")
+                return False, "VERIFICATION_EMAIL_FAILED", None
+
+        except Exception as e:
+            current_app.logger.error(f"Resend verification email error: {str(e)}")
             return False, "INTERNAL_SERVER_ERROR", None
 
