@@ -48,12 +48,12 @@ class GameService:
             result = {
                 "games": games_data,
                 "pagination": {
-                    "current_page": page,
+                    "page": page,
+                    "per_page": limit,
+                    "total_items": total_count,
                     "total_pages": total_pages,
-                    "total_count": total_count,
-                    "limit": limit,
                     "has_next": page < total_pages,
-                    "has_previous": page > 1
+                    "has_prev": page > 1
                 }
             }
 

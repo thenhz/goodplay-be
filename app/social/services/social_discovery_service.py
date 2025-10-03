@@ -33,10 +33,7 @@ class SocialDiscoveryService:
             if not query or len(query.strip()) < 2:
                 return False, "SEARCH_QUERY_TOO_SHORT", None
 
-            # Get current user's privacy settings
-            current_user = self.user_repository.find_user_by_id(current_user_id)
-            if not current_user:
-                return False, "USER_NOT_FOUND", None
+
 
             # Create search filter
             search_regex = regex.Regex(f".*{query}.*", "i")
@@ -88,14 +85,21 @@ class SocialDiscoveryService:
 
             current_app.logger.info(f"Search completed. Found {total_count} users for query: {query}")
 
+            # Calculate pagination metadata
+            page = (skip // limit) + 1
+            total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
+
             return True, "SEARCH_USERS_SUCCESS", {
                 "users": filtered_users,
                 "total": total_count,
                 "query": query,
                 "pagination": {
-                    "limit": limit,
-                    "skip": skip,
-                    "has_more": total_count == limit
+                    "page": page,
+                    "per_page": limit,
+                    "total_items": total_count,
+                    "total_pages": total_pages,
+                    "has_next": (skip + limit) < total_count,
+                    "has_prev": skip > 0
                 }
             }
 

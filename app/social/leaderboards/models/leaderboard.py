@@ -238,11 +238,15 @@ class Leaderboard:
         if include_entries:
             entries = self.get_entries_paginated(page, per_page)
             response['entries'] = [entry.to_response_dict() for entry in entries]
+            total_items = len(self.entries)
+            total_pages = (total_items + per_page - 1) // per_page if total_items > 0 else 1
             response['pagination'] = {
                 'page': page,
                 'per_page': per_page,
-                'total_entries': len(self.entries),
-                'total_pages': (len(self.entries) + per_page - 1) // per_page
+                'total_items': total_items,
+                'total_pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
             }
 
         return response

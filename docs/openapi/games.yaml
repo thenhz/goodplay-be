@@ -863,25 +863,38 @@ components:
 
     PaginationInfo:
       type: object
+      required:
+        - page
+        - per_page
+        - total_items
+        - total_pages
+        - has_next
+        - has_prev
       properties:
-        total:
-          type: integer
-          description: Total number of items
         page:
           type: integer
-          description: Current page number
+          description: Current page number (1-indexed)
+          example: 1
         per_page:
           type: integer
-          description: Items per page
+          description: Number of items per page
+          example: 50
+        total_items:
+          type: integer
+          description: Total number of items across all pages
+          example: 100
         total_pages:
           type: integer
           description: Total number of pages
+          example: 2
         has_next:
           type: boolean
           description: Whether there is a next page
+          example: true
         has_prev:
           type: boolean
           description: Whether there is a previous page
+          example: false
 
   # Game Modes Endpoints
   /api/modes/current:

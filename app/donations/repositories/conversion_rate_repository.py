@@ -409,9 +409,9 @@ class ConversionRateRepository(BaseRepository):
         return {
             "rates": [ConversionRate.from_dict(data) for data in rates_data],
             "pagination": {
-                "current_page": page,
-                "page_size": page_size,
-                "total_count": total_count,
+                "page": page,
+                "per_page": page_size,
+                "total_items": total_count,
                 "total_pages": total_pages,
                 "has_next": page < total_pages,
                 "has_prev": page > 1

@@ -363,13 +363,20 @@ class RelationshipService:
 
             current_app.logger.info(f"Retrieved {len(friends_list)} friends for user {user_id}")
 
+            # Calculate pagination metadata
+            page = (skip // limit) + 1
+            total_pages = (total_friends + limit - 1) // limit if total_friends > 0 else 1
+
             return True, "FRIENDS_LIST_SUCCESS", {
                 "friends": friends_list,
                 "total": total_friends,
                 "pagination": {
-                    "limit": limit,
-                    "skip": skip,
-                    "has_more": len(friends_list) == limit
+                    "page": page,
+                    "per_page": limit,
+                    "total_items": total_friends,
+                    "total_pages": total_pages,
+                    "has_next": (skip + limit) < total_friends,
+                    "has_prev": skip > 0
                 }
             }
 
@@ -438,14 +445,21 @@ class RelationshipService:
 
             current_app.logger.info(f"Retrieved {len(formatted_requests)} {type_filter} requests")
 
+            # Calculate pagination metadata
+            page = (skip // limit) + 1
+            total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
+
             return True, "FRIEND_REQUESTS_SUCCESS", {
                 "requests": formatted_requests,
                 "total": total_count,
                 "type": type_filter,
                 "pagination": {
-                    "limit": limit,
-                    "skip": skip,
-                    "has_more": len(formatted_requests) == limit
+                    "page": page,
+                    "per_page": limit,
+                    "total_items": total_count,
+                    "total_pages": total_pages,
+                    "has_next": (skip + limit) < total_count,
+                    "has_prev": skip > 0
                 }
             }
 
@@ -493,12 +507,21 @@ class RelationshipService:
 
             current_app.logger.info(f"Retrieved {len(blocked_users)} blocked users")
 
+            # Get total count for pagination
+            total_blocked = len(blocked_users)
+            page = (skip // limit) + 1
+            total_pages = (total_blocked + limit - 1) // limit if total_blocked > 0 else 1
+
             return True, "BLOCKED_USERS_SUCCESS", {
                 "blocked_users": blocked_users,
-                "total": len(blocked_users),
+                "total": total_blocked,
                 "pagination": {
-                    "limit": limit,
-                    "skip": skip
+                    "page": page,
+                    "per_page": limit,
+                    "total_items": total_blocked,
+                    "total_pages": total_pages,
+                    "has_next": (skip + limit) < total_blocked,
+                    "has_prev": skip > 0
                 }
             }
 

@@ -163,17 +163,26 @@ def get_reports(current_user):
         if not success:
             return error_response(message)
 
+        # Calculate pagination metadata
+        total_items = len(reports)
+        page = (skip // limit) + 1
+        total_pages = (total_items + limit - 1) // limit if total_items > 0 else 1
+
         return success_response("REPORTS_RETRIEVED_SUCCESS", {
             "reports": [report.to_dict() for report in reports],
-            "count": len(reports),
+            "count": total_items,
             "filters": {
                 "type": report_type,
                 "status": status,
                 "entity_id": entity_id
             },
             "pagination": {
-                "limit": limit,
-                "skip": skip
+                "page": page,
+                "per_page": limit,
+                "total_items": total_items,
+                "total_pages": total_pages,
+                "has_next": (skip + limit) < total_items,
+                "has_prev": skip > 0
             }
         })
 
@@ -332,14 +341,23 @@ def search_reports(current_user):
         if not success:
             return error_response(message)
 
+        # Calculate pagination metadata
+        total_items = len(reports)
+        page = (skip // limit) + 1
+        total_pages = (total_items + limit - 1) // limit if total_items > 0 else 1
+
         return success_response(message, {
             "reports": [report.to_dict() for report in reports],
-            "count": len(reports),
+            "count": total_items,
             "query": query_text,
             "filters": filters,
             "pagination": {
-                "limit": limit,
-                "skip": skip
+                "page": page,
+                "per_page": limit,
+                "total_items": total_items,
+                "total_pages": total_pages,
+                "has_next": (skip + limit) < total_items,
+                "has_prev": skip > 0
             }
         })
 

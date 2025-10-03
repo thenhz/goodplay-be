@@ -87,13 +87,22 @@ def get_compliance_history(current_user, onlus_id):
         if not success:
             return error_response(message)
 
+        # Calculate pagination metadata
+        total_items = len(scores)
+        page = (skip // limit) + 1
+        total_pages = (total_items + limit - 1) // limit if total_items > 0 else 1
+
         return success_response("ONLUS_COMPLIANCE_SCORES_SUCCESS", {
             "scores": [score.to_dict() for score in scores],
-            "count": len(scores),
+            "count": total_items,
             "onlus_id": onlus_id,
             "pagination": {
-                "limit": limit,
-                "skip": skip
+                "page": page,
+                "per_page": limit,
+                "total_items": total_items,
+                "total_pages": total_pages,
+                "has_next": (skip + limit) < total_items,
+                "has_prev": skip > 0
             }
         })
 

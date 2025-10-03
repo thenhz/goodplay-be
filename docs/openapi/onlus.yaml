@@ -2687,31 +2687,37 @@ components:
     PaginationInfo:
       type: object
       properties:
-        current_page:
+        page:
           type: integer
+          description: Current page number (1-indexed)
           example: 1
-        total_pages:
+        per_page:
           type: integer
-          example: 15
+          description: Number of items per page
+          example: 20
         total_items:
           type: integer
+          description: Total number of items across all pages
           example: 287
-        items_per_page:
+        total_pages:
           type: integer
-          example: 20
+          description: Total number of pages
+          example: 15
         has_next:
           type: boolean
+          description: Whether there is a next page
           example: true
-        has_previous:
+        has_prev:
           type: boolean
+          description: Whether there is a previous page
           example: false
       required:
-        - current_page
-        - total_pages
+        - page
+        - per_page
         - total_items
-        - items_per_page
+        - total_pages
         - has_next
-        - has_previous
+        - has_prev
 
     ActiveFilters:
       type: object
