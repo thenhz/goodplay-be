@@ -11,7 +11,7 @@ info:
 # API Paths
 paths:
   # Friend Request Management
-  /api/social/friends/request:
+  /api/social/friend-request:
     post:
       tags:
         - Social
@@ -34,7 +34,7 @@ paths:
             example:
               target_user_id: "64f8b2c1234567890abcdef2"
       responses:
-        '200':
+        '201':
           description: Friend request sent successfully
           content:
             application/json:
@@ -50,6 +50,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
               examples:
+                missing_data:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_DATA_REQUIRED"
+                missing_target:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_TARGET_USER_REQUIRED"
                 already_friends:
                   value:
                     success: false
@@ -63,8 +71,8 @@ paths:
                     success: false
                     message: "FRIEND_REQUEST_USER_BLOCKED"
 
-  /api/social/friends/request/{request_id}/accept:
-    post:
+  /api/social/friend-request/{relationship_id}/accept:
+    put:
       tags:
         - Social
       summary: Accept friend request
@@ -72,12 +80,12 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: request_id
+        - name: relationship_id
           in: path
           required: true
           schema:
             type: string
-          description: Friend request ID
+          description: Relationship ID from friend request
       responses:
         '200':
           description: Friend request accepted successfully
@@ -88,9 +96,20 @@ paths:
               example:
                 success: true
                 message: "FRIEND_REQUEST_ACCEPTED_SUCCESS"
+        '400':
+          description: Accept failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_id:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_ID_REQUIRED"
 
-  /api/social/friends/request/{request_id}/decline:
-    post:
+  /api/social/friend-request/{relationship_id}/decline:
+    put:
       tags:
         - Social
       summary: Decline friend request
@@ -98,11 +117,12 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: request_id
+        - name: relationship_id
           in: path
           required: true
           schema:
             type: string
+          description: Relationship ID from friend request
       responses:
         '200':
           description: Friend request declined successfully
@@ -110,6 +130,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Decline failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_id:
+                  value:
+                    success: false
+                    message: "FRIEND_REQUEST_ID_REQUIRED"
 
   # Friends Management
   /api/social/friends:
@@ -121,19 +152,19 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-        - name: per_page
+        - name: limit
           in: query
           schema:
             type: integer
             default: 50
             minimum: 1
             maximum: 100
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
           description: Friends list retrieved successfully
@@ -147,7 +178,7 @@ paths:
                       data:
                         $ref: '#/components/schemas/FriendsList'
 
-  /api/social/friends/{friend_id}:
+  /api/social/friends/{friend_user_id}:
     delete:
       tags:
         - Social
@@ -156,11 +187,12 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: friend_id
+        - name: friend_user_id
           in: path
           required: true
           schema:
             type: string
+          description: ID of friend to remove
       responses:
         '200':
           description: Friend removed successfully
@@ -168,8 +200,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_id:
+                  value:
+                    success: false
+                    message: "FRIEND_USER_ID_REQUIRED"
 
-  /api/social/friends/requests:
+  /api/social/friend-requests:
     get:
       tags:
         - Social
@@ -182,8 +225,22 @@ paths:
           in: query
           schema:
             type: string
-            enum: [received, sent, all]
+            enum: [received, sent]
             default: received
+          description: Type of requests to retrieve (received or sent)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
           description: Friend requests retrieved successfully
@@ -196,9 +253,20 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/FriendRequestsList'
+        '400':
+          description: Invalid request type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalid_type:
+                  value:
+                    success: false
+                    message: "INVALID_REQUEST_TYPE"
 
   # User Blocking
-  /api/social/block:
+  /api/social/users/{target_user_id}/block:
     post:
       tags:
         - Social
@@ -206,44 +274,47 @@ paths:
       description: Block a user from interacting
       security:
         - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - target_user_id
-              properties:
-                target_user_id:
-                  type: string
+      parameters:
+        - name: target_user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of user to block
       responses:
-        '200':
+        '201':
           description: User blocked successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Block failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_id:
+                  value:
+                    success: false
+                    message: "TARGET_USER_ID_REQUIRED"
 
-  /api/social/unblock:
-    post:
+  /api/social/users/{target_user_id}/unblock:
+    delete:
       tags:
         - Social
       summary: Unblock user
       description: Unblock a previously blocked user
       security:
         - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - target_user_id
-              properties:
-                target_user_id:
-                  type: string
+      parameters:
+        - name: target_user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of user to unblock
       responses:
         '200':
           description: User unblocked successfully
@@ -251,8 +322,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Unblock failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_id:
+                  value:
+                    success: false
+                    message: "TARGET_USER_ID_REQUIRED"
 
-  /api/social/blocked:
+  /api/social/blocked-users:
     get:
       tags:
         - Social
@@ -260,6 +342,20 @@ paths:
       description: Retrieve list of blocked users
       security:
         - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
           description: Blocked users list retrieved successfully
@@ -274,29 +370,40 @@ paths:
                         $ref: '#/components/schemas/BlockedUsersList'
 
   # User Discovery
-  /api/social/search:
-    get:
+  /api/social/users/search:
+    post:
       tags:
         - Social
       summary: Search users
       description: Search for users by name or email
       security:
         - bearerAuth: []
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 2
-          description: Search query (minimum 2 characters)
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-            minimum: 1
-            maximum: 50
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  minLength: 2
+                  description: Search query (minimum 2 characters)
+                limit:
+                  type: integer
+                  default: 20
+                  minimum: 1
+                  maximum: 50
+                skip:
+                  type: integer
+                  default: 0
+                  minimum: 0
+            example:
+              query: "john"
+              limit: 20
+              skip: 0
       responses:
         '200':
           description: User search completed successfully
@@ -309,8 +416,23 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/UserSearchResults'
+        '400':
+          description: Search failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  value:
+                    success: false
+                    message: "SEARCH_DATA_REQUIRED"
+                missing_query:
+                  value:
+                    success: false
+                    message: "SEARCH_QUERY_REQUIRED"
 
-  /api/social/suggestions:
+  /api/social/users/suggestions:
     get:
       tags:
         - Social
@@ -340,7 +462,7 @@ paths:
                         $ref: '#/components/schemas/FriendSuggestions'
 
   # Relationship Status
-  /api/social/relationship/{user_id}:
+  /api/social/relationship-status/{target_user_id}:
     get:
       tags:
         - Social
@@ -349,11 +471,12 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: user_id
+        - name: target_user_id
           in: path
           required: true
           schema:
             type: string
+          description: ID of user to check relationship with
       responses:
         '200':
           description: Relationship status retrieved successfully
@@ -365,7 +488,23 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/RelationshipStatus'
+                        type: object
+                        properties:
+                          target_user_id:
+                            type: string
+                          relationship:
+                            $ref: '#/components/schemas/RelationshipStatus'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_id:
+                  value:
+                    success: false
+                    message: "TARGET_USER_ID_REQUIRED"
 
   # Social Statistics
   /api/social/stats:
@@ -405,7 +544,18 @@ components:
           type: string
           description: Constant message key for UI localization
           enum:
-            # Friend operations
+            # Friend operations - Success
+            - FRIEND_REQUEST_SENT_SUCCESS
+            - FRIEND_REQUEST_ACCEPTED_SUCCESS
+            - FRIEND_REQUEST_DECLINED_SUCCESS
+            - FRIEND_REMOVED_SUCCESS
+            - FRIENDS_LIST_SUCCESS
+            - FRIEND_REQUESTS_SUCCESS
+            # Friend operations - Errors
+            - FRIEND_REQUEST_DATA_REQUIRED
+            - FRIEND_REQUEST_TARGET_USER_REQUIRED
+            - FRIEND_REQUEST_ID_REQUIRED
+            - FRIEND_USER_ID_REQUIRED
             - FRIEND_REQUEST_SEND_FAILED
             - FRIEND_REQUEST_ALREADY_FRIENDS
             - FRIEND_REQUEST_ALREADY_SENT
@@ -419,24 +569,37 @@ components:
             - FRIEND_REMOVE_FAILED
             - FRIENDS_LIST_FAILED
             - FRIEND_REQUESTS_FAILED
-            # Blocking operations
+            - INVALID_REQUEST_TYPE
+            # Blocking operations - Success
+            - USER_BLOCKED_SUCCESS
+            - USER_UNBLOCKED_SUCCESS
+            - BLOCKED_USERS_SUCCESS
+            # Blocking operations - Errors
+            - TARGET_USER_ID_REQUIRED
             - USER_ALREADY_BLOCKED
             - USER_NOT_BLOCKED
             - USER_BLOCK_FAILED
             - USER_UNBLOCK_FAILED
             - BLOCKED_USERS_FAILED
-            # Search & discovery
+            # Search & discovery - Success
+            - SEARCH_USERS_SUCCESS
+            - FRIEND_SUGGESTIONS_SUCCESS
+            # Search & discovery - Errors
+            - SEARCH_DATA_REQUIRED
+            - SEARCH_QUERY_REQUIRED
             - SEARCH_USERS_FAILED
             - SEARCH_QUERY_TOO_SHORT
             - FRIEND_SUGGESTIONS_FAILED
-            # Social stats
+            # Social stats - Success
+            - SOCIAL_STATS_SUCCESS
+            - RELATIONSHIP_STATUS_SUCCESS
+            # Social stats - Errors
             - SOCIAL_STATS_FAILED
             - RELATIONSHIP_STATUS_FAILED
-            # Validation
+            # General validation
             - TARGET_USER_NOT_FOUND
             - CANNOT_INTERACT_WITH_SELF
             - USER_NOT_FOUND
-            - SEARCH_QUERY_REQUIRED
         data:
           anyOf:
             - type: object
