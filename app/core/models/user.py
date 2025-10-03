@@ -91,7 +91,7 @@ class User:
         from app.core.utils.json_encoder import serialize_model_dates
 
         user_dict = {
-            '_id': str(self._id) if self._id else None,
+            'user_id': str(self._id) if self._id else None,
             'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,

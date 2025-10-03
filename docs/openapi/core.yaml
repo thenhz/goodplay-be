@@ -1,7 +1,7 @@
 # Core Authentication & User Management API
 # This module contains core platform functionality
 
-openapi: 3.1.0
+openapi: 3.0.1
 
 info:
   title: GoodPlay Core API
@@ -765,20 +765,7 @@ paths:
                         properties:
                           user:
                             $ref: '#/components/schemas/UserProfile'
-              examples:
-                success:
-                  summary: Profile retrieved
-                  value:
-                    success: true
-                    message: "PROFILE_RETRIEVED_SUCCESS"
-                    data:
-                      user:
-                        user_id: "64f8b2c1234567890abcdef1"
-                        email: "user@example.com"
-                        first_name: "John"
-                        last_name: "Doe"
-                        is_active: true
-                        role: "user"
+
         '401':
           description: Authentication failed
           content:
@@ -1968,7 +1955,6 @@ components:
           description: Optional response data
           anyOf:
             - type: object
-            - type: "null"
 
     # Authentication schemas
     UserRegistration:
@@ -2041,8 +2027,15 @@ components:
         created_at:
           type: string
           format: date-time
+        updated_at:
+          type: string
+          format: date-time
         gaming_stats:
           $ref: '#/components/schemas/GamingStats'
+        impact_score:
+          type: number
+          format: float
+          description: User's total impact score
         social_profile:
           $ref: '#/components/schemas/SocialProfile'
         wallet_credits:
@@ -2079,12 +2072,10 @@ components:
         favorite_category:
           anyOf:
             - type: string
-            - type: "null"
         last_activity:
           anyOf:
             - type: string
               format: date-time
-            - type: "null"
 
     SocialProfile:
       type: object
@@ -2206,7 +2197,6 @@ components:
           anyOf:
             - type: number
               format: float
-            - type: "null"
         impact_sharing:
           type: boolean
 
