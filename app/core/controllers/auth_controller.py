@@ -188,3 +188,59 @@ def resend_verification(current_user):
         current_app.logger.error(f"Resend verification endpoint error: {str(e)}")
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """Request password reset - sends email with reset token"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return error_response("DATA_REQUIRED")
+
+        email = data.get('email', '').strip()
+
+        if not email:
+            return error_response("EMAIL_REQUIRED")
+
+        success, message, result = auth_service.forgot_password(email)
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Forgot password endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    """Reset password using reset token"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return error_response("DATA_REQUIRED")
+
+        token = data.get('token', '').strip()
+        new_password = data.get('new_password', '').strip()
+
+        if not token:
+            return error_response("RESET_TOKEN_REQUIRED")
+
+        if not new_password:
+            return error_response("NEW_PASSWORD_REQUIRED")
+
+        success, message, result = auth_service.reset_password(token, new_password)
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Reset password endpoint error: {str(e)}")
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+

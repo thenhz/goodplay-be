@@ -297,3 +297,90 @@ class AuthService:
             current_app.logger.error(f"Resend verification email error: {str(e)}")
             return False, "INTERNAL_SERVER_ERROR", None
 
+    def forgot_password(self, email: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Request password reset - sends email with reset token"""
+        try:
+            if not email:
+                return False, "EMAIL_REQUIRED", None
+
+            if not self._is_valid_email(email):
+                return False, "INVALID_EMAIL_FORMAT", None
+
+            # Find user by email
+            user = self.user_repository.find_by_email(email)
+
+            if not user:
+                # For security, return success even if user not found (don't reveal if email exists)
+                current_app.logger.info(f"Password reset requested for non-existent email: {email}")
+                return True, "PASSWORD_RESET_EMAIL_SENT", None
+
+            if not user.is_active:
+                return False, "ACCOUNT_DISABLED", None
+
+            # Generate password reset token
+            reset_token = secrets.token_urlsafe(32)
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+            # Save reset token
+            self.user_repository.set_password_reset_token(str(user._id), reset_token, expires_at)
+
+            # Send password reset email
+            email_sent = self.email_service.send_password_reset_email(
+                user.email,
+                reset_token,
+                user.first_name
+            )
+
+            if email_sent:
+                current_app.logger.info(f"Password reset email sent to: {user.email}")
+                return True, "PASSWORD_RESET_EMAIL_SENT", None
+            else:
+                current_app.logger.error(f"Failed to send password reset email to: {user.email}")
+                return False, "PASSWORD_RESET_EMAIL_FAILED", None
+
+        except Exception as e:
+            current_app.logger.error(f"Forgot password error: {str(e)}")
+            return False, "INTERNAL_SERVER_ERROR", None
+
+    def reset_password(self, token: str, new_password: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Reset password using reset token"""
+        try:
+            if not token:
+                return False, "RESET_TOKEN_REQUIRED", None
+
+            if not new_password:
+                return False, "NEW_PASSWORD_REQUIRED", None
+
+            if len(new_password) < 6:
+                return False, "NEW_PASSWORD_TOO_WEAK", None
+
+            # Find user by reset token
+            user = self.user_repository.find_by_password_reset_token(token)
+
+            if not user:
+                return False, "INVALID_RESET_TOKEN", None
+
+            # Check if token expired
+            if user.password_reset_token_expires_at and user.password_reset_token_expires_at < datetime.now(timezone.utc):
+                return False, "RESET_TOKEN_EXPIRED", None
+
+            if not user.is_active:
+                return False, "ACCOUNT_DISABLED", None
+
+            # Update password
+            new_password_hash = generate_password_hash(new_password)
+            password_updated = self.user_repository.update_password(str(user._id), new_password_hash)
+
+            if not password_updated:
+                return False, "PASSWORD_RESET_FAILED", None
+
+            # Clear reset token
+            self.user_repository.clear_password_reset_token(str(user._id))
+
+            current_app.logger.info(f"Password reset successful for user: {user.email}")
+            return True, "PASSWORD_RESET_SUCCESS", None
+
+        except Exception as e:
+            current_app.logger.error(f"Reset password error: {str(e)}")
+            return False, "INTERNAL_SERVER_ERROR", None
+

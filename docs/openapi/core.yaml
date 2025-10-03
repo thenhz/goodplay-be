@@ -655,6 +655,197 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: |
+        Request a password reset link to be sent via email.
+        For security reasons, always returns success even if email doesn't exist.
+
+        **Possible response messages:**
+        - Success: `PASSWORD_RESET_EMAIL_SENT`
+        - Errors: `DATA_REQUIRED`, `EMAIL_REQUIRED`, `INVALID_EMAIL_FORMAT`, `ACCOUNT_DISABLED`, `PASSWORD_RESET_EMAIL_FAILED`, `INTERNAL_SERVER_ERROR`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the account to reset
+            examples:
+              valid_request:
+                summary: Valid forgot password request
+                value:
+                  email: "user@example.com"
+      responses:
+        '200':
+          description: Password reset email sent (or would be sent if account exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                success:
+                  summary: Reset email sent
+                  value:
+                    success: true
+                    message: "PASSWORD_RESET_EMAIL_SENT"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                missing_email:
+                  summary: Email not provided
+                  value:
+                    success: false
+                    message: "EMAIL_REQUIRED"
+                invalid_email:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    message: "INVALID_EMAIL_FORMAT"
+                account_disabled:
+                  summary: Account is disabled
+                  value:
+                    success: false
+                    message: "ACCOUNT_DISABLED"
+                email_failed:
+                  summary: Failed to send email
+                  value:
+                    success: false
+                    message: "PASSWORD_RESET_EMAIL_FAILED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    success: false
+                    message: "INTERNAL_SERVER_ERROR"
+
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password with token
+      description: |
+        Reset user password using the token received via email.
+        Token expires after 1 hour.
+
+        **Possible response messages:**
+        - Success: `PASSWORD_RESET_SUCCESS`
+        - Errors: `DATA_REQUIRED`, `RESET_TOKEN_REQUIRED`, `NEW_PASSWORD_REQUIRED`, `INVALID_RESET_TOKEN`, `RESET_TOKEN_EXPIRED`, `NEW_PASSWORD_TOO_WEAK`, `ACCOUNT_DISABLED`, `PASSWORD_RESET_FAILED`, `INTERNAL_SERVER_ERROR`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - new_password
+              properties:
+                token:
+                  type: string
+                  description: Password reset token from email
+                new_password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  description: New password (minimum 6 characters)
+            examples:
+              valid_request:
+                summary: Valid password reset request
+                value:
+                  token: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+                  new_password: "newSecurePassword123"
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                success:
+                  summary: Password reset successful
+                  value:
+                    success: true
+                    message: "PASSWORD_RESET_SUCCESS"
+        '400':
+          description: Password reset failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                missing_data:
+                  summary: Missing data
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                missing_token:
+                  summary: Token not provided
+                  value:
+                    success: false
+                    message: "RESET_TOKEN_REQUIRED"
+                missing_password:
+                  summary: Password not provided
+                  value:
+                    success: false
+                    message: "NEW_PASSWORD_REQUIRED"
+                invalid_token:
+                  summary: Invalid reset token
+                  value:
+                    success: false
+                    message: "INVALID_RESET_TOKEN"
+                token_expired:
+                  summary: Token has expired
+                  value:
+                    success: false
+                    message: "RESET_TOKEN_EXPIRED"
+                weak_password:
+                  summary: Password too weak
+                  value:
+                    success: false
+                    message: "NEW_PASSWORD_TOO_WEAK"
+                account_disabled:
+                  summary: Account is disabled
+                  value:
+                    success: false
+                    message: "ACCOUNT_DISABLED"
+                reset_failed:
+                  summary: Reset operation failed
+                  value:
+                    success: false
+                    message: "PASSWORD_RESET_FAILED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
               examples:
                 server_error:
                   summary: Server error
@@ -907,9 +1098,15 @@ paths:
       description: |
         Update current user's social profile (display name, privacy level).
 
+        **Only the following fields can be updated:**
+        - `display_name` - User's display name (2-50 characters)
+        - `privacy_level` - Privacy level (public, friends, private)
+
+        **Note:** Any other fields in the request will be ignored.
+
         **Possible response messages:**
         - Success: `SOCIAL_PROFILE_UPDATED_SUCCESS`
-        - Errors: `DATA_REQUIRED`, `INVALID_PRIVACY_LEVEL`, `DISPLAY_NAME_LENGTH_INVALID`, `UPDATE_FAILED`, `SOCIAL_PROFILE_UPDATE_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+        - Errors: `DATA_REQUIRED`, `NO_VALID_FIELDS_TO_UPDATE`, `INVALID_PRIVACY_LEVEL`, `DISPLAY_NAME_LENGTH_INVALID`, `UPDATE_FAILED`, `SOCIAL_PROFILE_UPDATE_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       requestBody:
@@ -1927,6 +2124,24 @@ components:
             - NEW_PASSWORD_TOO_WEAK
             - PASSWORD_CHANGE_FAILED
             - ACCOUNT_DELETION_FAILED
+            # Email verification messages
+            - VERIFICATION_TOKEN_REQUIRED
+            - VERIFICATION_TOKEN_INVALID
+            - EMAIL_ALREADY_VERIFIED
+            - VERIFICATION_TOKEN_EXPIRED
+            - EMAIL_VERIFICATION_FAILED
+            - VERIFICATION_EMAIL_SENT
+            - VERIFICATION_EMAIL_FAILED
+            # Password reset messages
+            - EMAIL_REQUIRED
+            - PASSWORD_RESET_EMAIL_SENT
+            - PASSWORD_RESET_EMAIL_FAILED
+            - RESET_TOKEN_REQUIRED
+            - NEW_PASSWORD_REQUIRED
+            - INVALID_RESET_TOKEN
+            - RESET_TOKEN_EXPIRED
+            - PASSWORD_RESET_SUCCESS
+            - PASSWORD_RESET_FAILED
             # User management error messages
             - UPDATE_FAILED
             - PROFILE_UPDATE_ERROR
@@ -2139,40 +2354,55 @@ components:
           type: array
           items:
             type: string
+          description: List of preferred game categories
         difficulty_level:
           type: string
-          enum: [easy, medium, hard]
+          enum: [easy, medium, hard, expert]
+          description: Game difficulty level
         tutorial_enabled:
           type: boolean
+          description: Enable in-game tutorials
         auto_save:
           type: boolean
+          description: Enable automatic save
         sound_enabled:
           type: boolean
+          description: Enable sound effects
         music_enabled:
           type: boolean
+          description: Enable background music
         vibration_enabled:
           type: boolean
+          description: Enable vibration feedback
 
     NotificationPreferences:
       type: object
       properties:
         push_enabled:
           type: boolean
+          description: Enable push notifications
         email_enabled:
           type: boolean
+          description: Enable email notifications
         frequency:
           type: string
-          enum: [never, daily, weekly, monthly]
+          enum: [none, daily, weekly, monthly]
+          description: Notification frequency
         achievement_alerts:
           type: boolean
+          description: Receive alerts for achievements
         donation_confirmations:
           type: boolean
+          description: Receive donation confirmations
         friend_activity:
           type: boolean
+          description: Receive friend activity notifications
         tournament_reminders:
           type: boolean
+          description: Receive tournament reminders
         maintenance_alerts:
           type: boolean
+          description: Receive maintenance alerts
 
     PrivacyPreferences:
       type: object
@@ -2180,41 +2410,53 @@ components:
         profile_visibility:
           type: string
           enum: [public, friends, private]
+          description: Who can view your profile
         stats_sharing:
           type: boolean
+          description: Share statistics with others
         friends_discovery:
           type: boolean
+          description: Allow friends to discover your profile
         leaderboard_participation:
           type: boolean
+          description: Participate in public leaderboards
         activity_visibility:
           type: string
           enum: [public, friends, private]
+          description: Who can see your activity
         contact_permissions:
           type: string
           enum: [everyone, friends, none]
+          description: Who can contact you
 
     DonationPreferences:
       type: object
       properties:
         auto_donate_enabled:
           type: boolean
+          description: Enable automatic donations
         auto_donate_percentage:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 100
+          description: Percentage of credits to auto-donate (0-100)
         preferred_causes:
           type: array
           items:
             type: string
+          description: List of preferred ONLUS IDs for donations
         notification_threshold:
           type: number
           format: float
+          description: Credit threshold for donation notifications
         monthly_goal:
           anyOf:
             - type: number
               format: float
+          description: Monthly donation goal in credits (optional)
         impact_sharing:
           type: boolean
+          description: Share donation impact publicly
 
   securitySchemes:
     bearerAuth:

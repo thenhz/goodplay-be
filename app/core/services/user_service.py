@@ -61,13 +61,20 @@ class UserService:
 
 
     def update_social_profile(self, user_id: str, profile_data: Dict) -> Tuple[bool, str, Optional[Dict]]:
-        """Update user social profile only"""
-        validation_error = self._validate_social_profile(profile_data)
+        """Update user social profile only (display_name and privacy_level)"""
+        # Filter allowed fields
+        allowed_fields = {'display_name', 'privacy_level'}
+        filtered_data = {k: v for k, v in profile_data.items() if k in allowed_fields}
+
+        if not filtered_data:
+            return False, "NO_VALID_FIELDS_TO_UPDATE", None
+
+        validation_error = self._validate_social_profile(filtered_data)
         if validation_error:
             return False, validation_error, None
 
         try:
-            success = self.user_repository.update_social_profile(user_id, profile_data)
+            success = self.user_repository.update_social_profile(user_id, filtered_data)
 
             if success:
                 user = self.user_repository.find_user_by_id(user_id)

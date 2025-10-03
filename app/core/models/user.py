@@ -6,7 +6,8 @@ class User:
     def __init__(self, email, password_hash=None, first_name=None, last_name=None,
                  is_active=True, role='user', _id=None, created_at=None, updated_at=None,
                  gaming_stats=None, impact_score=0, preferences=None, social_profile=None, wallet_credits=None,
-                 is_verified=False, verification_token=None, verification_token_expires_at=None, preferred_language='en'):
+                 is_verified=False, verification_token=None, verification_token_expires_at=None, preferred_language='en',
+                 password_reset_token=None, password_reset_token_expires_at=None):
         self._id = _id
         self.email = email.lower()
         self.first_name = first_name
@@ -17,6 +18,8 @@ class User:
         self.is_verified = is_verified
         self.verification_token = verification_token
         self.verification_token_expires_at = verification_token_expires_at
+        self.password_reset_token = password_reset_token
+        self.password_reset_token_expires_at = password_reset_token_expires_at
         self.preferred_language = (preferred_language or 'en').lower()
         self.created_at = created_at or datetime.now(timezone.utc)
         self.updated_at = updated_at or datetime.now(timezone.utc)
@@ -113,6 +116,8 @@ class User:
             user_dict['password_hash'] = self.password_hash
             user_dict['verification_token'] = self.verification_token
             user_dict['verification_token_expires_at'] = self.verification_token_expires_at
+            user_dict['password_reset_token'] = self.password_reset_token
+            user_dict['password_reset_token_expires_at'] = self.password_reset_token_expires_at
 
         # Serialize all datetime fields to ISO 8601 format
         user_dict = serialize_model_dates(user_dict)
@@ -138,6 +143,8 @@ class User:
             password_hash=data.get('password_hash') if include_sensitive else None,
             verification_token=data.get('verification_token') if include_sensitive else None,
             verification_token_expires_at=data.get('verification_token_expires_at') if include_sensitive else None,
+            password_reset_token=data.get('password_reset_token') if include_sensitive else None,
+            password_reset_token_expires_at=data.get('password_reset_token_expires_at') if include_sensitive else None,
             gaming_stats=data.get('gaming_stats'),
             impact_score=data.get('impact_score', 0),
             preferences=data.get('preferences'),
@@ -261,7 +268,7 @@ class User:
             if not isinstance(notifications, dict):
                 return "NOTIFICATION_PREFERENCES_INVALID"
 
-            if 'frequency' in notifications and notifications['frequency'] not in ['none', 'daily', 'weekly', 'monthly']:
+            if 'frequency' in notifications and notifications['frequency'] not in ['never', 'daily', 'weekly', 'monthly']:
                 return "NOTIFICATION_FREQUENCY_INVALID"
 
         # Validate privacy preferences

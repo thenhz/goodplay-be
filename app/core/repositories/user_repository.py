@@ -235,3 +235,30 @@ class UserRepository(BaseRepository):
             }
         }
         return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
+
+    def set_password_reset_token(self, user_id: str, token: str, expires_at) -> bool:
+        """Set password reset token and expiry for a user"""
+        update_data = {
+            "$set": {
+                "password_reset_token": token,
+                "password_reset_token_expires_at": expires_at,
+                "updated_at": self._get_current_time()
+            }
+        }
+        return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
+
+    def find_by_password_reset_token(self, token: str) -> Optional[User]:
+        """Find user by password reset token"""
+        user_data = self.find_one({"password_reset_token": token})
+        return User.from_dict(user_data, include_sensitive=True) if user_data else None
+
+    def clear_password_reset_token(self, user_id: str) -> bool:
+        """Clear password reset token after successful reset"""
+        update_data = {
+            "$set": {
+                "password_reset_token": None,
+                "password_reset_token_expires_at": None,
+                "updated_at": self._get_current_time()
+            }
+        }
+        return self.collection.update_one({"_id": self._get_object_id(user_id)}, update_data).modified_count > 0
