@@ -6,7 +6,7 @@ class User:
     def __init__(self, email, password_hash=None, first_name=None, last_name=None,
                  is_active=True, role='user', _id=None, created_at=None, updated_at=None,
                  gaming_stats=None, impact_score=0, preferences=None, social_profile=None, wallet_credits=None,
-                 is_verified=False, verification_token=None, verification_token_expires_at=None):
+                 is_verified=False, verification_token=None, verification_token_expires_at=None, preferred_language='en'):
         self._id = _id
         self.email = email.lower()
         self.first_name = first_name
@@ -17,6 +17,7 @@ class User:
         self.is_verified = is_verified
         self.verification_token = verification_token
         self.verification_token_expires_at = verification_token_expires_at
+        self.preferred_language = (preferred_language or 'en').lower()
         self.created_at = created_at or datetime.now(timezone.utc)
         self.updated_at = updated_at or datetime.now(timezone.utc)
 
@@ -98,6 +99,7 @@ class User:
             'is_active': self.is_active,
             'is_verified': self.is_verified,
             'role': self.role,
+            'preferred_language': self.preferred_language,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
             'gaming_stats': self.gaming_stats,
@@ -130,6 +132,7 @@ class User:
             is_active=data.get('is_active', True),
             is_verified=data.get('is_verified', False),
             role=data.get('role', 'user'),
+            preferred_language=data.get('preferred_language', 'en'),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at'),
             password_hash=data.get('password_hash') if include_sensitive else None,
@@ -298,6 +301,12 @@ class User:
             if key in self.social_profile:
                 self.social_profile[key] = value
         self.updated_at = datetime.now(timezone.utc)
+
+    @staticmethod
+    def validate_language_code(language_code: str) -> bool:
+        """Validate ISO 639-1 language code (2 letters, lowercase)"""
+        valid_languages = ['en', 'it', 'es', 'fr', 'de', 'pt', 'nl', 'ru', 'zh', 'ja', 'ko', 'ar']
+        return language_code and isinstance(language_code, str) and language_code.lower() in valid_languages
 
     def __repr__(self):
         return f'<User {self.email}>'

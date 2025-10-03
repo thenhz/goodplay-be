@@ -67,6 +67,7 @@ paths:
                         last_name: "Doe"
                         is_active: true
                         role: "user"
+                        preferred_language: "en"
                       tokens:
                         access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
                         refresh_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
@@ -163,6 +164,7 @@ paths:
                         email: "user@example.com"
                         first_name: "John"
                         last_name: "Doe"
+                        preferred_language: "en"
                       tokens:
                         access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
                         refresh_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
@@ -800,7 +802,7 @@ paths:
 
         **Possible response messages:**
         - Success: `PROFILE_UPDATED_SUCCESS`
-        - Errors: `DATA_REQUIRED`, `USER_NOT_FOUND`, `UPDATE_FAILED`, `PROFILE_UPDATE_ERROR`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
+        - Errors: `DATA_REQUIRED`, `USER_NOT_FOUND`, `UPDATE_FAILED`, `PROFILE_UPDATE_ERROR`, `INVALID_LANGUAGE_CODE`, `INVALID_TOKEN_OR_USER_DISABLED`, `AUTHENTICATION_ERROR`, `INTERNAL_SERVER_ERROR`
       security:
         - bearerAuth: []
       requestBody:
@@ -815,11 +817,16 @@ paths:
                 value:
                   first_name: "Jane"
                   last_name: "Smith"
+              language_update:
+                summary: Update preferred language
+                value:
+                  preferred_language: "it"
               full_update:
                 summary: Update with preferences
                 value:
                   first_name: "Jane"
                   last_name: "Smith"
+                  preferred_language: "fr"
                   preferences:
                     gaming:
                       difficulty_level: "hard"
@@ -2024,6 +2031,11 @@ components:
         role:
           type: string
           enum: [user, admin]
+        preferred_language:
+          type: string
+          description: User's preferred language (ISO 639-1 code)
+          enum: [en, it, es, fr, de, pt, nl, ru, zh, ja, ko, ar]
+          default: en
         created_at:
           type: string
           format: date-time
@@ -2050,6 +2062,10 @@ components:
           type: string
         last_name:
           type: string
+        preferred_language:
+          type: string
+          description: User's preferred language (ISO 639-1 code)
+          enum: [en, it, es, fr, de, pt, nl, ru, zh, ja, ko, ar]
         preferences:
           $ref: '#/components/schemas/UserPreferences'
         social_profile:

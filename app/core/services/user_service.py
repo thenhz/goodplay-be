@@ -33,6 +33,13 @@ class UserService:
             if 'last_name' in profile_data:
                 user.last_name = profile_data['last_name']
 
+            # Update preferred language with validation
+            if 'preferred_language' in profile_data:
+                language_code = profile_data['preferred_language'].lower()
+                if not User.validate_language_code(language_code):
+                    return False, "INVALID_LANGUAGE_CODE", None
+                user.preferred_language = language_code
+
             # Update extended fields using new methods
             if 'preferences' in profile_data:
                 user.update_preferences(**profile_data['preferences'])
