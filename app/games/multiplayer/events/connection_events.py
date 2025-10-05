@@ -130,6 +130,73 @@ class MultiplayerNamespace(BaseNamespace):
 
         current_app.logger.info(f"User {current_user} authenticated on WebSocket (sid={session_id})")
 
+    def on_reauth(self, data):
+        """
+        Refresh WebSocket authentication with a new token.
+
+        Used when the client detects token expiry and needs to refresh
+        the WebSocket connection without disconnecting.
+
+        Event data:
+            {
+                "token": "<new_jwt_token>"
+            }
+
+        Response on success:
+            {
+                "message": "TOKEN_REFRESHED",
+                "timestamp": "<iso_timestamp>"
+            }
+
+        Response on error:
+            {
+                "message": "NOT_AUTHENTICATED|INVALID_TOKEN"
+            }
+        """
+        from app.core.services.auth_service import AuthService
+        from app.games.multiplayer.services.websocket_session_manager import websocket_session_manager
+
+        session_id = request.sid
+        new_token = data.get('token')
+
+        if not new_token:
+            emit('auth_error', {'message': 'TOKEN_REQUIRED'})
+            return False
+
+        # Check if session exists
+        if not websocket_session_manager.is_authenticated(session_id):
+            emit('auth_error', {'message': 'NOT_AUTHENTICATED'})
+            return False
+
+        # Validate new token
+        payload = AuthService.validate_websocket_token(new_token)
+        if not payload:
+            emit('auth_error', {'message': 'INVALID_TOKEN'})
+            return False
+
+        # Verify token is for the same user
+        user_id = payload.get('sub')
+        current_user_id = websocket_session_manager.get_user_id(session_id)
+
+        if user_id != current_user_id:
+            emit('auth_error', {'message': 'USER_MISMATCH'})
+            current_app.logger.warning(
+                f"Token refresh attempt with different user: {user_id} != {current_user_id}"
+            )
+            return False
+
+        # Update session with new token
+        websocket_session_manager.update_token(session_id, new_token)
+
+        # Send success response
+        emit('reauth_success', {
+            'message': 'TOKEN_REFRESHED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        })
+
+        current_app.logger.info(f"Token refreshed for user {user_id} (sid={session_id})")
+        return True
+
     @BaseNamespace.require_auth
     @BaseNamespace.validate_data
     def on_join_room(self, data, current_user=None):

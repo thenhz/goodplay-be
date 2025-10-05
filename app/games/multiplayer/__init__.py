@@ -10,9 +10,12 @@ def register_multiplayer_module(app, socketio: SocketIO):
         app: Flask application instance
         socketio: SocketIO instance
     """
-    # Register REST API blueprint
+    # Register REST API blueprints
     from .controllers.multiplayer_controller import blueprint as multiplayer_bp
+    from .controllers.auth_controller import blueprint as multiplayer_auth_bp
+
     app.register_blueprint(multiplayer_bp, url_prefix='/api/multiplayer')
+    app.register_blueprint(multiplayer_auth_bp, url_prefix='/api/multiplayer/auth')
 
     # Register WebSocket namespace
     from .events.connection_events import MultiplayerNamespace

@@ -3,6 +3,7 @@ from flask import current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
 import re
 import secrets
+import jwt as pyjwt
 from datetime import datetime, timezone, timedelta
 from werkzeug.security import generate_password_hash
 
@@ -383,4 +384,67 @@ class AuthService:
         except Exception as e:
             current_app.logger.error(f"Reset password error: {str(e)}")
             return False, "INTERNAL_SERVER_ERROR", None
+
+    @staticmethod
+    def generate_websocket_token(user_id: str, expires_hours: int = 24) -> str:
+        """
+        Generate a specific token for WebSocket connections.
+
+        WebSocket tokens have longer expiry than regular access tokens
+        and include a 'type' claim for additional validation.
+
+        Args:
+            user_id: User ID to encode in token
+            expires_hours: Token expiry in hours (default: 24)
+
+        Returns:
+            JWT token string for WebSocket authentication
+        """
+        payload = {
+            'sub': user_id,
+            'type': 'websocket',
+            'exp': datetime.now(timezone.utc) + timedelta(hours=expires_hours),
+            'iat': datetime.now(timezone.utc)
+        }
+
+        return pyjwt.encode(
+            payload,
+            current_app.config['JWT_SECRET_KEY'],
+            algorithm='HS256'
+        )
+
+    @staticmethod
+    def validate_websocket_token(token: str) -> Optional[Dict]:
+        """
+        Validate WebSocket-specific token.
+
+        Args:
+            token: JWT token string to validate
+
+        Returns:
+            Decoded payload dict if valid, None otherwise
+        """
+        try:
+            payload = pyjwt.decode(
+                token,
+                current_app.config['JWT_SECRET_KEY'],
+                algorithms=['HS256']
+            )
+
+            # Verify token type
+            if payload.get('type') != 'websocket':
+                current_app.logger.warning("Token is not a WebSocket token")
+                return None
+
+            return payload
+
+        except pyjwt.ExpiredSignatureError:
+            current_app.logger.warning("WebSocket token expired")
+            return None
+        except pyjwt.InvalidTokenError as e:
+            current_app.logger.warning(f"Invalid WebSocket token: {str(e)}")
+            return None
+        except Exception as e:
+            current_app.logger.error(f"WebSocket token validation error: {str(e)}")
+            return None
 
