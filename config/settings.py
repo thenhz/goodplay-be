@@ -14,8 +14,19 @@ class Config:
     
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_FILE = os.environ.get('LOG_FILE', 'app.log')
-    
+
     BCRYPT_LOG_ROUNDS = int(os.environ.get('BCRYPT_LOG_ROUNDS', 12))
+
+    # WebSocket Configuration (Flask-SocketIO with threading mode)
+    SOCKETIO_PING_TIMEOUT = int(os.environ.get('SOCKETIO_PING_TIMEOUT', 60))
+    SOCKETIO_PING_INTERVAL = int(os.environ.get('SOCKETIO_PING_INTERVAL', 25))
+    SOCKETIO_MAX_MESSAGE_SIZE = int(os.environ.get('SOCKETIO_MAX_MESSAGE_SIZE', 1000000))  # 1MB
+
+    # Multiplayer Configuration
+    MAX_PLAYERS_PER_ROOM = int(os.environ.get('MAX_PLAYERS_PER_ROOM', 8))
+    MAX_ROOMS_PER_USER = int(os.environ.get('MAX_ROOMS_PER_USER', 3))
+    ROOM_TIMEOUT_SECONDS = int(os.environ.get('ROOM_TIMEOUT_SECONDS', 3600))  # 1 hour
+    ROOM_CODE_LENGTH = int(os.environ.get('ROOM_CODE_LENGTH', 6))
 
 class DevelopmentConfig(Config):
     DEBUG = True

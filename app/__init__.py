@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from flask_socketio import SocketIO
 from pymongo import MongoClient
 import logging
 from logging.handlers import RotatingFileHandler
@@ -9,6 +10,7 @@ import os
 from config.settings import config
 
 jwt = JWTManager()
+socketio = SocketIO()
 mongo_client = None
 mongo_db = None
 
@@ -18,10 +20,21 @@ def create_app(config_name=None):
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
-    
+
     jwt.init_app(app)
     CORS(app, origins=app.config['CORS_ORIGINS'])
-    
+
+    # Initialize SocketIO with threading mode (recommended for 2025)
+    socketio.init_app(
+        app,
+        cors_allowed_origins=app.config['CORS_ORIGINS'],
+        logger=app.debug,
+        engineio_logger=False,
+        ping_timeout=app.config.get('SOCKETIO_PING_TIMEOUT', 60),
+        ping_interval=app.config.get('SOCKETIO_PING_INTERVAL', 25),
+        max_http_buffer_size=app.config.get('SOCKETIO_MAX_MESSAGE_SIZE', 1000000)
+    )
+
     init_db(app)
     init_logging(app)
     
@@ -74,11 +87,15 @@ def create_app(config_name=None):
     # Initialize games module (create indexes and discover plugins)
     with app.app_context():
         init_games_module()
-    
+
+    # Register multiplayer module (WebSocket + REST API)
+    from app.games.multiplayer import register_multiplayer_module
+    register_multiplayer_module(app, socketio)
+
     @app.route('/api/health', methods=['GET'])
     def health_check():
         return {'status': 'healthy', 'message': 'API is running'}, 200
-    
+
     return app
 
 def init_db(app):
