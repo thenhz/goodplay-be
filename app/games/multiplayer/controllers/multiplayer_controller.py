@@ -4,6 +4,8 @@ from app.core.utils.responses import success_response, error_response
 from app.games.multiplayer.services.room_manager import RoomManager
 from app.games.multiplayer.services.connection_manager import ConnectionManager
 from app.games.multiplayer.services.state_manager import StateManager
+from app.games.multiplayer.services.lobby_service import LobbyService
+from app.games.multiplayer.services.invitation_service import InvitationService
 
 
 blueprint = Blueprint('multiplayer', __name__)
@@ -12,6 +14,8 @@ blueprint = Blueprint('multiplayer', __name__)
 room_manager = RoomManager()
 connection_manager = ConnectionManager.get_instance()
 state_manager = StateManager()
+lobby_service = LobbyService()
+invitation_service = InvitationService()
 
 
 @blueprint.route('/rooms', methods=['POST'])
@@ -324,4 +328,261 @@ def get_statistics(current_user):
 
     except Exception as e:
         current_app.logger.error(f"Error getting statistics: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+# New GOO-56 endpoints
+
+@blueprint.route('/rooms/search', methods=['POST'])
+@auth_required
+def search_rooms(current_user):
+    """Search rooms with filters"""
+    try:
+        data = request.get_json() or {}
+
+        success, message, result = lobby_service.browse_rooms(
+            game_id=data.get('game_id'),
+            privacy=data.get('privacy', 'public'),
+            tags=data.get('tags'),
+            search_query=data.get('search_query'),
+            page=data.get('page', 1),
+            per_page=data.get('per_page', 20)
+        )
+
+        if success:
+            return success_response(message, result)
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Error searching rooms: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/rooms/<room_id>/ready', methods=['POST'])
+@auth_required
+def toggle_ready(current_user, room_id):
+    """Toggle player ready state"""
+    try:
+        data = request.get_json() or {}
+        is_ready = data.get('is_ready', True)
+
+        success, message, room = room_manager.set_player_ready(
+            room_id, current_user, is_ready
+        )
+
+        if success:
+            return success_response(message, {'room': room.to_dict() if room else None})
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error toggling ready: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/rooms/<room_id>/ready-status', methods=['GET'])
+@auth_required
+def get_ready_status(current_user, room_id):
+    """Get ready status for room"""
+    try:
+        success, message, status_data = room_manager.get_ready_status(room_id)
+
+        if success:
+            return success_response(message, status_data)
+        else:
+            return error_response(message, status_code=404)
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting ready status: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/rooms/<room_id>/settings', methods=['PUT'])
+@auth_required
+def update_room_settings(current_user, room_id):
+    """Update room settings (host only)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return error_response("DATA_REQUIRED")
+
+        success, message, room = room_manager.update_room_settings(
+            room_id, current_user, data
+        )
+
+        if success:
+            return success_response(message, {'room': room.to_dict() if room else None})
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error updating settings: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/rooms/<room_id>/spectate', methods=['POST'])
+@auth_required
+def join_as_spectator(current_user, room_id):
+    """Join room as spectator"""
+    try:
+        success, message, room = room_manager.add_spectator(room_id, current_user)
+
+        if success:
+            return success_response(message, {'room': room.to_dict() if room else None})
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error joining as spectator: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/rooms/<room_id>/spectate', methods=['DELETE'])
+@auth_required
+def leave_as_spectator(current_user, room_id):
+    """Leave room as spectator"""
+    try:
+        success, message = room_manager.remove_spectator(room_id, current_user)
+
+        if success:
+            return success_response(message)
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error leaving as spectator: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/rooms/<room_id>/invitations', methods=['POST'])
+@auth_required
+def send_invitation(current_user, room_id):
+    """Send room invitation"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('recipient_user_id'):
+            return error_response("RECIPIENT_USER_ID_REQUIRED")
+
+        success, message, invitation = invitation_service.send_invitation(
+            room_id, current_user, data['recipient_user_id']
+        )
+
+        if success:
+            return success_response(message, {
+                'invitation': invitation.to_dict() if invitation else None
+            })
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error sending invitation: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/invitations', methods=['GET'])
+@auth_required
+def get_my_invitations(current_user):
+    """Get user's invitations"""
+    try:
+        include_expired = request.args.get('include_expired', 'false').lower() == 'true'
+
+        success, message, invitations = invitation_service.get_user_invitations(
+            current_user, include_expired
+        )
+
+        if success:
+            return success_response(message, {
+                'invitations': [inv.to_dict() for inv in invitations],
+                'count': len(invitations)
+            })
+        else:
+            return error_response(message)
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting invitations: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/invitations/<invitation_id>/accept', methods=['POST'])
+@auth_required
+def accept_invitation(current_user, invitation_id):
+    """Accept invitation"""
+    try:
+        success, message, room_id = invitation_service.accept_invitation(
+            invitation_id, current_user
+        )
+
+        if success:
+            return success_response(message, {'room_id': room_id})
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error accepting invitation: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/invitations/<invitation_id>/decline', methods=['POST'])
+@auth_required
+def decline_invitation(current_user, invitation_id):
+    """Decline invitation"""
+    try:
+        success, message = invitation_service.decline_invitation(
+            invitation_id, current_user
+        )
+
+        if success:
+            return success_response(message)
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error declining invitation: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/quick-match', methods=['POST'])
+@auth_required
+def quick_match(current_user):
+    """Quick match - find and join best available room"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('game_id'):
+            return error_response("GAME_ID_REQUIRED")
+
+        success, message, room = lobby_service.quick_match(
+            current_user, data['game_id']
+        )
+
+        if success:
+            return success_response(message, {'room': room.to_dict() if room else None})
+        else:
+            return error_response(message, status_code=404)
+
+    except Exception as e:
+        current_app.logger.error(f"Error in quick match: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/lobby', methods=['GET'])
+@auth_required
+def get_lobby_data(current_user):
+    """Get lobby data with statistics"""
+    try:
+        game_id = request.args.get('game_id')
+
+        stats = lobby_service.get_lobby_statistics(game_id)
+
+        success, message, rooms = lobby_service.get_recommended_rooms(
+            current_user, game_id, limit=10
+        )
+
+        return success_response("LOBBY_DATA_RETRIEVED", {
+            'statistics': stats,
+            'recommended_rooms': [room.to_dict() for room in rooms]
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting lobby data: {str(e)}", exc_info=True)
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)

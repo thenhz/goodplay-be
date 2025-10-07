@@ -23,6 +23,17 @@ class GameRoom:
         finished_at: Game finish timestamp
         game_config: Game-specific configuration
         metadata: Additional room metadata
+        privacy: Room privacy setting (public, private, friends_only)
+        password: Hashed password for private rooms
+        room_name: Custom room name
+        description: Room description
+        tags: Searchable tags for room discovery
+        player_ready_states: Dictionary of player ready states {user_id: is_ready}
+        spectator_ids: List of spectator user IDs
+        allow_spectators: Whether spectators are allowed
+        max_spectators: Maximum number of spectators
+        auto_start_when_ready: Auto-start when all players ready
+        auto_start_timer: Delay before auto-start (seconds)
     """
 
     COLLECTION_NAME = 'game_rooms'
@@ -31,6 +42,10 @@ class GameRoom:
     STATUS_PLAYING = 'playing'
     STATUS_FINISHED = 'finished'
     STATUS_ABANDONED = 'abandoned'
+
+    PRIVACY_PUBLIC = 'public'
+    PRIVACY_PRIVATE = 'private'
+    PRIVACY_FRIENDS_ONLY = 'friends_only'
 
     def __init__(
         self,
@@ -45,7 +60,19 @@ class GameRoom:
         started_at: Optional[datetime] = None,
         finished_at: Optional[datetime] = None,
         game_config: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        # New GOO-56 fields
+        privacy: str = PRIVACY_PUBLIC,
+        password: Optional[str] = None,
+        room_name: Optional[str] = None,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        player_ready_states: Optional[Dict[str, bool]] = None,
+        spectator_ids: Optional[List[str]] = None,
+        allow_spectators: bool = False,
+        max_spectators: int = 10,
+        auto_start_when_ready: bool = False,
+        auto_start_timer: Optional[int] = None
     ):
         self.room_id = room_id
         self.room_code = room_code or self._generate_room_code()
@@ -59,6 +86,18 @@ class GameRoom:
         self.finished_at = finished_at
         self.game_config = game_config or {}
         self.metadata = metadata or {}
+        # New GOO-56 fields
+        self.privacy = privacy
+        self.password = password
+        self.room_name = room_name
+        self.description = description
+        self.tags = tags or []
+        self.player_ready_states = player_ready_states or {}
+        self.spectator_ids = spectator_ids or []
+        self.allow_spectators = allow_spectators
+        self.max_spectators = max_spectators
+        self.auto_start_when_ready = auto_start_when_ready
+        self.auto_start_timer = auto_start_timer
 
     @staticmethod
     def _generate_room_code(length: int = 6) -> str:
@@ -71,6 +110,7 @@ class GameRoom:
         # Ensure host_user_id and player_ids are always strings, not User objects
         host_id = extract_user_id(self.host_user_id)
         player_ids = extract_user_ids(self.player_ids)
+        spectator_ids = extract_user_ids(self.spectator_ids)
 
         room_dict = {
             'room_id': self.room_id,
@@ -84,7 +124,19 @@ class GameRoom:
             'started_at': self.started_at,
             'finished_at': self.finished_at,
             'game_config': self.game_config,
-            'metadata': self.metadata
+            'metadata': self.metadata,
+            # New GOO-56 fields
+            'privacy': self.privacy,
+            'password': self.password,
+            'room_name': self.room_name,
+            'description': self.description,
+            'tags': self.tags,
+            'player_ready_states': self.player_ready_states,
+            'spectator_ids': spectator_ids,
+            'allow_spectators': self.allow_spectators,
+            'max_spectators': self.max_spectators,
+            'auto_start_when_ready': self.auto_start_when_ready,
+            'auto_start_timer': self.auto_start_timer
         }
         return serialize_model_dates(room_dict)
 
@@ -103,7 +155,19 @@ class GameRoom:
             started_at=data.get('started_at'),
             finished_at=data.get('finished_at'),
             game_config=data.get('game_config', {}),
-            metadata=data.get('metadata', {})
+            metadata=data.get('metadata', {}),
+            # New GOO-56 fields
+            privacy=data.get('privacy', GameRoom.PRIVACY_PUBLIC),
+            password=data.get('password'),
+            room_name=data.get('room_name'),
+            description=data.get('description'),
+            tags=data.get('tags', []),
+            player_ready_states=data.get('player_ready_states', {}),
+            spectator_ids=data.get('spectator_ids', []),
+            allow_spectators=data.get('allow_spectators', False),
+            max_spectators=data.get('max_spectators', 10),
+            auto_start_when_ready=data.get('auto_start_when_ready', False),
+            auto_start_timer=data.get('auto_start_timer')
         )
 
     def is_host(self, user_id: str) -> bool:
@@ -198,3 +262,142 @@ class GameRoom:
     def get_player_count(self) -> int:
         """Get current number of players"""
         return len(self.player_ids)
+
+    # New GOO-56 methods
+
+    def set_player_ready(self, user_id: str, is_ready: bool) -> bool:
+        """
+        Set player ready state.
+
+        Args:
+            user_id: User ID
+            is_ready: Ready state
+
+        Returns:
+            True if successfully set, False if player not in room
+        """
+        if not self.has_player(user_id):
+            return False
+
+        self.player_ready_states[user_id] = is_ready
+        return True
+
+    def all_players_ready(self) -> bool:
+        """
+        Check if all players are ready.
+
+        Returns:
+            True if all players have ready state = True
+        """
+        if not self.player_ids:
+            return False
+
+        for player_id in self.player_ids:
+            if not self.player_ready_states.get(player_id, False):
+                return False
+
+        return True
+
+    def get_ready_count(self) -> int:
+        """
+        Get count of ready players.
+
+        Returns:
+            Number of players marked as ready
+        """
+        return sum(1 for ready in self.player_ready_states.values() if ready)
+
+    def add_spectator(self, user_id: str) -> bool:
+        """
+        Add spectator to room.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            True if successfully added, False otherwise
+        """
+        if not self.can_spectate(user_id):
+            return False
+
+        self.spectator_ids.append(user_id)
+        return True
+
+    def remove_spectator(self, user_id: str) -> bool:
+        """
+        Remove spectator from room.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            True if successfully removed, False if not a spectator
+        """
+        if user_id not in self.spectator_ids:
+            return False
+
+        self.spectator_ids.remove(user_id)
+        return True
+
+    def can_spectate(self, user_id: str) -> bool:
+        """
+        Check if user can join as spectator.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            True if user can spectate
+        """
+        return (
+            self.allow_spectators and
+            len(self.spectator_ids) < self.max_spectators and
+            not self.has_player(user_id) and
+            user_id not in self.spectator_ids
+        )
+
+    def is_private(self) -> bool:
+        """
+        Check if room is private.
+
+        Returns:
+            True if room privacy is private
+        """
+        return self.privacy == self.PRIVACY_PRIVATE
+
+    def validate_password(self, password: str) -> bool:
+        """
+        Validate password for private room.
+
+        Args:
+            password: Password to validate
+
+        Returns:
+            True if password matches (plain text comparison for now)
+        """
+        if not self.is_private() or not self.password:
+            return True
+
+        # TODO: Implement proper password hashing with bcrypt
+        return self.password == password
+
+    def has_spectator(self, user_id: str) -> bool:
+        """
+        Check if user is a spectator.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            True if user is spectator
+        """
+        return user_id in self.spectator_ids
+
+    def get_spectator_count(self) -> int:
+        """
+        Get current number of spectators.
+
+        Returns:
+            Count of spectators
+        """
+        return len(self.spectator_ids)
