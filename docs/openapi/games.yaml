@@ -1633,6 +1633,332 @@ paths:
           description: Authentication required
         '500':
           description: Internal server error
+
+  # GOO-60: Multiplayer Invitations & Notifications
+  /api/multiplayer/rooms/{room_id}/invitations:
+    post:
+      tags:
+        - Multiplayer Invitations
+      summary: Send room invitation(s)
+      description: |
+        Send single or batch invitations to multiplayer room.
+
+        **GOO-60 Features:**
+        - Supports both single (`recipient_user_id`) and batch (`recipient_ids`) invitations
+        - Rate limited to 10 calls per minute per user
+        - Validates against blocked users
+        - Validates room capacity
+        - Emits real-time WebSocket events
+        - Invitations expire after 15 minutes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Room ID to send invitations for
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    recipient_user_id:
+                      type: string
+                      description: Single recipient user ID
+                  required:
+                    - recipient_user_id
+                - type: object
+                  properties:
+                    recipient_ids:
+                      type: array
+                      items:
+                        type: string
+                      maxItems: 10
+                      description: List of recipient user IDs (max 10)
+                  required:
+                    - recipient_ids
+            examples:
+              single:
+                summary: Single invitation
+                value:
+                  recipient_user_id: "user123"
+              batch:
+                summary: Batch invitations
+                value:
+                  recipient_ids: ["user1", "user2", "user3"]
+      responses:
+        '200':
+          description: Invitation(s) sent successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SingleInvitationResponse'
+                  - $ref: '#/components/schemas/BatchInvitationResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                roomNotFound:
+                  value:
+                    success: false
+                    message: "ROOM_NOT_FOUND"
+                notInRoom:
+                  value:
+                    success: false
+                    message: "NOT_IN_ROOM"
+                userBlocked:
+                  value:
+                    success: false
+                    message: "USER_BLOCKED"
+                roomFull:
+                  value:
+                    success: false
+                    message: "ROOM_FULL"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "RATE_LIMIT_EXCEEDED"
+
+  /api/multiplayer/invitations:
+    get:
+      tags:
+        - Multiplayer Invitations
+      summary: Get user's invitations
+      description: Retrieve all invitations received by the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: include_expired
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include expired invitations
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          invitations:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/RoomInvitation'
+                          count:
+                            type: integer
+
+  /api/multiplayer/invitations/{invitation_id}/accept:
+    post:
+      tags:
+        - Multiplayer Invitations
+      summary: Accept invitation
+      description: |
+        Accept a room invitation.
+        GOO-60: Emits WebSocket event to sender upon acceptance.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invitation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          room_id:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/multiplayer/invitations/{invitation_id}/decline:
+    post:
+      tags:
+        - Multiplayer Invitations
+      summary: Decline invitation
+      description: |
+        Decline a room invitation.
+        GOO-60: Emits WebSocket event to sender upon decline.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invitation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitation declined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Bad request
+
+  /api/multiplayer/invitations/{invitation_id}:
+    delete:
+      tags:
+        - Multiplayer Invitations
+      summary: Cancel invitation
+      description: |
+        Cancel a pending invitation (sender only).
+        GOO-60: Allows sender to revoke invitations before they are accepted/declined.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invitation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitation cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                message: "INVITATION_CANCELLED_SUCCESS"
+        '400':
+          description: Bad request
+
+  # GOO-60: Social-Multiplayer Integration
+  /api/social/friends/online:
+    get:
+      tags:
+        - Social Multiplayer Integration
+      summary: Get online friends
+      description: |
+        Get list of friends currently connected to multiplayer system.
+        GOO-60: Shows which friends are online and available for multiplayer.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Online friends retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          friends:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/OnlineFriend'
+                          count:
+                            type: integer
+
+  /api/social/friends/{friend_id}/current-room:
+    get:
+      tags:
+        - Social Multiplayer Integration
+      summary: Get friend's current room
+      description: |
+        Get friend's current multiplayer room if they are in one.
+        GOO-60: Shows room details and whether you can join.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend room info retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        oneOf:
+                          - $ref: '#/components/schemas/FriendInRoom'
+                          - $ref: '#/components/schemas/FriendNotInRoom'
+
+  /api/social/friends/{friend_id}/invite-to-room:
+    post:
+      tags:
+        - Social Multiplayer Integration
+      summary: Invite friend to your room
+      description: |
+        Shortcut to invite a friend to your current multiplayer room.
+        GOO-60: Quick way to invite friends without specifying room ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                room_id:
+                  type: string
+                  description: Optional room ID (uses current room if not provided)
+      responses:
+        '200':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleInvitationResponse'
+        '400':
+          description: Bad request
+
 # Components
 components:
   schemas:
@@ -2408,4 +2734,145 @@ components:
           type: string
           description: Type of token
           example: "websocket"
+
+    # GOO-60: Multiplayer Invitations Schemas
+    RoomInvitation:
+      type: object
+      properties:
+        invitation_id:
+          type: string
+          example: "inv_123456"
+        room_id:
+          type: string
+          example: "room_789"
+        room_code:
+          type: string
+          example: "ABC123"
+          description: "GOO-60: Room join code for easier access"
+        game_id:
+          type: string
+          example: "memory_game"
+        game_name:
+          type: string
+          example: "Memory Game"
+          description: "GOO-60: Human-readable game name"
+        sender_user_id:
+          type: string
+          example: "user_sender"
+        recipient_user_id:
+          type: string
+          example: "user_recipient"
+        status:
+          type: string
+          enum: [pending, accepted, declined, expired]
+          example: "pending"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-07T10:00:00.000000+00:00"
+        expires_at:
+          type: string
+          format: date-time
+          example: "2025-10-07T10:15:00.000000+00:00"
+          description: "GOO-60: Expires 15 minutes after creation"
+        accepted_at:
+          type: string
+          format: date-time
+        declined_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    SingleInvitationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                invitation:
+                  $ref: '#/components/schemas/RoomInvitation'
+
+    BatchInvitationResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                sent:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      recipient_id:
+                        type: string
+                      invitation_id:
+                        type: string
+                failed:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      recipient_id:
+                        type: string
+                      reason:
+                        type: string
+                        enum:
+                          - CANNOT_INVITE_SELF
+                          - ALREADY_IN_ROOM
+                          - ROOM_FULL
+                          - USER_BLOCKED
+                          - INVITATION_ALREADY_SENT
+                          - INVITATION_CREATION_FAILED
+                total_requested:
+                  type: integer
+                sent_count:
+                  type: integer
+                failed_count:
+                  type: integer
+
+    OnlineFriend:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        is_in_room:
+          type: boolean
+        room_id:
+          type: string
+
+    FriendInRoom:
+      type: object
+      properties:
+        in_room:
+          type: boolean
+          example: true
+        room:
+          $ref: '#/components/schemas/GameRoom'
+        is_joinable:
+          type: boolean
+        reason:
+          type: string
+          enum:
+            - ROOM_NOT_ACCEPTING_PLAYERS
+            - ROOM_FULL
+            - ALREADY_IN_ROOM
+
+    FriendNotInRoom:
+      type: object
+      properties:
+        in_room:
+          type: boolean
+          example: false
 

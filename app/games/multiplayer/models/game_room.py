@@ -101,8 +101,14 @@ class GameRoom:
 
     @staticmethod
     def _generate_room_code(length: int = 6) -> str:
-        """Generate a random room code"""
-        chars = string.ascii_uppercase + string.digits
+        """
+        Generate a random room code.
+        Uses characters [A-HJ-NP-Z2-9] to avoid ambiguity:
+        - Excludes I, O (confused with 1, 0)
+        - Excludes 0, 1 (confused with O, I)
+        """
+        # A-H, J-N, P-Z (no I, O) + 2-9 (no 0, 1)
+        chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
         return ''.join(random.choices(chars, k=length))
 
     def to_dict(self) -> Dict[str, Any]:

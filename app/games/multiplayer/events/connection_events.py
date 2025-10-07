@@ -395,3 +395,105 @@ class MultiplayerNamespace(BaseNamespace):
         }, room=room_name, skip_sid=request.sid)
 
         current_app.logger.debug(f"User {current_user} updated state in room {room_id}")
+
+    def emit_invitation_received(self, recipient_user_id: str, invitation_data: dict):
+        """
+        Emit invitation_received event to a specific user.
+
+        GOO-60: Real-time notification when user receives an invitation.
+
+        Args:
+            recipient_user_id: User ID of invitation recipient
+            invitation_data: Invitation data to send
+        """
+        from app.socketio_instance import socketio
+
+        socketio.emit('invitation_received', {
+            'invitation': invitation_data,
+            'message': 'NEW_INVITATION_RECEIVED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"user_{recipient_user_id}", namespace=self.namespace)
+
+        current_app.logger.debug(f"Sent invitation_received to user {recipient_user_id}")
+
+    def emit_invitation_accepted(self, sender_user_id: str, invitation_data: dict):
+        """
+        Emit invitation_accepted event to invitation sender.
+
+        GOO-60: Notify sender when their invitation is accepted.
+
+        Args:
+            sender_user_id: User ID of invitation sender
+            invitation_data: Invitation data including accepter info
+        """
+        from app.socketio_instance import socketio
+
+        socketio.emit('invitation_accepted', {
+            'invitation': invitation_data,
+            'message': 'INVITATION_WAS_ACCEPTED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"user_{sender_user_id}", namespace=self.namespace)
+
+        current_app.logger.debug(f"Sent invitation_accepted to user {sender_user_id}")
+
+    def emit_invitation_declined(self, sender_user_id: str, invitation_data: dict):
+        """
+        Emit invitation_declined event to invitation sender.
+
+        GOO-60: Notify sender when their invitation is declined.
+
+        Args:
+            sender_user_id: User ID of invitation sender
+            invitation_data: Invitation data including decliner info
+        """
+        from app.socketio_instance import socketio
+
+        socketio.emit('invitation_declined', {
+            'invitation': invitation_data,
+            'message': 'INVITATION_WAS_DECLINED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"user_{sender_user_id}", namespace=self.namespace)
+
+        current_app.logger.debug(f"Sent invitation_declined to user {sender_user_id}")
+
+    def emit_invitation_expired(self, recipient_user_id: str, invitation_id: str):
+        """
+        Emit invitation_expired event when invitation expires.
+
+        GOO-60: Notify user when an invitation expires.
+
+        Args:
+            recipient_user_id: User ID of invitation recipient
+            invitation_id: ID of expired invitation
+        """
+        from app.socketio_instance import socketio
+
+        socketio.emit('invitation_expired', {
+            'invitation_id': invitation_id,
+            'message': 'INVITATION_EXPIRED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"user_{recipient_user_id}", namespace=self.namespace)
+
+        current_app.logger.debug(f"Sent invitation_expired to user {recipient_user_id}")
+
+    def emit_friend_joined_room(self, user_id: str, friend_data: dict, room_data: dict):
+        """
+        Emit friend_joined_room event when a friend joins a room.
+
+        GOO-60: Notify user when their friend joins a multiplayer room.
+
+        Args:
+            user_id: User ID to notify
+            friend_data: Friend information
+            room_data: Room information
+        """
+        from app.socketio_instance import socketio
+
+        socketio.emit('friend_joined_room', {
+            'friend': friend_data,
+            'room': room_data,
+            'message': 'FRIEND_JOINED_ROOM',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"user_{user_id}", namespace=self.namespace)
+
+        current_app.logger.debug(f"Sent friend_joined_room to user {user_id}")

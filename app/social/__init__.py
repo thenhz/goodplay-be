@@ -1,5 +1,6 @@
 from flask import Blueprint
 from .controllers.social_controller import social_bp
+from .controllers.multiplayer_integration_controller import social_multiplayer_bp
 from .achievements import register_achievement_module
 from .leaderboards import create_leaderboards_blueprint
 from .challenges.controllers import social_challenges_bp
@@ -8,6 +9,9 @@ def register_social_module(app):
     """Register social module blueprints and initialize repositories"""
     # Register social blueprint with URL prefix
     app.register_blueprint(social_bp, url_prefix='/api/social')
+
+    # GOO-60: Register social-multiplayer integration blueprint
+    app.register_blueprint(social_multiplayer_bp, url_prefix='/api/social')
 
     # Register leaderboards blueprint
     leaderboards_bp = create_leaderboards_blueprint()

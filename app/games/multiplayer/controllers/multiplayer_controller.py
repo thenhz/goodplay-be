@@ -458,22 +458,86 @@ def leave_as_spectator(current_user, room_id):
 @blueprint.route('/rooms/<room_id>/invitations', methods=['POST'])
 @auth_required
 def send_invitation(current_user, room_id):
-    """Send room invitation"""
+    """
+    Send room invitation(s).
+
+    GOO-60: Supports both single and batch invitations.
+
+    Body (single):
+        {"recipient_user_id": "user123"}
+
+    Body (batch):
+        {"recipient_ids": ["user1", "user2", "user3"]}
+    """
     try:
+        from app.games.multiplayer.decorators import rate_limit
+
         data = request.get_json()
-        if not data or not data.get('recipient_user_id'):
-            return error_response("RECIPIENT_USER_ID_REQUIRED")
+        if not data:
+            return error_response("DATA_REQUIRED")
 
-        success, message, invitation = invitation_service.send_invitation(
-            room_id, current_user, data['recipient_user_id']
-        )
+        # Check if batch invitation (recipient_ids) or single (recipient_user_id)
+        recipient_ids = data.get('recipient_ids')
+        recipient_user_id = data.get('recipient_user_id')
 
-        if success:
-            return success_response(message, {
-                'invitation': invitation.to_dict() if invitation else None
-            })
+        if recipient_ids and isinstance(recipient_ids, list):
+            # Batch invitation - apply rate limiting via decorator
+            from app.games.multiplayer.decorators import get_rate_limiter
+            rate_limiter = get_rate_limiter()
+
+            from app.core.utils.helpers import extract_user_id
+            user_id = extract_user_id(current_user)
+
+            if not rate_limiter.check_limit(user_id, max_calls=10, window=60):
+                return error_response("RATE_LIMIT_EXCEEDED", status_code=429)
+
+            success, message, result = invitation_service.send_batch_invitations(
+                room_id, current_user, recipient_ids
+            )
+
+            if success:
+                # Emit WebSocket events for each successful invitation
+                try:
+                    from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+                    multiplayer_ns = MultiplayerNamespace()
+
+                    for sent_inv in result.get('sent', []):
+                        multiplayer_ns.emit_invitation_received(
+                            sent_inv['recipient_id'],
+                            {'invitation_id': sent_inv['invitation_id'], 'room_id': room_id}
+                        )
+                except Exception as ws_error:
+                    current_app.logger.warning(f"WebSocket emit failed: {str(ws_error)}")
+
+                return success_response(message, result)
+            else:
+                return error_response(message, status_code=400)
+
+        elif recipient_user_id:
+            # Single invitation
+            success, message, invitation = invitation_service.send_invitation(
+                room_id, current_user, recipient_user_id
+            )
+
+            if success:
+                # Emit WebSocket event
+                try:
+                    from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+                    multiplayer_ns = MultiplayerNamespace()
+                    multiplayer_ns.emit_invitation_received(
+                        recipient_user_id,
+                        invitation.to_dict() if invitation else {}
+                    )
+                except Exception as ws_error:
+                    current_app.logger.warning(f"WebSocket emit failed: {str(ws_error)}")
+
+                return success_response(message, {
+                    'invitation': invitation.to_dict() if invitation else None
+                })
+            else:
+                return error_response(message, status_code=400)
         else:
-            return error_response(message, status_code=400)
+            return error_response("RECIPIENT_USER_ID_OR_IDS_REQUIRED")
 
     except Exception as e:
         current_app.logger.error(f"Error sending invitation: {str(e)}", exc_info=True)
@@ -507,13 +571,35 @@ def get_my_invitations(current_user):
 @blueprint.route('/invitations/<invitation_id>/accept', methods=['POST'])
 @auth_required
 def accept_invitation(current_user, invitation_id):
-    """Accept invitation"""
+    """
+    Accept invitation.
+
+    GOO-60: Emits WebSocket event to sender upon acceptance.
+    """
     try:
         success, message, room_id = invitation_service.accept_invitation(
             invitation_id, current_user
         )
 
         if success:
+            # Emit WebSocket event to sender
+            try:
+                # Get invitation details for sender notification
+                invitation = invitation_service.invitation_repository.get_invitation(invitation_id)
+                if invitation:
+                    from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+                    multiplayer_ns = MultiplayerNamespace()
+                    multiplayer_ns.emit_invitation_accepted(
+                        invitation.sender_user_id,
+                        {
+                            'invitation_id': invitation_id,
+                            'room_id': room_id,
+                            'accepted_by': current_user
+                        }
+                    )
+            except Exception as ws_error:
+                current_app.logger.warning(f"WebSocket emit failed: {str(ws_error)}")
+
             return success_response(message, {'room_id': room_id})
         else:
             return error_response(message, status_code=400)
@@ -526,9 +612,54 @@ def accept_invitation(current_user, invitation_id):
 @blueprint.route('/invitations/<invitation_id>/decline', methods=['POST'])
 @auth_required
 def decline_invitation(current_user, invitation_id):
-    """Decline invitation"""
+    """
+    Decline invitation.
+
+    GOO-60: Emits WebSocket event to sender upon decline.
+    """
     try:
+        # Get invitation details before declining for sender notification
+        invitation = invitation_service.invitation_repository.get_invitation(invitation_id)
+
         success, message = invitation_service.decline_invitation(
+            invitation_id, current_user
+        )
+
+        if success:
+            # Emit WebSocket event to sender
+            try:
+                if invitation:
+                    from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+                    multiplayer_ns = MultiplayerNamespace()
+                    multiplayer_ns.emit_invitation_declined(
+                        invitation.sender_user_id,
+                        {
+                            'invitation_id': invitation_id,
+                            'declined_by': current_user
+                        }
+                    )
+            except Exception as ws_error:
+                current_app.logger.warning(f"WebSocket emit failed: {str(ws_error)}")
+
+            return success_response(message)
+        else:
+            return error_response(message, status_code=400)
+
+    except Exception as e:
+        current_app.logger.error(f"Error declining invitation: {str(e)}", exc_info=True)
+        return error_response("INTERNAL_SERVER_ERROR", status_code=500)
+
+
+@blueprint.route('/invitations/<invitation_id>', methods=['DELETE'])
+@auth_required
+def cancel_invitation(current_user, invitation_id):
+    """
+    Cancel/delete invitation (sender only).
+
+    GOO-60: Allow sender to cancel their sent invitations.
+    """
+    try:
+        success, message = invitation_service.cancel_invitation(
             invitation_id, current_user
         )
 
@@ -538,7 +669,7 @@ def decline_invitation(current_user, invitation_id):
             return error_response(message, status_code=400)
 
     except Exception as e:
-        current_app.logger.error(f"Error declining invitation: {str(e)}", exc_info=True)
+        current_app.logger.error(f"Error canceling invitation: {str(e)}", exc_info=True)
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 

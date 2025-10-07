@@ -39,7 +39,10 @@ class RoomInvitation:
         expires_at: Optional[datetime] = None,
         accepted_at: Optional[datetime] = None,
         declined_at: Optional[datetime] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        room_code: Optional[str] = None,
+        game_id: Optional[str] = None,
+        game_name: Optional[str] = None
     ):
         self.invitation_id = invitation_id
         self.room_id = room_id
@@ -47,10 +50,16 @@ class RoomInvitation:
         self.recipient_user_id = extract_user_id(recipient_user_id)
         self.status = status
         self.created_at = created_at or datetime.now(timezone.utc)
-        self.expires_at = expires_at or (self.created_at + timedelta(hours=24))
+        # GOO-60: Invitations expire after 15 minutes
+        self.expires_at = expires_at or (self.created_at + timedelta(minutes=15))
         self.accepted_at = accepted_at
         self.declined_at = declined_at
         self.metadata = metadata or {}
+
+        # GOO-60: Explicit fields for easier frontend access
+        self.room_code = room_code or (metadata.get('room_code') if metadata else None)
+        self.game_id = game_id or (metadata.get('game_id') if metadata else None)
+        self.game_name = game_name or (metadata.get('game_name') if metadata else None)
 
     def is_expired(self) -> bool:
         """
@@ -117,6 +126,9 @@ class RoomInvitation:
         invitation_dict = {
             'invitation_id': self.invitation_id,
             'room_id': self.room_id,
+            'room_code': self.room_code,
+            'game_id': self.game_id,
+            'game_name': self.game_name,
             'sender_user_id': sender_id,
             'recipient_user_id': recipient_id,
             'status': self.status,
@@ -141,5 +153,8 @@ class RoomInvitation:
             expires_at=data.get('expires_at'),
             accepted_at=data.get('accepted_at'),
             declined_at=data.get('declined_at'),
-            metadata=data.get('metadata', {})
+            metadata=data.get('metadata', {}),
+            room_code=data.get('room_code'),
+            game_id=data.get('game_id'),
+            game_name=data.get('game_name')
         )
