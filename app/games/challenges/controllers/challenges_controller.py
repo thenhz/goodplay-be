@@ -11,7 +11,7 @@ challenges_bp = Blueprint('challenges', __name__, url_prefix='/api/challenges')
 challenge_service = ChallengeService()
 matchmaking_service = MatchmakingService()
 
-@challenges_bp.route('/', methods=['POST'])
+@challenges_bp.route('', methods=['POST'])
 @auth_required
 def create_challenge(current_user):
     """Create a new challenge"""
@@ -26,7 +26,7 @@ def create_challenge(current_user):
         if not game_id:
             return error_response("GAME_ID_REQUIRED")
 
-        user_id = current_user.get('id')
+        user_id = current_user._id
 
         if challenge_type == '1v1':
             challenged_id = data.get('challenged_id')

@@ -388,514 +388,6 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/SyncConflictsResponse'
-
-# Components
-components:
-  schemas:
-    # Core response structure
-    ApiResponse:
-      type: object
-      required:
-        - success
-        - message
-      properties:
-        success:
-          type: boolean
-          description: Indicates if the operation was successful
-        message:
-          type: string
-          description: Constant message key for UI localization
-          enum:
-            # Game operations
-            - GAME_NOT_FOUND
-            - GAME_NOT_ACTIVE
-            - GAME_RETRIEVAL_FAILED
-            - GAMES_RETRIEVAL_FAILED
-            - GAMES_SEARCH_FAILED
-            - GAMES_STATS_RETRIEVAL_FAILED
-            - GAME_CATEGORIES_RETRIEVAL_FAILED
-            - GAME_INFO_RETRIEVAL_FAILED
-            - GAME_CREATION_FAILED
-            - GAME_DELETION_FAILED
-            - GAME_HAS_NO_PLUGIN
-            # Plugin operations
-            - GAME_PLUGIN_NOT_FOUND
-            - GAME_PLUGIN_INSTALLATION_FAILED
-            - GAME_PLUGIN_UNINSTALLATION_FAILED
-            - GAME_PLUGIN_VALIDATION_FAILED
-            - PLUGIN_FILE_REQUIRED
-            - PLUGIN_FILE_EMPTY
-            - PLUGIN_NOT_FOUND_AFTER_INSTALL
-            - PLUGIN_SESSION_START_FAILED
-            - PLUGIN_STATE_UPDATE_REJECTED
-            # Session operations
-            - SESSION_NOT_FOUND
-            - SESSION_NOT_ACTIVE
-            - SESSION_ALREADY_ENDED
-            - SESSION_NOT_PAUSED
-            - SESSION_ACCESS_DENIED
-            - SESSION_CREATION_FAILED
-            - SESSION_RETRIEVAL_FAILED
-            - SESSION_STATE_UPDATE_FAILED
-            - SESSION_END_UPDATE_FAILED
-            - SESSION_PAUSE_FAILED
-            - SESSION_RESUME_FAILED
-            - GAME_SESSION_START_FAILED
-            - GAME_SESSION_END_FAILED
-            - ACTIVE_SESSION_EXISTS
-            - ACTIVE_SESSIONS_RETRIEVED_SUCCESS
-            - ACTIVE_SESSIONS_RETRIEVAL_FAILED
-            - USER_SESSIONS_RETRIEVAL_FAILED
-            - USER_SESSION_STATS_RETRIEVAL_FAILED
-            # Session sync operations
-            - SESSION_SYNC_FAILED
-            - SESSION_PROVISION_FAILED
-            - SYNC_DATA_REQUIRED
-            - SYNC_UPDATE_FAILED
-            - SYNC_CONFLICT_RESOLUTION_FAILED
-            - SYNC_CONFLICT_CHECK_FAILED
-            - CONFLICT_RESOLUTION_DATA_REQUIRED
-            - INVALID_RESOLUTION_STRATEGY
-            # Move validation
-            - MOVE_DATA_REQUIRED
-            - MOVE_VALIDATION_FAILED
-            - MOVE_RECORDING_FAILED
-            - INVALID_MOVE
-            # Rating operations
-            - GAME_RATING_FAILED
-            - GAME_RATING_UPDATE_FAILED
-            - RATING_REQUIRED
-            - INVALID_RATING_VALUE
-            # Validation errors
-            - SESSION_STATE_REQUIRED
-            - INVALID_END_REASON
-            - SEARCH_QUERY_REQUIRED
-            - SEARCH_QUERY_TOO_SHORT
-            - INVALID_PAGE_NUMBER
-            - INVALID_LIMIT_VALUE
-            - INVALID_SORT_FIELD
-            - INVALID_QUERY_PARAMETERS
-            # General errors
-            - INTERNAL_SERVER_ERROR
-            - NOT_FOUND
-        data:
-          description: Optional response data
-          anyOf:
-            - type: object
-            - type: "null"
-
-    # Game Management
-    GamesList:
-      type: object
-      properties:
-        games:
-          type: array
-          items:
-            $ref: '#/components/schemas/Game'
-        pagination:
-          $ref: '#/components/schemas/PaginationInfo'
-        categories:
-          type: array
-          items:
-            type: string
-
-    Game:
-      type: object
-      properties:
-        game_id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        category:
-          type: string
-        difficulty_level:
-          type: string
-          enum: [easy, medium, hard]
-        estimated_duration:
-          type: integer
-          description: Estimated duration in minutes
-        rating:
-          type: number
-          format: float
-        thumbnail_url:
-          type: string
-        is_active:
-          type: boolean
-        player_count:
-          type: integer
-
-    GameDetails:
-      allOf:
-        - $ref: '#/components/schemas/Game'
-        - type: object
-          properties:
-            rules:
-              type: string
-            instructions:
-              type: string
-            achievements:
-              type: array
-              items:
-                $ref: '#/components/schemas/Achievement'
-            statistics:
-              $ref: '#/components/schemas/GameStatistics'
-
-    GameCategories:
-      type: object
-      properties:
-        categories:
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-              display_name:
-                type: string
-              game_count:
-                type: integer
-
-    # Game Sessions
-    GameSession:
-      type: object
-      properties:
-        session_id:
-          type: string
-        game_id:
-          type: string
-        user_id:
-          type: string
-        status:
-          type: string
-          enum: [active, paused, completed, abandoned]
-        current_score:
-          type: integer
-        play_duration_ms:
-          type: integer
-          description: Total play duration in milliseconds
-        created_at:
-          type: string
-          format: date-time
-        started_at:
-          type: string
-          format: date-time
-        ended_at:
-          anyOf:
-            - type: string
-              format: date-time
-            - type: "null"
-        paused_at:
-          anyOf:
-            - type: string
-              format: date-time
-            - type: "null"
-        resumed_at:
-          anyOf:
-            - type: string
-              format: date-time
-            - type: "null"
-        device_info:
-          $ref: '#/components/schemas/DeviceInfo'
-        sync_version:
-          type: integer
-        session_state:
-          type: object
-          additionalProperties: true
-
-    DeviceInfo:
-      type: object
-      properties:
-        device_id:
-          type: string
-        device_type:
-          type: string
-          enum: [mobile, tablet, desktop, web]
-        platform:
-          type: string
-        app_version:
-          type: string
-        screen_resolution:
-          type: string
-
-    SessionsList:
-      type: object
-      properties:
-        sessions:
-          type: array
-          items:
-            $ref: '#/components/schemas/GameSession'
-        statistics:
-          $ref: '#/components/schemas/UserSessionStatistics'
-
-    UserSessionStatistics:
-      type: object
-      properties:
-        total_sessions:
-          type: integer
-        total_play_time_ms:
-          type: integer
-        average_session_duration_ms:
-          type: integer
-        favorite_game:
-          type: string
-        total_score:
-          type: integer
-        achievements_unlocked:
-          type: integer
-
-    # Session Synchronization (GOO-9)
-    SessionSyncRequest:
-      type: object
-      required:
-        - device_info
-        - session_state
-        - sync_version
-      properties:
-        device_info:
-          $ref: '#/components/schemas/DeviceInfo'
-        session_state:
-          type: object
-          additionalProperties: true
-        sync_version:
-          type: integer
-        play_duration_ms:
-          type: integer
-        current_score:
-          type: integer
-        conflict_resolution_strategy:
-          type: string
-          enum: [server_wins, client_wins, merge, manual]
-          default: server_wins
-
-    SessionSyncResponse:
-      type: object
-      properties:
-        session:
-          $ref: '#/components/schemas/GameSession'
-        sync_result:
-          type: string
-          enum: [success, conflict_resolved, conflict_detected]
-        conflict_info:
-          anyOf:
-            - $ref: '#/components/schemas/ConflictInfo'
-            - type: "null"
-        new_sync_version:
-          type: integer
-
-    DeviceSession:
-      type: object
-      properties:
-        session:
-          $ref: '#/components/schemas/GameSession'
-        device_optimizations:
-          type: object
-          properties:
-            recommended_quality:
-              type: string
-              enum: [low, medium, high]
-            touch_controls:
-              type: boolean
-            offline_mode:
-              type: boolean
-
-    ActiveSessionsList:
-      type: object
-      properties:
-        sessions:
-          type: array
-          items:
-            $ref: '#/components/schemas/GameSession'
-        cross_device_sessions:
-          type: array
-          items:
-            type: object
-            properties:
-              session_id:
-                type: string
-              devices:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DeviceInfo'
-              last_sync:
-                type: string
-                format: date-time
-
-    SyncConflictsResponse:
-      type: object
-      properties:
-        has_conflicts:
-          type: boolean
-        conflicts:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConflictInfo'
-        total_conflicts:
-          type: integer
-
-    ConflictInfo:
-      type: object
-      properties:
-        session_id:
-          type: string
-        conflict_type:
-          type: string
-          enum: [state_mismatch, version_conflict, device_conflict]
-        description:
-          type: string
-        server_state:
-          type: object
-          additionalProperties: true
-        client_state:
-          type: object
-          additionalProperties: true
-        conflicting_devices:
-          type: array
-          items:
-            $ref: '#/components/schemas/DeviceInfo'
-        timestamp:
-          type: string
-          format: date-time
-
-    Achievement:
-      type: object
-      properties:
-        achievement_id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        icon_url:
-          type: string
-        rarity:
-          type: string
-          enum: [common, rare, epic, legendary]
-
-    GameStatistics:
-      type: object
-      properties:
-        total_players:
-          type: integer
-        average_rating:
-          type: number
-          format: float
-        average_session_duration:
-          type: integer
-        total_sessions:
-          type: integer
-
-    GameMode:
-      type: object
-      properties:
-        mode_name:
-          type: string
-        display_name:
-          type: string
-        description:
-          type: string
-        is_active:
-          type: boolean
-        start_date:
-          type: string
-          format: date-time
-        end_date:
-          type: string
-          format: date-time
-        config:
-          type: object
-          additionalProperties: true
-
-    Challenge:
-      type: object
-      properties:
-        challenge_id:
-          type: string
-        challenge_type:
-          type: string
-          enum: ['1v1', 'NvN']
-        game_id:
-          type: string
-        challenger_id:
-          type: string
-        challenged_id:
-          type: string
-        participants:
-          type: array
-          items:
-            type: string
-        status:
-          type: string
-          enum: [pending, active, completed, cancelled]
-        created_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        game_config:
-          type: object
-          additionalProperties: true
-
-    GlobalTeam:
-      type: object
-      properties:
-        team_id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        color:
-          type: string
-        icon_url:
-          type: string
-        member_count:
-          type: integer
-        total_score:
-          type: number
-          format: float
-        rank:
-          type: integer
-        is_active:
-          type: boolean
-
-    PaginationInfo:
-      type: object
-      required:
-        - page
-        - per_page
-        - total_items
-        - total_pages
-        - has_next
-        - has_prev
-      properties:
-        page:
-          type: integer
-          description: Current page number (1-indexed)
-          example: 1
-        per_page:
-          type: integer
-          description: Number of items per page
-          example: 50
-        total_items:
-          type: integer
-          description: Total number of items across all pages
-          example: 100
-        total_pages:
-          type: integer
-          description: Total number of pages
-          example: 2
-        has_next:
-          type: boolean
-          description: Whether there is a next page
-          example: true
-        has_prev:
-          type: boolean
-          description: Whether there is a previous page
-          example: false
-
   # Game Modes Endpoints
   /api/modes/current:
     get:
@@ -1455,3 +947,1465 @@ components:
           description: Invalid score or user not in team
         '401':
           description: Authentication required
+
+  # Multiplayer WebSocket Authentication (GOO-54 & GOO-55)
+  /api/multiplayer/auth/websocket-token:
+    post:
+      tags:
+        - Multiplayer Auth
+      summary: Generate WebSocket authentication token
+      description: |
+        Generate a WebSocket-specific JWT token for real-time multiplayer connections.
+        WebSocket tokens have a longer expiry time (24 hours) compared to standard access tokens.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: WebSocket token generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [WEBSOCKET_TOKEN_GENERATED]
+                      data:
+                        $ref: '#/components/schemas/WebSocketToken'
+              example:
+                success: true
+                message: "WEBSOCKET_TOKEN_GENERATED"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzQ1NiIsInR5cGUiOiJ3ZWJzb2NrZXQiLCJleHAiOjE3Mjg0NzY0MDB9.abc123"
+                  expires_in: 86400
+                  token_type: "websocket"
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "USER_NOT_FOUND"
+                data: null
+        '500':
+          description: Token generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "TOKEN_GENERATION_FAILED"
+                data: null
+
+  /api/multiplayer/auth/websocket-token/refresh:
+    post:
+      tags:
+        - Multiplayer Auth
+      summary: Refresh WebSocket authentication token
+      description: |
+        Refresh an existing WebSocket token to extend the session.
+        Used when the WebSocket token is about to expire but the user is still connected.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: WebSocket token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [WEBSOCKET_TOKEN_REFRESHED]
+                      data:
+                        $ref: '#/components/schemas/WebSocketToken'
+              example:
+                success: true
+                message: "WEBSOCKET_TOKEN_REFRESHED"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzQ1NiIsInR5cGUiOiJ3ZWJzb2NrZXQiLCJleHAiOjE3Mjg1NjI4MDB9.def456"
+                  expires_in: 86400
+                  token_type: "websocket"
+        '401':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "USER_NOT_FOUND"
+                data: null
+        '500':
+          description: Token refresh failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "TOKEN_REFRESH_FAILED"
+                data: null
+
+  # Multiplayer Room Management (GOO-54)
+  /api/multiplayer/rooms:
+    post:
+      tags:
+        - Multiplayer Rooms
+      summary: Create a new multiplayer room
+      description: |
+        Create a new casual multiplayer game room that other players can join.
+        The creator becomes the room host and receives a shareable room code.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - game_id
+              properties:
+                game_id:
+                  type: string
+                  description: ID of the game to play
+                  example: "game_123"
+                max_players:
+                  type: integer
+                  description: Maximum number of players (default 8)
+                  minimum: 2
+                  maximum: 20
+                  default: 8
+                  example: 4
+                game_config:
+                  type: object
+                  description: Optional game-specific configuration
+                  additionalProperties: true
+                  example: {"difficulty": "hard", "rounds": 10}
+      responses:
+        '200':
+          description: Room created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [ROOM_CREATED_SUCCESS]
+                      data:
+                        type: object
+                        properties:
+                          room:
+                            $ref: '#/components/schemas/GameRoom'
+              example:
+                success: true
+                message: "ROOM_CREATED_SUCCESS"
+                data:
+                  room:
+                    room_id: "550e8400-e29b-41d4-a716-446655440000"
+                    room_code: "XYZ789"
+                    game_id: "game_123"
+                    host_user_id: "user_456"
+                    player_ids: ["user_456"]
+                    max_players: 4
+                    status: "waiting"
+                    game_config: {"difficulty": "hard", "rounds": 10}
+                    created_at: "2025-10-06T10:30:00.000000+00:00"
+                    started_at: null
+                    finished_at: null
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                data_required:
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                    data: null
+                game_id_required:
+                  value:
+                    success: false
+                    message: "GAME_ID_REQUIRED"
+                    data: null
+                creation_failed:
+                  value:
+                    success: false
+                    message: "ROOM_CREATION_FAILED"
+                    data: null
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "INTERNAL_SERVER_ERROR"
+                data: null
+
+  /api/multiplayer/rooms/{room_id}:
+    get:
+      tags:
+        - Multiplayer Rooms
+      summary: Get room details
+      description: Retrieve detailed information about a specific multiplayer room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique room identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Room retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [ROOM_RETRIEVED_SUCCESS]
+                      data:
+                        type: object
+                        properties:
+                          room:
+                            $ref: '#/components/schemas/GameRoom'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "ROOM_NOT_FOUND"
+                data: null
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/code/{room_code}:
+    get:
+      tags:
+        - Multiplayer Rooms
+      summary: Find room by code
+      description: Find and retrieve a multiplayer room using its 6-character code
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_code
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Z0-9]{6}$'
+          description: 6-character room code
+          example: "XYZ789"
+      responses:
+        '200':
+          description: Room retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [ROOM_RETRIEVED_SUCCESS]
+                      data:
+                        type: object
+                        properties:
+                          room:
+                            $ref: '#/components/schemas/GameRoom'
+        '404':
+          description: Room not found with this code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "ROOM_NOT_FOUND"
+                data: null
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/{room_id}/join:
+    post:
+      tags:
+        - Multiplayer Rooms
+      summary: Join a multiplayer room
+      description: |
+        Join an existing multiplayer room as a player.
+        Room must be in 'waiting' status and have available slots.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Successfully joined the room
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [PLAYER_JOINED_SUCCESS]
+                      data:
+                        type: object
+                        properties:
+                          room:
+                            $ref: '#/components/schemas/GameRoom'
+        '400':
+          description: Cannot join room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                room_full:
+                  value:
+                    success: false
+                    message: "ROOM_FULL"
+                    data: null
+                room_not_accepting:
+                  value:
+                    success: false
+                    message: "ROOM_NOT_ACCEPTING_PLAYERS"
+                    data: null
+                already_in_room:
+                  value:
+                    success: false
+                    message: "ALREADY_IN_ROOM"
+                    data: null
+        '404':
+          description: Room not found
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/{room_id}/leave:
+    post:
+      tags:
+        - Multiplayer Rooms
+      summary: Leave a multiplayer room
+      description: Remove yourself from a multiplayer room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully left the room
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [PLAYER_LEFT_SUCCESS]
+                      data:
+                        type: object
+                        properties:
+                          room:
+                            anyOf:
+                              - $ref: '#/components/schemas/GameRoom'
+                              - type: "null"
+        '400':
+          description: Cannot leave room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "NOT_IN_ROOM"
+                data: null
+        '404':
+          description: Room not found
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/{room_id}/start:
+    post:
+      tags:
+        - Multiplayer Rooms
+      summary: Start the game (host only)
+      description: |
+        Start the game in the room. Only the room host can start the game.
+        Requires at least 2 players in the room.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Game started successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [GAME_STARTED_SUCCESS]
+                      data:
+                        type: object
+                        properties:
+                          room:
+                            $ref: '#/components/schemas/GameRoom'
+        '400':
+          description: Cannot start game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                not_host:
+                  value:
+                    success: false
+                    message: "NOT_ROOM_HOST"
+                    data: null
+                already_started:
+                  value:
+                    success: false
+                    message: "GAME_ALREADY_STARTED"
+                    data: null
+                not_enough_players:
+                  value:
+                    success: false
+                    message: "NOT_ENOUGH_PLAYERS"
+                    data: null
+        '404':
+          description: Room not found
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/available:
+    get:
+      tags:
+        - Multiplayer Rooms
+      summary: Get available rooms
+      description: |
+        Retrieve list of available multiplayer rooms that can be joined.
+        Returns rooms in 'waiting' status that are not full.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game_id
+          in: query
+          schema:
+            type: string
+          description: Filter by specific game ID
+          example: "game_123"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Maximum number of rooms to return
+          example: 10
+      responses:
+        '200':
+          description: Available rooms retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [ROOMS_RETRIEVED_SUCCESS]
+                      data:
+                        $ref: '#/components/schemas/RoomsList'
+              example:
+                success: true
+                message: "ROOMS_RETRIEVED_SUCCESS"
+                data:
+                  rooms:
+                    - room_id: "550e8400-e29b-41d4-a716-446655440000"
+                      room_code: "ABC123"
+                      game_id: "game_123"
+                      host_user_id: "user_456"
+                      player_ids: ["user_456", "user_789"]
+                      max_players: 4
+                      status: "waiting"
+                      created_at: "2025-10-06T10:30:00.000000+00:00"
+                  count: 1
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/my-rooms:
+    get:
+      tags:
+        - Multiplayer Rooms
+      summary: Get user's rooms
+      description: Retrieve all active rooms where the current user is a player
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User rooms retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [ROOMS_RETRIEVED_SUCCESS]
+                      data:
+                        $ref: '#/components/schemas/RoomsList'
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/rooms/{room_id}/state:
+    get:
+      tags:
+        - Multiplayer Rooms
+      summary: Get room player states
+      description: |
+        Retrieve the current state of all players in the room,
+        including readiness status and game-specific state data.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room state retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [ROOM_STATE_RETRIEVED]
+                      data:
+                        $ref: '#/components/schemas/RoomState'
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/sessions/active:
+    get:
+      tags:
+        - Multiplayer Sessions
+      summary: Get active WebSocket sessions
+      description: |
+        Retrieve all active WebSocket sessions for the current user.
+        Useful for detecting and managing multiple concurrent connections.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [SESSIONS_RETRIEVED_SUCCESS]
+                      data:
+                        $ref: '#/components/schemas/MultiplayerSessionsList'
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+
+  /api/multiplayer/statistics:
+    get:
+      tags:
+        - Multiplayer Sessions
+      summary: Get multiplayer statistics
+      description: |
+        Retrieve real-time statistics about multiplayer connections and rooms.
+        Includes active connections, room counts, and performance metrics.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        enum: [STATISTICS_RETRIEVED]
+                      data:
+                        $ref: '#/components/schemas/MultiplayerStatistics'
+              example:
+                success: true
+                message: "STATISTICS_RETRIEVED"
+                data:
+                  connections:
+                    total_active: 42
+                    total_idle: 8
+                    average_latency_ms: 56.3
+                  rooms:
+                    total_waiting: 12
+                    total_playing: 7
+                    total_finished: 3
+                    average_players_per_room: 3.2
+        '401':
+          description: Authentication required
+        '500':
+          description: Internal server error
+# Components
+components:
+  schemas:
+    # Core response structure
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+        message:
+          type: string
+          description: Constant message key for UI localization
+          enum:
+            # Game operations
+            - GAME_NOT_FOUND
+            - GAME_NOT_ACTIVE
+            - GAME_RETRIEVAL_FAILED
+            - GAMES_RETRIEVAL_FAILED
+            - GAMES_SEARCH_FAILED
+            - GAMES_STATS_RETRIEVAL_FAILED
+            - GAME_CATEGORIES_RETRIEVAL_FAILED
+            - GAME_INFO_RETRIEVAL_FAILED
+            - GAME_CREATION_FAILED
+            - GAME_DELETION_FAILED
+            - GAME_HAS_NO_PLUGIN
+            # Plugin operations
+            - GAME_PLUGIN_NOT_FOUND
+            - GAME_PLUGIN_INSTALLATION_FAILED
+            - GAME_PLUGIN_UNINSTALLATION_FAILED
+            - GAME_PLUGIN_VALIDATION_FAILED
+            - PLUGIN_FILE_REQUIRED
+            - PLUGIN_FILE_EMPTY
+            - PLUGIN_NOT_FOUND_AFTER_INSTALL
+            - PLUGIN_SESSION_START_FAILED
+            - PLUGIN_STATE_UPDATE_REJECTED
+            # Session operations
+            - SESSION_NOT_FOUND
+            - SESSION_NOT_ACTIVE
+            - SESSION_ALREADY_ENDED
+            - SESSION_NOT_PAUSED
+            - SESSION_ACCESS_DENIED
+            - SESSION_CREATION_FAILED
+            - SESSION_RETRIEVAL_FAILED
+            - SESSION_STATE_UPDATE_FAILED
+            - SESSION_END_UPDATE_FAILED
+            - SESSION_PAUSE_FAILED
+            - SESSION_RESUME_FAILED
+            - GAME_SESSION_START_FAILED
+            - GAME_SESSION_END_FAILED
+            - ACTIVE_SESSION_EXISTS
+            - ACTIVE_SESSIONS_RETRIEVED_SUCCESS
+            - ACTIVE_SESSIONS_RETRIEVAL_FAILED
+            - USER_SESSIONS_RETRIEVAL_FAILED
+            - USER_SESSION_STATS_RETRIEVAL_FAILED
+            # Session sync operations
+            - SESSION_SYNC_FAILED
+            - SESSION_PROVISION_FAILED
+            - SYNC_DATA_REQUIRED
+            - SYNC_UPDATE_FAILED
+            - SYNC_CONFLICT_RESOLUTION_FAILED
+            - SYNC_CONFLICT_CHECK_FAILED
+            - CONFLICT_RESOLUTION_DATA_REQUIRED
+            - INVALID_RESOLUTION_STRATEGY
+            # Move validation
+            - MOVE_DATA_REQUIRED
+            - MOVE_VALIDATION_FAILED
+            - MOVE_RECORDING_FAILED
+            - INVALID_MOVE
+            # Rating operations
+            - GAME_RATING_FAILED
+            - GAME_RATING_UPDATE_FAILED
+            - RATING_REQUIRED
+            - INVALID_RATING_VALUE
+            # Validation errors
+            - SESSION_STATE_REQUIRED
+            - INVALID_END_REASON
+            - SEARCH_QUERY_REQUIRED
+            - SEARCH_QUERY_TOO_SHORT
+            - INVALID_PAGE_NUMBER
+            - INVALID_LIMIT_VALUE
+            - INVALID_SORT_FIELD
+            - INVALID_QUERY_PARAMETERS
+            # Multiplayer room operations
+            - ROOM_CREATED_SUCCESS
+            - ROOM_RETRIEVED_SUCCESS
+            - ROOMS_RETRIEVED_SUCCESS
+            - PLAYER_JOINED_SUCCESS
+            - PLAYER_LEFT_SUCCESS
+            - GAME_STARTED_SUCCESS
+            - GAME_FINISHED_SUCCESS
+            - ROOM_STATE_RETRIEVED
+            - ROOM_NOT_FOUND
+            - ROOM_FULL
+            - ROOM_NOT_ACCEPTING_PLAYERS
+            - ALREADY_IN_ROOM
+            - NOT_IN_ROOM
+            - NOT_ROOM_HOST
+            - GAME_ALREADY_STARTED
+            - NOT_ENOUGH_PLAYERS
+            - GAME_NOT_PLAYING
+            - ROOM_CREATION_FAILED
+            - ROOM_CREATION_ERROR
+            - JOIN_ROOM_ERROR
+            - LEAVE_ROOM_ERROR
+            - START_GAME_ERROR
+            - FINISH_GAME_ERROR
+            # Multiplayer session operations
+            - SESSIONS_RETRIEVED_SUCCESS
+            - STATISTICS_RETRIEVED
+            # WebSocket authentication
+            - WEBSOCKET_TOKEN_GENERATED
+            - WEBSOCKET_TOKEN_REFRESHED
+            - TOKEN_GENERATION_FAILED
+            - TOKEN_REFRESH_FAILED
+            - USER_NOT_FOUND
+            # General errors
+            - DATA_REQUIRED
+            - GAME_ID_REQUIRED
+            - INTERNAL_SERVER_ERROR
+            - NOT_FOUND
+        data:
+          description: Optional response data
+          anyOf:
+            - type: object
+            - type: "null"
+
+    # Game Management
+    GamesList:
+      type: object
+      properties:
+        games:
+          type: array
+          items:
+            $ref: '#/components/schemas/Game'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        categories:
+          type: array
+          items:
+            type: string
+
+    Game:
+      type: object
+      properties:
+        game_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        difficulty_level:
+          type: string
+          enum: [easy, medium, hard]
+        estimated_duration:
+          type: integer
+          description: Estimated duration in minutes
+        rating:
+          type: number
+          format: float
+        thumbnail_url:
+          type: string
+        is_active:
+          type: boolean
+        player_count:
+          type: integer
+
+    GameDetails:
+      allOf:
+        - $ref: '#/components/schemas/Game'
+        - type: object
+          properties:
+            rules:
+              type: string
+            instructions:
+              type: string
+            achievements:
+              type: array
+              items:
+                $ref: '#/components/schemas/Achievement'
+            statistics:
+              $ref: '#/components/schemas/GameStatistics'
+
+    GameCategories:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              display_name:
+                type: string
+              game_count:
+                type: integer
+
+    # Game Sessions
+    GameSession:
+      type: object
+      properties:
+        session_id:
+          type: string
+        game_id:
+          type: string
+        user_id:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, completed, abandoned]
+        current_score:
+          type: integer
+        play_duration_ms:
+          type: integer
+          description: Total play duration in milliseconds
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        paused_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        resumed_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        device_info:
+          $ref: '#/components/schemas/DeviceInfo'
+        sync_version:
+          type: integer
+        session_state:
+          type: object
+          additionalProperties: true
+
+    DeviceInfo:
+      type: object
+      properties:
+        device_id:
+          type: string
+        device_type:
+          type: string
+          enum: [mobile, tablet, desktop, web]
+        platform:
+          type: string
+        app_version:
+          type: string
+        screen_resolution:
+          type: string
+
+    SessionsList:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameSession'
+        statistics:
+          $ref: '#/components/schemas/UserSessionStatistics'
+
+    UserSessionStatistics:
+      type: object
+      properties:
+        total_sessions:
+          type: integer
+        total_play_time_ms:
+          type: integer
+        average_session_duration_ms:
+          type: integer
+        favorite_game:
+          type: string
+        total_score:
+          type: integer
+        achievements_unlocked:
+          type: integer
+
+    # Session Synchronization (GOO-9)
+    SessionSyncRequest:
+      type: object
+      required:
+        - device_info
+        - session_state
+        - sync_version
+      properties:
+        device_info:
+          $ref: '#/components/schemas/DeviceInfo'
+        session_state:
+          type: object
+          additionalProperties: true
+        sync_version:
+          type: integer
+        play_duration_ms:
+          type: integer
+        current_score:
+          type: integer
+        conflict_resolution_strategy:
+          type: string
+          enum: [server_wins, client_wins, merge, manual]
+          default: server_wins
+
+    SessionSyncResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        sync_result:
+          type: string
+          enum: [success, conflict_resolved, conflict_detected]
+        conflict_info:
+          anyOf:
+            - $ref: '#/components/schemas/ConflictInfo'
+            - type: "null"
+        new_sync_version:
+          type: integer
+
+    DeviceSession:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        device_optimizations:
+          type: object
+          properties:
+            recommended_quality:
+              type: string
+              enum: [low, medium, high]
+            touch_controls:
+              type: boolean
+            offline_mode:
+              type: boolean
+
+    ActiveSessionsList:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameSession'
+        cross_device_sessions:
+          type: array
+          items:
+            type: object
+            properties:
+              session_id:
+                type: string
+              devices:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeviceInfo'
+              last_sync:
+                type: string
+                format: date-time
+
+    SyncConflictsResponse:
+      type: object
+      properties:
+        has_conflicts:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictInfo'
+        total_conflicts:
+          type: integer
+
+    ConflictInfo:
+      type: object
+      properties:
+        session_id:
+          type: string
+        conflict_type:
+          type: string
+          enum: [state_mismatch, version_conflict, device_conflict]
+        description:
+          type: string
+        server_state:
+          type: object
+          additionalProperties: true
+        client_state:
+          type: object
+          additionalProperties: true
+        conflicting_devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceInfo'
+        timestamp:
+          type: string
+          format: date-time
+
+    Achievement:
+      type: object
+      properties:
+        achievement_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon_url:
+          type: string
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+
+    GameStatistics:
+      type: object
+      properties:
+        total_players:
+          type: integer
+        average_rating:
+          type: number
+          format: float
+        average_session_duration:
+          type: integer
+        total_sessions:
+          type: integer
+
+    GameMode:
+      type: object
+      properties:
+        mode_name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        config:
+          type: object
+          additionalProperties: true
+
+    Challenge:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+        challenge_type:
+          type: string
+          enum: ['1v1', 'NvN']
+        game_id:
+          type: string
+        challenger_id:
+          type: string
+        challenged_id:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, active, completed, cancelled]
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        game_config:
+          type: object
+          additionalProperties: true
+
+    GlobalTeam:
+      type: object
+      properties:
+        team_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        icon_url:
+          type: string
+        member_count:
+          type: integer
+        total_score:
+          type: number
+          format: float
+        rank:
+          type: integer
+        is_active:
+          type: boolean
+
+    PaginationInfo:
+      type: object
+      required:
+        - page
+        - per_page
+        - total_items
+        - total_pages
+        - has_next
+        - has_prev
+      properties:
+        page:
+          type: integer
+          description: Current page number (1-indexed)
+          example: 1
+        per_page:
+          type: integer
+          description: Number of items per page
+          example: 50
+        total_items:
+          type: integer
+          description: Total number of items across all pages
+          example: 100
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 2
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    # Multiplayer Rooms (GOO-54 & GOO-55)
+    GameRoom:
+      type: object
+      required:
+        - room_id
+        - room_code
+        - game_id
+        - host_user_id
+        - player_ids
+        - max_players
+        - status
+        - created_at
+      properties:
+        room_id:
+          type: string
+          description: Unique identifier for the room
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        room_code:
+          type: string
+          description: 6-character code for joining the room
+          example: "ABC123"
+        game_id:
+          type: string
+          description: ID of the game being played
+          example: "game_123"
+        host_user_id:
+          type: string
+          description: ID of the room host
+          example: "user_456"
+        player_ids:
+          type: array
+          description: List of player IDs in the room
+          items:
+            type: string
+          example: ["user_456", "user_789"]
+        max_players:
+          type: integer
+          description: Maximum number of players allowed
+          minimum: 2
+          maximum: 20
+          example: 8
+        status:
+          type: string
+          description: Current status of the room
+          enum: [waiting, playing, finished]
+          example: "waiting"
+        game_config:
+          type: object
+          description: Game-specific configuration
+          additionalProperties: true
+          example: {"difficulty": "medium", "rounds": 5}
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when room was created
+          example: "2025-10-06T10:30:00.000000+00:00"
+        started_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: Timestamp when game started
+          example: "2025-10-06T10:35:00.000000+00:00"
+        finished_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: Timestamp when game finished
+          example: null
+
+    RoomsList:
+      type: object
+      properties:
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameRoom'
+        count:
+          type: integer
+          description: Number of rooms returned
+          example: 5
+
+    PlayerState:
+      type: object
+      properties:
+        state_id:
+          type: string
+        room_id:
+          type: string
+        user_id:
+          type: string
+        game_state:
+          type: object
+          additionalProperties: true
+          description: Player-specific game state
+        is_ready:
+          type: boolean
+          description: Whether player is ready to start
+          example: true
+        sync_version:
+          type: integer
+          description: State version for optimistic locking
+          example: 3
+        last_sync_at:
+          type: string
+          format: date-time
+
+    RoomState:
+      type: object
+      properties:
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerState'
+        statistics:
+          type: object
+          properties:
+            total_players:
+              type: integer
+            ready_players:
+              type: integer
+            average_sync_version:
+              type: number
+
+    MultiplayerSession:
+      type: object
+      required:
+        - session_id
+        - user_id
+        - socket_id
+        - status
+        - connected_at
+      properties:
+        session_id:
+          type: string
+          description: Unique WebSocket session identifier
+          example: "ws_session_abc123"
+        user_id:
+          type: string
+          description: ID of the connected user
+          example: "user_456"
+        socket_id:
+          type: string
+          description: Socket.IO connection ID
+          example: "Xy8zAbC123"
+        room_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Current room ID if joined
+          example: "room_789"
+        status:
+          type: string
+          enum: [active, idle, disconnected]
+          description: Session connection status
+          example: "active"
+        last_ping:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: Timestamp of last ping received
+        latency_ms:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Connection latency in milliseconds
+          example: 45
+        connected_at:
+          type: string
+          format: date-time
+          description: Timestamp when session was established
+        disconnected_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+          description: Timestamp when session was disconnected
+
+    MultiplayerSessionsList:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MultiplayerSession'
+        count:
+          type: integer
+
+    MultiplayerStatistics:
+      type: object
+      properties:
+        connections:
+          type: object
+          properties:
+            total_active:
+              type: integer
+            total_idle:
+              type: integer
+            average_latency_ms:
+              type: number
+        rooms:
+          type: object
+          properties:
+            total_waiting:
+              type: integer
+            total_playing:
+              type: integer
+            total_finished:
+              type: integer
+            average_players_per_room:
+              type: number
+
+    WebSocketToken:
+      type: object
+      required:
+        - token
+        - expires_in
+        - token_type
+      properties:
+        token:
+          type: string
+          description: JWT token for WebSocket authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expires_in:
+          type: integer
+          description: Token expiry time in seconds
+          example: 86400
+        token_type:
+          type: string
+          description: Type of token
+          example: "websocket"
+

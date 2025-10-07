@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Dict, Optional, Any
 from app.core.utils.json_encoder import serialize_model_dates
+from app.core.utils.helpers import extract_user_id
 
 
 class MultiplayerSession:
@@ -49,9 +50,12 @@ class MultiplayerSession:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary for MongoDB storage"""
+        # Ensure user_id is always a string, not User object
+        user_id = extract_user_id(self.user_id)
+
         session_dict = {
             'session_id': self.session_id,
-            'user_id': self.user_id,
+            'user_id': user_id,
             'room_id': self.room_id,
             'device_info': self.device_info,
             'connected_at': self.connected_at,

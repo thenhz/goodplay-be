@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import uuid
 from app.games.multiplayer.models.game_room import GameRoom
 from app.games.multiplayer.repositories.room_repository import RoomRepository
+from app.core.utils.helpers import extract_user_id
 
 
 class RoomManager:
@@ -107,12 +108,15 @@ class RoomManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
 
         Returns:
             Tuple of (success, message, room)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             room = self.room_repository.find_by_room_id(room_id)
 
             if not room:
@@ -123,7 +127,7 @@ class RoomManager:
                     return False, "ROOM_FULL", room
                 if room.status != GameRoom.STATUS_WAITING:
                     return False, "ROOM_NOT_ACCEPTING_PLAYERS", room
-                if user_id in room.player_ids:
+                if room.has_player(user_id):
                     return False, "ALREADY_IN_ROOM", room
 
             # Add player
@@ -150,18 +154,21 @@ class RoomManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
 
         Returns:
             Tuple of (success, message, room)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             room = self.room_repository.find_by_room_id(room_id)
 
             if not room:
                 return False, "ROOM_NOT_FOUND", None
 
-            if user_id not in room.player_ids:
+            if not room.has_player(user_id):
                 return False, "NOT_IN_ROOM", room
 
             # Remove player
@@ -188,18 +195,21 @@ class RoomManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID (must be host)
+            user_id: User ID (string) or User object (must be host)
 
         Returns:
             Tuple of (success, message, room)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             room = self.room_repository.find_by_room_id(room_id)
 
             if not room:
                 return False, "ROOM_NOT_FOUND", None
 
-            if room.host_user_id != user_id:
+            if not room.is_host(user_id):
                 return False, "NOT_ROOM_HOST", room
 
             if not room.start_game():
@@ -275,12 +285,14 @@ class RoomManager:
         Get rooms where user is a player.
 
         Args:
-            user_id: User ID
+            user_id: User ID (string) or User object
 
         Returns:
             List of GameRoom objects
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
             return self.room_repository.find_by_player(user_id, active_only=True)
         except Exception as e:
             current_app.logger.error(f"Error getting user rooms: {str(e)}")

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import uuid
 from app.games.multiplayer.models.player_state import PlayerState
 from app.games.multiplayer.repositories.player_state_repository import PlayerStateRepository
+from app.core.utils.helpers import extract_user_id
 
 
 class StateManager:
@@ -32,7 +33,7 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
             session_id: WebSocket session ID
             initial_state: Optional initial game state
 
@@ -40,6 +41,9 @@ class StateManager:
             Tuple of (success, message, state)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             state_id = str(uuid.uuid4())
 
             state = PlayerState(
@@ -71,12 +75,14 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
 
         Returns:
             PlayerState or None
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
             return self.state_repository.find_by_room_and_user(room_id, user_id)
         except Exception as e:
             current_app.logger.error(f"Error getting player state: {str(e)}")
@@ -110,13 +116,16 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
             game_state: New game state data
 
         Returns:
             Tuple of (success, message)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             success = self.state_repository.update_game_state(
                 room_id, user_id, game_state
             )
@@ -144,13 +153,16 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
             score: New score
 
         Returns:
             Tuple of (success, message)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             success = self.state_repository.update_score(room_id, user_id, score)
 
             if success:
@@ -176,13 +188,16 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
             position: Position data (e.g., {"x": 10.5, "y": 20.3})
 
         Returns:
             Tuple of (success, message)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             success = self.state_repository.update_position(room_id, user_id, position)
 
             if success:
@@ -208,13 +223,16 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
             is_ready: Ready status
 
         Returns:
             Tuple of (success, message)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             success = self.state_repository.set_ready(room_id, user_id, is_ready)
 
             if success:
@@ -241,13 +259,16 @@ class StateManager:
 
         Args:
             room_id: Room ID
-            user_id: User ID
+            user_id: User ID (string) or User object
             is_active: Active status
 
         Returns:
             Tuple of (success, message)
         """
         try:
+            # Extract user ID if User object passed
+            user_id = extract_user_id(user_id)
+
             success = self.state_repository.set_active(room_id, user_id, is_active)
 
             if success:

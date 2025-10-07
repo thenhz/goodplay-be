@@ -152,6 +152,11 @@ class User:
             wallet_credits=data.get('wallet_credits')
         )
     
+    @property
+    def user_id(self):
+        """Get user ID as string (alias for get_id())"""
+        return str(self._id) if self._id else None
+
     def get_id(self):
         return str(self._id) if self._id else None
 
@@ -316,4 +321,7 @@ class User:
         return language_code and isinstance(language_code, str) and language_code.lower() in valid_languages
 
     def __repr__(self):
-        return f'<User {self.email}>'
+        return f'<User user_id={self.user_id}>'
+
+    def __str__(self):
+        return self.user_id or 'None'

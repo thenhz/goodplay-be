@@ -251,6 +251,7 @@ Database entities and schemas are defined in each module's `models/` directory:
 - Use structured logging via `current_app.logger`
 - Validate input data in services layer
 - **🚨 CRITICAL**: All datetime fields MUST be serialized to ISO 8601 format (see [ISO 8601 Serialization Guide](docs/ISO8601_SERIALIZATION.md))
+- **🚨 CRITICAL**: Always use user IDs (strings) instead of User objects (see [User ID Best Practices](#user-id-best-practices) below)
 
 ### API Response Standards (🚨 CRITICAL FOR UI LOCALIZATION)
 
@@ -520,3 +521,195 @@ git push heroku main
 - Consider database indexing for new queries
 - Follow the development order: Core → Games → Social → Donations → ONLUS → Admin
 - Update this file when making architectural changes
+
+## User ID Best Practices
+
+### Overview
+To ensure consistent behavior across the codebase and prevent serialization issues (especially in WebSocket/logging contexts), **ALWAYS use user IDs (strings) instead of User objects** when storing, passing, or logging user references.
+
+### Problem Statement
+When User objects are used directly in:
+- Model `to_dict()` methods
+- Logging statements
+- WebSocket emit events
+- Database operations
+
+Python may call the object's `__repr__()` or `__str__()` method, which can:
+- Cause serialization errors (WebSocket fails to serialize objects)
+- Create confusing logs (e.g., `<User user_id=123>` instead of just `123`)
+- Lead to type mismatches in database queries
+
+### Solution: Centralized ID Extraction
+
+#### 1. Use the `extract_user_id()` Utility
+**File**: `app/core/utils/helpers.py`
+
+```python
+from app.core.utils.helpers import extract_user_id, extract_user_ids
+
+# Extract single user ID
+user_id = extract_user_id(value)  # Works with User object, string, ObjectId, dict
+
+# Extract multiple user IDs from list
+user_ids = extract_user_ids([user1, "user2", {"user_id": "user3"}])
+```
+
+The utility handles:
+- ✅ String IDs (returns as-is)
+- ✅ User objects with `user_id` property
+- ✅ User objects with `get_id()` method
+- ✅ User objects with `_id` attribute
+- ✅ Dictionaries with `user_id` or `_id` keys
+- ✅ ObjectId instances (converts to string)
+
+#### 2. In Model `to_dict()` Methods
+
+**ALWAYS** extract user IDs in `to_dict()`:
+
+```python
+from app.core.utils.helpers import extract_user_id, extract_user_ids
+
+class GameRoom:
+    def to_dict(self) -> Dict[str, Any]:
+        # ✅ CORRECT - Extract IDs from potential User objects
+        host_id = extract_user_id(self.host_user_id)
+        player_ids = extract_user_ids(self.player_ids)
+
+        return serialize_model_dates({
+            'room_id': self.room_id,
+            'host_user_id': host_id,      # String ID
+            'player_ids': player_ids,      # List of string IDs
+            # ...
+        })
+```
+
+❌ **WRONG** - Direct assignment without extraction:
+```python
+def to_dict(self) -> Dict[str, Any]:
+    return {
+        'host_user_id': self.host_user_id,  # Could be User object!
+        'player_ids': self.player_ids,      # Could contain User objects!
+    }
+```
+
+#### 3. In Logging Statements
+
+**ALWAYS** log user IDs, not User objects:
+
+```python
+# ✅ CORRECT - Log user ID
+current_app.logger.info(f"User {user_id} joined room {room_id}")
+
+# ✅ CORRECT - Extract ID if you have User object
+from app.core.utils.helpers import safe_extract_user_id
+user_id = safe_extract_user_id(user_obj, default="unknown")
+current_app.logger.info(f"User {user_id} authenticated")
+
+# ❌ WRONG - Logging User object
+current_app.logger.info(f"User {user_obj} joined room")  # Logs: <User user_id=123>
+```
+
+#### 4. In WebSocket Emit Events
+
+**ALWAYS** emit user IDs in WebSocket events:
+
+```python
+# ✅ CORRECT - Emit user ID
+emit('player_joined', {
+    'user_id': user_id,        # String ID
+    'room_id': room_id
+})
+
+# ❌ WRONG - Emit User object
+emit('player_joined', {
+    'user': current_user       # Cannot serialize User object!
+})
+```
+
+#### 5. In Service Layer Methods
+
+**ALWAYS** accept and return user IDs (strings), not User objects:
+
+```python
+# ✅ CORRECT - Method signature uses user_id: str
+def create_room(self, game_id: str, host_user_id: str) -> Tuple[bool, str, Optional[GameRoom]]:
+    room = GameRoom(
+        room_id=str(uuid.uuid4()),
+        game_id=game_id,
+        host_user_id=host_user_id,  # Already a string
+        # ...
+    )
+    return True, "ROOM_CREATED_SUCCESS", room
+
+# ❌ WRONG - Accepting User object
+def create_room(self, game_id: str, host_user: User) -> Tuple[bool, str, Optional[GameRoom]]:
+    # Forces caller to pass entire User object
+```
+
+### User Model Enhancements
+
+The `User` model now includes:
+
+1. **`user_id` property**: Easy access to user ID as string
+   ```python
+   user = User(...)
+   user_id = user.user_id  # Returns str(_id)
+   ```
+
+2. **Updated `__repr__()`**: Returns `<User user_id={id}>` instead of `<User {email}>`
+   ```python
+   user = User(...)
+   print(user)  # Output: <User user_id=507f1f77bcf86cd799439011>
+   ```
+
+3. **`__str__()` method**: Returns user ID directly
+   ```python
+   user = User(...)
+   str(user)  # Returns: "507f1f77bcf86cd799439011"
+   ```
+
+### Quick Reference Checklist
+
+When working with user references:
+
+- [ ] Models use `extract_user_id()` in `to_dict()` methods
+- [ ] Service methods accept `user_id: str` parameters
+- [ ] Logging statements use user IDs, not User objects
+- [ ] WebSocket emits contain user IDs (strings), not User objects
+- [ ] Database queries use string user IDs
+- [ ] API responses contain user IDs in `user_id` fields
+
+### Common Mistakes to Avoid
+
+❌ **Storing User objects in model attributes meant for IDs**
+```python
+room.host_user_id = user_object  # Wrong! Should be user_object.user_id
+```
+
+❌ **Logging User objects directly**
+```python
+current_app.logger.info(f"Created room for {user}")  # Wrong!
+```
+
+❌ **Emitting User objects in WebSocket events**
+```python
+emit('event', {'user': user_obj})  # Wrong! Cannot serialize
+```
+
+✅ **Always extract and use IDs**
+```python
+room.host_user_id = extract_user_id(user_input)
+current_app.logger.info(f"Created room for user {user_id}")
+emit('event', {'user_id': user_id})
+```
+
+### Files Using This Pattern
+
+The following files have been updated to use `extract_user_id()`:
+- `app/core/models/user.py` - Added `user_id` property and updated `__repr__()`
+- `app/core/utils/helpers.py` - Centralized extraction utilities
+- `app/games/multiplayer/models/game_room.py` - Extracts host and player IDs
+- `app/games/multiplayer/models/multiplayer_session.py` - Extracts user ID
+- `app/games/multiplayer/models/player_state.py` - Extracts user ID
+
+When creating new models or services, follow these patterns for consistency.

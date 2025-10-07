@@ -118,7 +118,7 @@ class MultiplayerNamespace(BaseNamespace):
                 )
                 current_app.logger.info(f"Created multiplayer session for user {current_user}")
             except Exception as e:
-                current_app.logger.error(f"Error creating session: {str(e)}")
+                current_app.logger.error(f"Error creating session: {str(e)}", exc_info=True)
 
         # Send authentication success
         emit('authenticated', {
