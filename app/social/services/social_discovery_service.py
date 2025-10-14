@@ -28,7 +28,7 @@ class SocialDiscoveryService:
             Tuple[success, message, data] where data contains users and pagination info
         """
         try:
-            current_app.logger.info(f"User {current_user_id} searching for: {query}")
+            current_app.logger.debug(f"User {current_user_id} searching for: {query}")
 
             if not query or len(query.strip()) < 2:
                 return False, "SEARCH_QUERY_TOO_SHORT", None
@@ -219,7 +219,7 @@ class SocialDiscoveryService:
         gaming_stats = user_data.get("gaming_stats", {})
 
         return {
-            "id": str(user_data["_id"]),
+            "user_id": str(user_data["_id"]),
             "display_name": social_profile.get("display_name", "Unknown User"),
             "first_name": user_data.get("first_name"),
             "last_name": user_data.get("last_name"),

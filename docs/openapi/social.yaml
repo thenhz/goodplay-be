@@ -39,10 +39,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          relationship_id:
+                            type: string
+                          target_user_id:
+                            type: string
+                          status:
+                            type: string
+                            enum: [pending]
               example:
                 success: true
                 message: "FRIEND_REQUEST_SENT_SUCCESS"
+                data:
+                  relationship_id: "64f8b2c1234567890abcdef1"
+                  target_user_id: "64f8b2c1234567890abcdef2"
+                  status: "pending"
         '400':
           description: Friend request failed
           content:
@@ -92,10 +109,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          relationship_id:
+                            type: string
+                          friend_user_id:
+                            type: string
+                          status:
+                            type: string
+                            enum: [accepted]
               example:
                 success: true
                 message: "FRIEND_REQUEST_ACCEPTED_SUCCESS"
+                data:
+                  relationship_id: "64f8b2c1234567890abcdef1"
+                  friend_user_id: "64f8b2c1234567890abcdef2"
+                  status: "accepted"
         '400':
           description: Accept failed
           content:
@@ -129,7 +163,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          relationship_id:
+                            type: string
+              example:
+                success: true
+                message: "FRIEND_REQUEST_DECLINED_SUCCESS"
+                data:
+                  relationship_id: "64f8b2c1234567890abcdef1"
         '400':
           description: Decline failed
           content:
@@ -199,7 +246,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          removed_user_id:
+                            type: string
+              example:
+                success: true
+                message: "FRIEND_REMOVED_SUCCESS"
+                data:
+                  removed_user_id: "64f8b2c1234567890abcdef2"
         '400':
           description: Invalid request
           content:
@@ -287,7 +347,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          blocked_user_id:
+                            type: string
+                          relationship_id:
+                            type: string
+              example:
+                success: true
+                message: "USER_BLOCKED_SUCCESS"
+                data:
+                  blocked_user_id: "64f8b2c1234567890abcdef2"
+                  relationship_id: "64f8b2c1234567890abcdef1"
         '400':
           description: Block failed
           content:
@@ -321,7 +397,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          unblocked_user_id:
+                            type: string
+              example:
+                success: true
+                message: "USER_UNBLOCKED_SUCCESS"
+                data:
+                  unblocked_user_id: "64f8b2c1234567890abcdef2"
         '400':
           description: Unblock failed
           content:
@@ -565,6 +654,7 @@ components:
             - FRIEND_REQUEST_DECLINE_FAILED
             - FRIEND_REQUEST_NOT_FOUND
             - FRIEND_REQUEST_NOT_PENDING
+            - FRIEND_REQUEST_NOT_AUTHORIZED
             - FRIEND_RELATIONSHIP_NOT_FOUND
             - FRIEND_REMOVE_FAILED
             - FRIENDS_LIST_FAILED
@@ -589,6 +679,7 @@ components:
             - SEARCH_QUERY_REQUIRED
             - SEARCH_USERS_FAILED
             - SEARCH_QUERY_TOO_SHORT
+            - SEARCH_NO_RESULTS
             - FRIEND_SUGGESTIONS_FAILED
             # Social stats - Success
             - SOCIAL_STATS_SUCCESS
@@ -613,27 +704,43 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Friend'
+        total:
+          type: integer
+          description: Total count of friends
         pagination:
           $ref: '#/components/schemas/PaginationInfo'
 
     Friend:
       type: object
       properties:
-        user_id:
+        id:
           type: string
+          description: User ID of the friend
         display_name:
           type: string
-        avatar_url:
+        first_name:
           type: string
-          nullable: true
-        status:
+        last_name:
           type: string
-          enum: [online, offline, away]
+        impact_score:
+          type: number
+          format: float
+        gaming_stats:
+          type: object
+          properties:
+            total_play_time:
+              type: integer
+              description: Total play time in seconds
+            favorite_category:
+              anyOf:
+                - type: string
+                - type: 'null'
         friendship_date:
           type: string
           format: date-time
-        mutual_friends_count:
-          type: integer
+          description: ISO 8601 format datetime
+        is_active:
+          type: boolean
 
     UserProfile:
       type: object
@@ -660,27 +767,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FriendRequest'
-        total_count:
+        total:
           type: integer
+          description: Total count of requests
+        type:
+          type: string
+          enum: [received, sent]
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
     FriendRequest:
       type: object
       properties:
-        request_id:
+        id:
           type: string
-        from_user:
-          $ref: '#/components/schemas/UserProfile'
-        to_user:
-          $ref: '#/components/schemas/UserProfile'
-        status:
+          description: Relationship ID
+        user_id:
           type: string
-          enum: [pending, accepted, declined]
+          description: ID of the other user (sender if received, receiver if sent)
+        display_name:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        impact_score:
+          type: number
+          format: float
         created_at:
           type: string
           format: date-time
-        updated_at:
+          description: ISO 8601 format datetime
+        status:
           type: string
-          format: date-time
+          enum: [pending, accepted, declined]
+        type:
+          type: string
+          enum: [received, sent]
+          description: Type of request relative to current user
 
     # User Blocking
     BlockedUsersList:
@@ -690,19 +814,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BlockedUser'
-        total_count:
+        total:
           type: integer
+          description: Total count of blocked users
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
     BlockedUser:
       type: object
       properties:
-        user_id:
+        id:
           type: string
+          description: User ID of blocked user
         display_name:
+          type: string
+        first_name:
+          type: string
+        last_name:
           type: string
         blocked_at:
           type: string
           format: date-time
+          description: ISO 8601 format datetime
 
     # User Discovery
     UserSearchResults:
@@ -712,10 +845,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SearchUser'
-        total_results:
+        total:
           type: integer
+          description: Total count of search results
         query:
           type: string
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
     SearchUser:
       type: object
@@ -724,14 +860,52 @@ components:
           type: string
         display_name:
           type: string
-        avatar_url:
+        first_name:
           type: string
-          nullable: true
-        mutual_friends_count:
+        last_name:
+          type: string
+        email:
+          type: string
+        impact_score:
+          type: number
+          format: float
+        gaming_stats:
+          type: object
+          properties:
+            total_play_time:
+              type: integer
+              description: Total play time in seconds
+            favorite_category:
+              anyOf:
+                - type: string
+                - type: 'null'
+        friends_count:
           type: integer
-        relationship_status:
+        relationship:
+          type: object
+          description: Relationship status with current user
+          properties:
+            type:
+              anyOf:
+                - type: string
+                  enum: [friend, blocked]
+                - type: 'null'
+            status:
+              anyOf:
+                - type: string
+                  enum: [pending, accepted, declined]
+                - type: 'null'
+            is_friend:
+              type: boolean
+            is_pending:
+              type: boolean
+            is_blocked:
+              type: boolean
+            initiated_by_me:
+              type: boolean
+        privacy_level:
           type: string
-          enum: [none, friend, blocked, request_sent, request_received]
+          enum: [public, friends, private]
 
     FriendSuggestions:
       type: object
@@ -740,41 +914,86 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SuggestedUser'
-        total_suggestions:
+        total:
           type: integer
+          description: Total count of suggestions
 
     SuggestedUser:
       type: object
       properties:
-        user_id:
+        id:
           type: string
+          description: User ID
         display_name:
           type: string
-        avatar_url:
+        first_name:
           type: string
-          nullable: true
-        mutual_friends_count:
+        last_name:
+          type: string
+        email:
+          type: string
+        impact_score:
+          type: number
+          format: float
+        gaming_stats:
+          type: object
+          properties:
+            total_play_time:
+              type: integer
+              description: Total play time in seconds
+            favorite_category:
+              anyOf:
+                - type: string
+                - type: 'null'
+        friends_count:
           type: integer
-        suggestion_reason:
+        relationship:
+          type: object
+          description: Relationship status with current user
+          properties:
+            type:
+              anyOf:
+                - type: string
+                  enum: [friend, blocked]
+                - type: 'null'
+            status:
+              anyOf:
+                - type: string
+                  enum: [pending, accepted, declined]
+                - type: 'null'
+            is_friend:
+              type: boolean
+            is_pending:
+              type: boolean
+            is_blocked:
+              type: boolean
+            initiated_by_me:
+              type: boolean
+        privacy_level:
           type: string
-          enum: [mutual_friends, similar_interests, location]
+          enum: [public, friends, private]
 
     # Relationship Status
     RelationshipStatus:
       type: object
       properties:
-        relationship_type:
-          type: string
-          enum: [none, friend, blocked, request_sent, request_received]
+        type:
+          anyOf:
+            - type: string
+              enum: [friend, blocked]
+            - type: 'null'
         status:
-          type: string
-          enum: [pending, accepted, declined]
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-          nullable: true
-        can_send_request:
+          anyOf:
+            - type: string
+              enum: [pending, accepted, declined]
+            - type: 'null'
+        is_friend:
+          type: boolean
+        is_pending:
+          type: boolean
+        is_blocked:
+          type: boolean
+        initiated_by_me:
           type: boolean
 
     # Social Statistics
@@ -783,18 +1002,16 @@ components:
       properties:
         friends_count:
           type: integer
+          description: Total number of friends
         pending_requests_count:
           type: integer
+          description: Number of pending incoming friend requests
         sent_requests_count:
           type: integer
+          description: Number of sent friend requests awaiting response
         blocked_users_count:
           type: integer
-        mutual_friends_avg:
-          type: number
-          format: float
-        social_activity_score:
-          type: number
-          format: float
+          description: Number of blocked users
 
     PaginationInfo:
       type: object
