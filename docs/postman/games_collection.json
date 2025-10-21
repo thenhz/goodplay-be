@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "acf566eb-d1ea-4b4d-9674-1c1d1f0a413b",
     "name": "GoodPlay Games API",
-    "description": "Complete game engine and management API endpoints\n\nThis collection covers:\n- Game CRUD and discovery\n- Session management with cross-device sync\n- Game modes and scheduling\n- Direct challenges and matchmaking\n- Team management and tournaments\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{game_id}}` - Current game ID\n- `{{session_id}}` - Current session ID\n- `{{challenge_id}}` - Current challenge ID\n- `{{team_id}}` - Current team ID",
+    "description": "Complete game engine and management API endpoints\n\nThis collection covers:\n- Game CRUD and discovery\n- Session management with cross-device sync\n- Game modes and scheduling\n- Direct challenges and matchmaking\n- Team management and tournaments\n- Multiplayer room invitations (GOO-60)\n\n## Environment Variables\n- `{{baseUrl}}` - API base URL\n- `{{access_token}}` - JWT access token\n- `{{game_id}}` - Current game ID\n- `{{session_id}}` - Current session ID\n- `{{challenge_id}}` - Current challenge ID\n- `{{team_id}}` - Current team ID\n- `{{room_id}}` - Current multiplayer room ID\n- `{{invitation_id}}` - Current invitation ID\n- `{{recipient_user_id}}` - Recipient user ID for invitations",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1005,6 +1005,191 @@
           }
         }
       ]
+    },
+    {
+      "name": "Multiplayer Invitations",
+      "item": [
+        {
+          "name": "Send Single Invitation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.invitation && responseJson.data.invitation.invitation_id) {",
+                  "        pm.environment.set('invitation_id', responseJson.data.invitation.invitation_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient_user_id\": \"{{recipient_user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/multiplayer/rooms/{{room_id}}/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "multiplayer", "rooms", "{{room_id}}", "invitations"]
+            },
+            "description": "Send invitation to a single user for a multiplayer room.\n\nPossible error responses:\n- DATA_REQUIRED\n- RECIPIENT_USER_ID_OR_IDS_REQUIRED\n- ROOM_NOT_FOUND\n- NOT_IN_ROOM\n- ROOM_NOT_ACCEPTING_PLAYERS\n- USER_BLOCKED\n- ROOM_FULL\n- ALREADY_IN_ROOM\n- INVITATION_ALREADY_SENT\n- SEND_INVITATION_ERROR"
+          }
+        },
+        {
+          "name": "Send Batch Invitations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient_ids\": [\n    \"user_id_1\",\n    \"user_id_2\",\n    \"user_id_3\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/multiplayer/rooms/{{room_id}}/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "multiplayer", "rooms", "{{room_id}}", "invitations"]
+            },
+            "description": "Send invitations to multiple users (max 10) for a multiplayer room.\n\nRate limited to 10 calls per minute per user.\n\nPossible error responses:\n- RECIPIENT_LIST_EMPTY\n- TOO_MANY_RECIPIENTS\n- NO_INVITATIONS_SENT\n- BATCH_INVITATION_ERROR\n- RATE_LIMIT_EXCEEDED (429)"
+          }
+        },
+        {
+          "name": "Get My Invitations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.invitations && responseJson.data.invitations.length > 0) {",
+                  "        pm.environment.set('invitation_id', responseJson.data.invitations[0].invitation_id);",
+                  "        pm.environment.set('room_id', responseJson.data.invitations[0].room_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/multiplayer/invitations?include_expired=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "multiplayer", "invitations"],
+              "query": [
+                {
+                  "key": "include_expired",
+                  "value": "false",
+                  "description": "Include expired invitations"
+                }
+              ]
+            },
+            "description": "Get all pending invitations for the current user.\n\nPossible error responses:\n- GET_INVITATIONS_ERROR (500)"
+          }
+        },
+        {
+          "name": "Accept Invitation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.data && responseJson.data.room_id) {",
+                  "        pm.environment.set('room_id', responseJson.data.room_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/multiplayer/invitations/{{invitation_id}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "multiplayer", "invitations", "{{invitation_id}}", "accept"]
+            },
+            "description": "Accept a room invitation. Returns room_id to join.\n\nEmits WebSocket event 'invitation_accepted' to sender.\n\nPossible error responses:\n- INVITATION_NOT_FOUND\n- NOT_INVITATION_RECIPIENT\n- INVITATION_EXPIRED\n- INVITATION_ALREADY_PROCESSED\n- ROOM_NO_LONGER_EXISTS\n- ROOM_NOT_ACCEPTING_PLAYERS\n- ROOM_FULL\n- ALREADY_IN_ROOM\n- ACCEPT_INVITATION_ERROR"
+          }
+        },
+        {
+          "name": "Decline Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/multiplayer/invitations/{{invitation_id}}/decline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "multiplayer", "invitations", "{{invitation_id}}", "decline"]
+            },
+            "description": "Decline a room invitation.\n\nEmits WebSocket event 'invitation_declined' to sender.\n\nPossible error responses:\n- INVITATION_NOT_FOUND\n- NOT_INVITATION_RECIPIENT\n- INVITATION_ALREADY_PROCESSED\n- DECLINE_INVITATION_ERROR"
+          }
+        },
+        {
+          "name": "Cancel Invitation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/multiplayer/invitations/{{invitation_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "multiplayer", "invitations", "{{invitation_id}}"]
+            },
+            "description": "Cancel a pending invitation (sender only).\n\nPossible error responses:\n- INVITATION_NOT_FOUND\n- NOT_INVITATION_SENDER\n- INVITATION_ALREADY_PROCESSED\n- CANCEL_INVITATION_ERROR"
+          }
+        }
+      ]
     }
   ],
   "event": [
@@ -1046,6 +1231,21 @@
     },
     {
       "key": "team_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "room_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invitation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "recipient_user_id",
       "value": "",
       "type": "string"
     }

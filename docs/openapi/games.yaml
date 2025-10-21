@@ -1707,6 +1707,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
               examples:
+                dataRequired:
+                  value:
+                    success: false
+                    message: "DATA_REQUIRED"
+                recipientRequired:
+                  value:
+                    success: false
+                    message: "RECIPIENT_USER_ID_OR_IDS_REQUIRED"
                 roomNotFound:
                   value:
                     success: false
@@ -1715,6 +1723,10 @@ paths:
                   value:
                     success: false
                     message: "NOT_IN_ROOM"
+                roomNotAccepting:
+                  value:
+                    success: false
+                    message: "ROOM_NOT_ACCEPTING_PLAYERS"
                 userBlocked:
                   value:
                     success: false
@@ -1723,6 +1735,38 @@ paths:
                   value:
                     success: false
                     message: "ROOM_FULL"
+                alreadyInRoom:
+                  value:
+                    success: false
+                    message: "ALREADY_IN_ROOM"
+                invitationAlreadySent:
+                  value:
+                    success: false
+                    message: "INVITATION_ALREADY_SENT"
+                recipientListEmpty:
+                  value:
+                    success: false
+                    message: "RECIPIENT_LIST_EMPTY"
+                tooManyRecipients:
+                  value:
+                    success: false
+                    message: "TOO_MANY_RECIPIENTS"
+                noInvitationsSent:
+                  value:
+                    success: false
+                    message: "NO_INVITATIONS_SENT"
+                invitationCreationFailed:
+                  value:
+                    success: false
+                    message: "INVITATION_CREATION_FAILED"
+                sendInvitationError:
+                  value:
+                    success: false
+                    message: "SEND_INVITATION_ERROR"
+                batchInvitationError:
+                  value:
+                    success: false
+                    message: "BATCH_INVITATION_ERROR"
         '429':
           description: Rate limit exceeded
           content:
@@ -1767,6 +1811,21 @@ paths:
                               $ref: '#/components/schemas/RoomInvitation'
                           count:
                             type: integer
+              example:
+                success: true
+                message: "INVITATIONS_RETRIEVED_SUCCESS"
+                data:
+                  invitations: []
+                  count: 0
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "GET_INVITATIONS_ERROR"
 
   /api/multiplayer/invitations/{invitation_id}/accept:
     post:
@@ -1805,6 +1864,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invitationNotFound:
+                  value:
+                    success: false
+                    message: "INVITATION_NOT_FOUND"
+                notRecipient:
+                  value:
+                    success: false
+                    message: "NOT_INVITATION_RECIPIENT"
+                invitationExpired:
+                  value:
+                    success: false
+                    message: "INVITATION_EXPIRED"
+                alreadyProcessed:
+                  value:
+                    success: false
+                    message: "INVITATION_ALREADY_PROCESSED"
+                roomNoLongerExists:
+                  value:
+                    success: false
+                    message: "ROOM_NO_LONGER_EXISTS"
+                roomNotAccepting:
+                  value:
+                    success: false
+                    message: "ROOM_NOT_ACCEPTING_PLAYERS"
+                roomFull:
+                  value:
+                    success: false
+                    message: "ROOM_FULL"
+                alreadyInRoom:
+                  value:
+                    success: false
+                    message: "ALREADY_IN_ROOM"
+                acceptError:
+                  value:
+                    success: false
+                    message: "ACCEPT_INVITATION_ERROR"
 
   /api/multiplayer/invitations/{invitation_id}/decline:
     post:
@@ -1831,6 +1927,27 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invitationNotFound:
+                  value:
+                    success: false
+                    message: "INVITATION_NOT_FOUND"
+                notRecipient:
+                  value:
+                    success: false
+                    message: "NOT_INVITATION_RECIPIENT"
+                alreadyProcessed:
+                  value:
+                    success: false
+                    message: "INVITATION_ALREADY_PROCESSED"
+                declineError:
+                  value:
+                    success: false
+                    message: "DECLINE_INVITATION_ERROR"
 
   /api/multiplayer/invitations/{invitation_id}:
     delete:
@@ -1860,6 +1977,27 @@ paths:
                 message: "INVITATION_CANCELLED_SUCCESS"
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invitationNotFound:
+                  value:
+                    success: false
+                    message: "INVITATION_NOT_FOUND"
+                notSender:
+                  value:
+                    success: false
+                    message: "NOT_INVITATION_SENDER"
+                alreadyProcessed:
+                  value:
+                    success: false
+                    message: "INVITATION_ALREADY_PROCESSED"
+                cancelError:
+                  value:
+                    success: false
+                    message: "CANCEL_INVITATION_ERROR"
 
   # GOO-60: Social-Multiplayer Integration
   /api/social/friends/online:
@@ -2875,4 +3013,204 @@ components:
         in_room:
           type: boolean
           example: false
+
+# Response Message Constants (GOO-60 Multiplayer Invitations)
+# These constants MUST be used in API responses for proper frontend localization
+responseConstants:
+  multiplayer:
+    # Room Management
+    ROOM_CREATED_SUCCESS: "Room created successfully"
+    ROOM_RETRIEVED_SUCCESS: "Room retrieved successfully"
+    ROOMS_RETRIEVED_SUCCESS: "Rooms retrieved successfully"
+    PLAYER_JOINED_SUCCESS: "Player joined room successfully"
+    PLAYER_LEFT_SUCCESS: "Player left room successfully"
+    GAME_STARTED_SUCCESS: "Game started successfully"
+    ROOM_NOT_FOUND: "Room not found"
+    ROOM_FULL: "Room is full"
+    ROOM_NOT_ACCEPTING_PLAYERS: "Room is not accepting players"
+    NOT_IN_ROOM: "You are not in this room"
+    NOT_ROOM_HOST: "You are not the host of this room"
+    ALREADY_IN_ROOM: "User is already in the room"
+
+  invitations:
+    # Success messages
+    INVITATION_SENT_SUCCESS: "Invitation sent successfully"
+    BATCH_INVITATIONS_SENT: "Batch invitations sent (partial success possible)"
+    INVITATION_ACCEPTED_SUCCESS: "Invitation accepted successfully"
+    INVITATION_DECLINED_SUCCESS: "Invitation declined successfully"
+    INVITATION_CANCELLED_SUCCESS: "Invitation cancelled successfully"
+    INVITATIONS_RETRIEVED_SUCCESS: "Invitations retrieved successfully"
+    SENT_INVITATIONS_RETRIEVED: "Sent invitations retrieved successfully"
+    ROOM_INVITATIONS_RETRIEVED: "Room invitations retrieved successfully"
+
+    # Error messages - Not Found
+    INVITATION_NOT_FOUND: "Invitation not found"
+    ROOM_NOT_FOUND: "Room not found"
+    ROOM_NO_LONGER_EXISTS: "Room no longer exists"
+
+    # Error messages - Validation
+    DATA_REQUIRED: "Data is required"
+    RECIPIENT_USER_ID_REQUIRED: "Recipient user ID is required"
+    RECIPIENT_USER_ID_OR_IDS_REQUIRED: "Either recipient_user_id or recipient_ids is required"
+    RECIPIENT_LIST_EMPTY: "Recipient list cannot be empty"
+    TOO_MANY_RECIPIENTS: "Too many recipients (max 10)"
+
+    # Error messages - Permission
+    NOT_INVITATION_SENDER: "You are not the sender of this invitation"
+    NOT_INVITATION_RECIPIENT: "You are not the recipient of this invitation"
+    NOT_IN_ROOM: "You are not in this room"
+    NOT_ROOM_HOST: "You are not the host of this room"
+
+    # Error messages - State
+    INVITATION_ALREADY_SENT: "Invitation already sent to this user"
+    INVITATION_ALREADY_PROCESSED: "Invitation already accepted or declined"
+    INVITATION_EXPIRED: "Invitation has expired"
+    ALREADY_IN_ROOM: "User is already in the room"
+    ROOM_FULL: "Room is full"
+    ROOM_NOT_ACCEPTING_PLAYERS: "Room is not accepting players"
+
+    # Error messages - Block/Restriction
+    USER_BLOCKED: "Cannot send invitation to blocked user"
+
+    # Error messages - Operation Failed
+    INVITATION_CREATION_FAILED: "Failed to create invitation"
+    SEND_INVITATION_ERROR: "Error sending invitation"
+    BATCH_INVITATION_ERROR: "Error sending batch invitations"
+    NO_INVITATIONS_SENT: "No invitations were sent"
+    ACCEPT_INVITATION_ERROR: "Error accepting invitation"
+    DECLINE_INVITATION_ERROR: "Error declining invitation"
+    CANCEL_INVITATION_ERROR: "Error cancelling invitation"
+    GET_INVITATIONS_ERROR: "Error retrieving invitations"
+    GET_SENT_INVITATIONS_ERROR: "Error retrieving sent invitations"
+    GET_ROOM_INVITATIONS_ERROR: "Error retrieving room invitations"
+
+    # Rate Limiting
+    RATE_LIMIT_EXCEEDED: "Rate limit exceeded (max 10 invitations per minute)"
+
+  socialMultiplayer:
+    # Online Friends
+    ONLINE_FRIENDS_RETRIEVED: "Online friends retrieved successfully"
+    FRIEND_NOT_ONLINE: "Friend is not currently online"
+    FRIEND_NOT_IN_ROOM: "Friend is not currently in a room"
+    FRIEND_ROOM_RETRIEVED: "Friend's room information retrieved"
+    NOT_IN_ANY_ROOM: "You are not currently in any room"
+
+# WebSocket Events (GOO-60 Multiplayer Invitations)
+# These events are emitted via Socket.IO on the /multiplayer namespace
+websocketEvents:
+  invitation_received:
+    description: |
+      Emitted to recipient when they receive a new invitation.
+      Client should listen on /multiplayer namespace for this event.
+    payload:
+      type: object
+      properties:
+        invitation:
+          $ref: '#/components/schemas/RoomInvitation'
+        message:
+          type: string
+          example: "NEW_INVITATION_RECEIVED"
+        timestamp:
+          type: string
+          format: date-time
+    example:
+      invitation:
+        invitation_id: "inv_123"
+        room_id: "room_456"
+        room_code: "ABC123"
+        game_id: "memory_game"
+        sender_user_id: "user_789"
+        expires_at: "2025-10-07T10:15:00.000000+00:00"
+      message: "NEW_INVITATION_RECEIVED"
+      timestamp: "2025-10-07T10:00:00.123456+00:00"
+
+  invitation_accepted:
+    description: |
+      Emitted to sender when their invitation is accepted.
+      Client should listen on /multiplayer namespace for this event.
+    payload:
+      type: object
+      properties:
+        invitation:
+          type: object
+          properties:
+            invitation_id:
+              type: string
+            room_id:
+              type: string
+            accepted_by:
+              type: string
+        message:
+          type: string
+          example: "INVITATION_WAS_ACCEPTED"
+        timestamp:
+          type: string
+          format: date-time
+
+  invitation_declined:
+    description: |
+      Emitted to sender when their invitation is declined.
+      Client should listen on /multiplayer namespace for this event.
+    payload:
+      type: object
+      properties:
+        invitation:
+          type: object
+          properties:
+            invitation_id:
+              type: string
+            declined_by:
+              type: string
+        message:
+          type: string
+          example: "INVITATION_WAS_DECLINED"
+        timestamp:
+          type: string
+          format: date-time
+
+  invitation_expired:
+    description: |
+      Emitted to recipient when an invitation expires (after 15 minutes).
+      Client should listen on /multiplayer namespace for this event.
+    payload:
+      type: object
+      properties:
+        invitation_id:
+          type: string
+        message:
+          type: string
+          example: "INVITATION_EXPIRED"
+        timestamp:
+          type: string
+          format: date-time
+
+  friend_joined_room:
+    description: |
+      Emitted when a friend joins a multiplayer room.
+      Client should listen on /multiplayer namespace for this event.
+    payload:
+      type: object
+      properties:
+        friend:
+          type: object
+          properties:
+            user_id:
+              type: string
+            display_name:
+              type: string
+        room:
+          type: object
+          properties:
+            room_id:
+              type: string
+            room_code:
+              type: string
+            game_id:
+              type: string
+        message:
+          type: string
+          example: "FRIEND_JOINED_ROOM"
+        timestamp:
+          type: string
+          format: date-time
 

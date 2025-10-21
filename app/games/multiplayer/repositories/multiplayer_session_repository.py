@@ -36,11 +36,26 @@ class MultiplayerSessionRepository(BaseRepository):
         ])
 
     def create_session(self, session: MultiplayerSession) -> bool:
-        """Create a new multiplayer session"""
+        """Create a new multiplayer session (idempotent for duplicate keys)"""
         try:
             self.create(session.to_dict())
             return True
-        except Exception:
+        except Exception as e:
+            from flask import current_app
+            error_msg = str(e).lower()
+
+            # Duplicate key error = session already exists (idempotent behavior)
+            if "duplicate" in error_msg or "unique" in error_msg:
+                current_app.logger.warning(
+                    f"⚠️  Session {session.session_id} already exists (duplicate key), treating as success"
+                )
+                return True
+
+            # Other errors = real problem
+            current_app.logger.error(
+                f"❌ Error creating session {session.session_id}: {str(e)}",
+                exc_info=True
+            )
             return False
 
     def find_by_session_id(self, session_id: str) -> Optional[MultiplayerSession]:

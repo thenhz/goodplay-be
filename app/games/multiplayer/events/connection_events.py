@@ -228,16 +228,30 @@ class MultiplayerNamespace(BaseNamespace):
             emit('error', {'message': 'ROOM_ID_REQUIRED'})
             return
 
+        current_app.logger.info(
+            f"📥 [JOIN_FLOW] Step 1/4: User {current_user} requesting to join room {room_id} "
+            f"(sid={request.sid})"
+        )
+
         # Join the Socket.IO room
         room_name = f"room_{room_id}"
         join_room(room_name)
+
+        current_app.logger.info(
+            f"✅ [JOIN_FLOW] Step 2/4: User {current_user} joined Socket.IO room {room_name}"
+        )
 
         # Update session with room info if connection manager available
         if self.connection_manager:
             try:
                 self.connection_manager.join_room(request.sid, room_id)
+                current_app.logger.info(
+                    f"✅ [JOIN_FLOW] Step 3/4: Updated multiplayer session for {current_user} with room_id={room_id}"
+                )
             except Exception as e:
-                current_app.logger.error(f"Error updating session room: {str(e)}")
+                current_app.logger.error(
+                    f"❌ [JOIN_FLOW] Error updating session room: {str(e)}"
+                )
 
         # Notify others in room about new player
         emit('player_joined', {
@@ -247,6 +261,11 @@ class MultiplayerNamespace(BaseNamespace):
             'timestamp': datetime.now(timezone.utc).isoformat()
         }, room=room_name, skip_sid=request.sid)
 
+        current_app.logger.info(
+            f"✅ [JOIN_FLOW] Step 4/4: Emitted player_joined to room {room_name} "
+            f"(all users notified about {current_user})"
+        )
+
         # Confirm join to sender
         emit('room_joined', {
             'room_id': room_id,
@@ -254,7 +273,9 @@ class MultiplayerNamespace(BaseNamespace):
             'timestamp': datetime.now(timezone.utc).isoformat()
         })
 
-        current_app.logger.info(f"User {current_user} joined room {room_id}")
+        current_app.logger.info(
+            f"🎉 [JOIN_FLOW] COMPLETE: User {current_user} successfully joined room {room_id}"
+        )
 
     @BaseNamespace.require_auth
     @BaseNamespace.validate_data
@@ -406,7 +427,7 @@ class MultiplayerNamespace(BaseNamespace):
             recipient_user_id: User ID of invitation recipient
             invitation_data: Invitation data to send
         """
-        from app.socketio_instance import socketio
+        from app import socketio
 
         socketio.emit('invitation_received', {
             'invitation': invitation_data,
@@ -426,7 +447,7 @@ class MultiplayerNamespace(BaseNamespace):
             sender_user_id: User ID of invitation sender
             invitation_data: Invitation data including accepter info
         """
-        from app.socketio_instance import socketio
+        from app import socketio
 
         socketio.emit('invitation_accepted', {
             'invitation': invitation_data,
@@ -446,7 +467,7 @@ class MultiplayerNamespace(BaseNamespace):
             sender_user_id: User ID of invitation sender
             invitation_data: Invitation data including decliner info
         """
-        from app.socketio_instance import socketio
+        from app import socketio
 
         socketio.emit('invitation_declined', {
             'invitation': invitation_data,
@@ -466,7 +487,7 @@ class MultiplayerNamespace(BaseNamespace):
             recipient_user_id: User ID of invitation recipient
             invitation_id: ID of expired invitation
         """
-        from app.socketio_instance import socketio
+        from app import socketio
 
         socketio.emit('invitation_expired', {
             'invitation_id': invitation_id,
@@ -487,7 +508,7 @@ class MultiplayerNamespace(BaseNamespace):
             friend_data: Friend information
             room_data: Room information
         """
-        from app.socketio_instance import socketio
+        from app import socketio
 
         socketio.emit('friend_joined_room', {
             'friend': friend_data,

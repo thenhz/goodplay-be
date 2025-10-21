@@ -65,6 +65,56 @@ def serialize_datetime(dt):
     return str(dt)
 
 
+def parse_datetime(dt_value):
+    """
+    Parse a datetime value from various formats to datetime object.
+
+    Args:
+        dt_value: datetime object, ISO 8601 string, or None
+
+    Returns:
+        datetime object or None
+
+    Raises:
+        ValueError: If string cannot be parsed as datetime
+    """
+    if dt_value is None:
+        return None
+
+    if isinstance(dt_value, datetime):
+        # Already a datetime object
+        from datetime import timezone
+        # Ensure timezone-aware
+        if dt_value.tzinfo is None:
+            dt_value = dt_value.replace(tzinfo=timezone.utc)
+        return dt_value
+
+    if isinstance(dt_value, str):
+        # Parse ISO 8601 string
+        try:
+            # Handle various ISO 8601 formats
+            from datetime import timezone
+            # Try parsing with fromisoformat (Python 3.7+)
+            parsed_dt = datetime.fromisoformat(dt_value.replace('Z', '+00:00'))
+            # Ensure timezone-aware
+            if parsed_dt.tzinfo is None:
+                parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+            return parsed_dt
+        except (ValueError, AttributeError):
+            # Fallback to strptime for older formats
+            try:
+                parsed_dt = datetime.strptime(dt_value, '%Y-%m-%dT%H:%M:%S.%f%z')
+                return parsed_dt
+            except ValueError:
+                try:
+                    parsed_dt = datetime.strptime(dt_value, '%Y-%m-%dT%H:%M:%S%z')
+                    return parsed_dt
+                except ValueError:
+                    raise ValueError(f"Cannot parse datetime string: {dt_value}")
+
+    raise ValueError(f"Unsupported datetime type: {type(dt_value)}")
+
+
 def serialize_model_dates(data):
     """
     Recursively serialize all datetime fields in a dict or list to ISO 8601 format.

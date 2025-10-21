@@ -1,0 +1,704 @@
+# Notifications & Device Management API
+# GoodPlay - Notification System
+# This file contains all endpoints for notification inbox and device (FCM) management
+
+openapi: 3.0.3
+info:
+  title: GoodPlay Notifications API
+  version: 1.0.0
+  description: |
+    Complete notification system including:
+    - Device (FCM token) registration
+    - Notification inbox with pagination
+    - Read/unread status management
+    - Notification preferences (see core.yaml for NotificationPreferences)
+
+servers:
+  - url: https://api.goodplay.com
+    description: Production
+  - url: https://api-dev.goodplay.com
+    description: Development
+
+paths:
+  # ========================================
+  # DEVICE MANAGEMENT (FCM Tokens)
+  # ========================================
+
+  /api/devices/register:
+    post:
+      tags:
+        - Device Management
+      summary: Register device for push notifications
+      description: |
+        Register device FCM token to receive push notifications.
+
+        **Features:**
+        - Supports iOS and Android platforms
+        - Stores device metadata for debugging
+        - Updates existing token if device_id matches
+        - One user can have multiple devices
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - device_token
+                - platform
+              properties:
+                device_token:
+                  type: string
+                  description: FCM device token
+                  example: "fKj3k2Jd9s...FCM_TOKEN_HERE"
+                platform:
+                  type: string
+                  enum: [android, ios]
+                  description: Device platform
+                device_id:
+                  type: string
+                  description: Unique device identifier (optional, generated if not provided)
+                  example: "device_abc123"
+                device_info:
+                  type: object
+                  description: Optional device metadata
+                  properties:
+                    model:
+                      type: string
+                      example: "iPhone 14 Pro"
+                    os_version:
+                      type: string
+                      example: "iOS 17.0"
+                    app_version:
+                      type: string
+                      example: "1.0.0"
+      responses:
+        '200':
+          description: Device registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          device_id:
+                            type: string
+                            example: "device_abc123"
+                          device_token:
+                            type: string
+                            example: "fKj3k2Jd9s...FCM_TOKEN_HERE"
+                          registered_at:
+                            type: string
+                            format: date-time
+              example:
+                message: "DEVICE_REGISTERED_SUCCESS"
+                data:
+                  device_id: "device_abc123"
+                  device_token: "fKj3k2Jd9s...FCM_TOKEN_HERE"
+                  registered_at: "2025-10-20T10:00:00.000000+00:00"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                tokenRequired:
+                  value:
+                    message: "DEVICE_TOKEN_REQUIRED"
+                platformInvalid:
+                  value:
+                    message: "PLATFORM_INVALID"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/devices/unregister:
+    delete:
+      tags:
+        - Device Management
+      summary: Unregister device (delete FCM token)
+      description: |
+        Remove device token to stop receiving push notifications.
+        Called on logout.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_token:
+                  type: string
+                  description: FCM token to remove (optional if device_id provided)
+                device_id:
+                  type: string
+                  description: Device ID to remove (optional if device_token provided)
+      responses:
+        '200':
+          description: Device unregistered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                message: "DEVICE_UNREGISTERED_SUCCESS"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "DEVICE_TOKEN_OR_ID_REQUIRED"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ========================================
+  # NOTIFICATION INBOX
+  # ========================================
+
+  /api/notifications:
+    get:
+      tags:
+        - Notification Inbox
+      summary: Get notifications (inbox)
+      description: |
+        Fetch user's notification inbox with pagination and filters.
+
+        **Features:**
+        - Pagination with limit/offset
+        - Filter by read/unread status
+        - Filter by notification type
+        - Ordered by created_at DESC (newest first)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of notifications per page
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Offset for pagination
+        - name: read
+          in: query
+          schema:
+            type: boolean
+          description: Filter by read status (true=read, false=unread, omit=all)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - room_invitation
+              - invitation_received
+              - friend_request
+              - friend_online
+              - room_started
+              - friend_joined_room
+              - invitation_accepted
+              - invitation_declined
+              - invitation_expired
+              - invitation_expiring_soon
+          description: Filter by notification type
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          notifications:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/NotificationItem'
+                          total:
+                            type: integer
+                            description: Total count of notifications matching filters
+                          unread_count:
+                            type: integer
+                            description: Total unread notifications
+                          limit:
+                            type: integer
+                          offset:
+                            type: integer
+                          has_more:
+                            type: boolean
+                            description: Whether there are more notifications to fetch
+              example:
+                message: "NOTIFICATIONS_RETRIEVED_SUCCESS"
+                data:
+                  notifications:
+                    - id: "notif_123"
+                      type: "room_invitation"
+                      title: "New Game Invitation"
+                      body: "Alice invited you to play TicTacToe"
+                      data:
+                        invitation_id: "inv_456"
+                        room_id: "room_789"
+                        sender_user_id: "user_alice"
+                      created_at: "2025-10-20T10:00:00.000000+00:00"
+                      is_read: false
+                      read_at: null
+                      expires_at: "2025-10-20T10:15:00.000000+00:00"
+                  total: 45
+                  unread_count: 12
+                  limit: 20
+                  offset: 0
+                  has_more: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    delete:
+      tags:
+        - Notification Inbox
+      summary: Clear all notifications
+      description: |
+        Delete all notifications for the authenticated user.
+        **Warning:** This action cannot be undone.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                message: "NOTIFICATIONS_CLEARED_SUCCESS"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/notifications/unread-count:
+    get:
+      tags:
+        - Notification Inbox
+      summary: Get unread notification count
+      description: |
+        Get count of unread notifications.
+        Lightweight endpoint for badge/counter display.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          unread_count:
+                            type: integer
+              example:
+                message: "UNREAD_COUNT_RETRIEVED"
+                data:
+                  unread_count: 12
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/notifications/read-all:
+    put:
+      tags:
+        - Notification Inbox
+      summary: Mark all notifications as read
+      description: |
+        Mark all user's notifications as read.
+        Updates read_at timestamp to current time.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated_count:
+                            type: integer
+                            description: Number of notifications marked as read
+              example:
+                message: "NOTIFICATIONS_MARKED_READ_SUCCESS"
+                data:
+                  updated_count: 12
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/notifications/{notificationId}:
+    put:
+      tags:
+        - Notification Inbox
+      summary: Mark notification as read
+      description: |
+        Mark specific notification as read.
+        Updates read_at timestamp to current time.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Notification ID
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          notification:
+                            $ref: '#/components/schemas/NotificationItem'
+              example:
+                message: "NOTIFICATION_MARKED_READ_SUCCESS"
+                data:
+                  notification:
+                    id: "notif_123"
+                    is_read: true
+                    read_at: "2025-10-20T10:05:00.000000+00:00"
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "NOTIFICATION_NOT_FOUND"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    delete:
+      tags:
+        - Notification Inbox
+      summary: Delete notification
+      description: |
+        Delete specific notification from inbox.
+        **Warning:** This action cannot be undone.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                message: "NOTIFICATION_DELETED_SUCCESS"
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "NOTIFICATION_NOT_FOUND"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+# ========================================
+# COMPONENTS
+# ========================================
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NotificationItem:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique notification ID
+          example: "notif_123"
+        type:
+          type: string
+          description: Notification type
+          enum:
+            - room_invitation
+            - invitation_received
+            - friend_request
+            - friend_online
+            - room_started
+            - friend_joined_room
+            - invitation_accepted
+            - invitation_declined
+            - invitation_expired
+            - invitation_expiring_soon
+          example: "room_invitation"
+        title:
+          type: string
+          description: Notification title (localized on backend)
+          example: "New Game Invitation"
+        body:
+          type: string
+          description: Notification body (localized on backend)
+          example: "Alice invited you to play TicTacToe"
+        data:
+          type: object
+          description: Type-specific data payload
+          additionalProperties: true
+          example:
+            invitation_id: "inv_456"
+            room_id: "room_789"
+            sender_user_id: "user_alice"
+        created_at:
+          type: string
+          format: date-time
+          description: Notification creation timestamp
+          example: "2025-10-20T10:00:00.000000+00:00"
+        is_read:
+          type: boolean
+          description: Whether notification has been read
+          example: false
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when notification was read
+          example: null
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Optional expiration timestamp (for time-sensitive notifications)
+          example: "2025-10-20T10:15:00.000000+00:00"
+
+    SuccessResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Response message constant
+        data:
+          type: object
+          description: Response data (structure varies by endpoint)
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message constant
+        error:
+          type: string
+          nullable: true
+          description: Detailed error description (development only)
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Invalid or missing token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidToken:
+              value:
+                message: "INVALID_TOKEN_OR_USER_DISABLED"
+            authenticationError:
+              value:
+                message: "AUTHENTICATION_ERROR"
+
+# ========================================
+# RESPONSE CONSTANTS
+# ========================================
+
+x-response-constants:
+  device_management:
+    # Success
+    DEVICE_REGISTERED_SUCCESS: "Device registered successfully"
+    DEVICE_UNREGISTERED_SUCCESS: "Device unregistered successfully"
+
+    # Errors
+    DEVICE_TOKEN_REQUIRED: "Device token is required"
+    DEVICE_TOKEN_OR_ID_REQUIRED: "Device token or device ID is required"
+    PLATFORM_INVALID: "Platform must be 'android' or 'ios'"
+    DEVICE_REGISTRATION_FAILED: "Failed to register device"
+
+  notifications:
+    # Success
+    NOTIFICATIONS_RETRIEVED_SUCCESS: "Notifications retrieved successfully"
+    UNREAD_COUNT_RETRIEVED: "Unread count retrieved successfully"
+    NOTIFICATION_MARKED_READ_SUCCESS: "Notification marked as read"
+    NOTIFICATIONS_MARKED_READ_SUCCESS: "All notifications marked as read"
+    NOTIFICATION_DELETED_SUCCESS: "Notification deleted successfully"
+    NOTIFICATIONS_CLEARED_SUCCESS: "All notifications cleared"
+
+    # Errors
+    NOTIFICATION_NOT_FOUND: "Notification not found"
+    NOTIFICATION_UPDATE_FAILED: "Failed to update notification"
+    NOTIFICATION_DELETE_FAILED: "Failed to delete notification"
+    INVALID_NOTIFICATION_TYPE: "Invalid notification type"
+
+# ========================================
+# NOTIFICATION DATA PAYLOADS BY TYPE
+# ========================================
+
+x-notification-data-schemas:
+  room_invitation:
+    description: Data payload for room invitation notifications
+    properties:
+      invitation_id:
+        type: string
+      room_id:
+        type: string
+      room_code:
+        type: string
+      game_id:
+        type: string
+      sender_user_id:
+        type: string
+      sender_display_name:
+        type: string
+
+  invitation_received:
+    description: Data payload for new invitation received notifications (GOO-60)
+    properties:
+      invitation_id:
+        type: string
+      room_id:
+        type: string
+      room_code:
+        type: string
+      game_id:
+        type: string
+      sender_user_id:
+        type: string
+
+  friend_request:
+    description: Data payload for friend request notifications
+    properties:
+      request_id:
+        type: string
+      requester_user_id:
+        type: string
+      requester_display_name:
+        type: string
+
+  friend_online:
+    description: Data payload for friend online notifications
+    properties:
+      friend_user_id:
+        type: string
+      friend_display_name:
+        type: string
+
+  room_started:
+    description: Data payload for room started notifications
+    properties:
+      room_id:
+        type: string
+      game_id:
+        type: string
+
+  friend_joined_room:
+    description: Data payload for friend joined room notifications
+    properties:
+      friend_user_id:
+        type: string
+      friend_display_name:
+        type: string
+      room_id:
+        type: string
+      room_code:
+        type: string
+
+  invitation_accepted:
+    description: Data payload for invitation accepted notifications
+    properties:
+      invitation_id:
+        type: string
+      accepted_by_user_id:
+        type: string
+      accepted_by_display_name:
+        type: string
+      room_id:
+        type: string
+
+  invitation_declined:
+    description: Data payload for invitation declined notifications
+    properties:
+      invitation_id:
+        type: string
+      declined_by_user_id:
+        type: string
+      declined_by_display_name:
+        type: string
+
+  invitation_expired:
+    description: Data payload for invitation expired notifications
+    properties:
+      invitation_id:
+        type: string
+      room_id:
+        type: string
+
+  invitation_expiring_soon:
+    description: Data payload for invitation expiring soon warnings (GOO-60)
+    properties:
+      invitation_id:
+        type: string
+      room_id:
+        type: string
+      room_code:
+        type: string
+      game_id:
+        type: string
+      minutes_remaining:
+        type: integer
+        description: Minutes until invitation expires

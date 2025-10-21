@@ -146,7 +146,8 @@ class TestInvitationService:
 
     def test_send_invitation_blocked_user(self, mock_invitation_service, mock_room):
         """GOO-60: Test that invitations are blocked for blocked users"""
-        # Setup mocks
+        # Setup mocks - recipient NOT in room yet
+        mock_room.has_player = Mock(return_value=False)
         mock_invitation_service.room_repository.find_by_room_id = Mock(return_value=mock_room)
         mock_invitation_service.relationship_repository.is_blocked = Mock(return_value=True)
 
@@ -161,7 +162,7 @@ class TestInvitationService:
         assert message == "USER_BLOCKED"
         assert invitation is None
 
-    def test_send_batch_invitations_success(self, mock_invitation_service, mock_room):
+    def test_send_batch_invitations_success(self, mock_invitation_service, mock_room, app):
         """GOO-60: Test successful batch invitation"""
         # Setup mocks
         mock_invitation_service.room_repository.find_by_room_id = Mock(return_value=mock_room)
@@ -172,18 +173,19 @@ class TestInvitationService:
         recipient_ids = ["user1", "user2", "user3"]
 
         # Send batch invitations
-        success, message, result = mock_invitation_service.send_batch_invitations(
-            room_id="room_123",
-            sender_user_id="sender",
-            recipient_user_ids=recipient_ids
-        )
+        with app.app_context():
+            success, message, result = mock_invitation_service.send_batch_invitations(
+                room_id="room_123",
+                sender_user_id="sender",
+                recipient_user_ids=recipient_ids
+            )
 
         assert success is True
         assert message == "BATCH_INVITATIONS_SENT"
         assert result['sent_count'] == 3
         assert result['failed_count'] == 0
 
-    def test_send_batch_invitations_with_blocked_users(self, mock_invitation_service, mock_room):
+    def test_send_batch_invitations_with_blocked_users(self, mock_invitation_service, mock_room, app):
         """GOO-60: Test batch invitation filters out blocked users"""
         # Setup mocks
         mock_invitation_service.room_repository.find_by_room_id = Mock(return_value=mock_room)
@@ -199,11 +201,12 @@ class TestInvitationService:
         recipient_ids = ["user1", "user2", "user3"]
 
         # Send batch invitations
-        success, message, result = mock_invitation_service.send_batch_invitations(
-            room_id="room_123",
-            sender_user_id="sender",
-            recipient_user_ids=recipient_ids
-        )
+        with app.app_context():
+            success, message, result = mock_invitation_service.send_batch_invitations(
+                room_id="room_123",
+                sender_user_id="sender",
+                recipient_user_ids=recipient_ids
+            )
 
         assert success is True
         assert result['sent_count'] == 2  # user1 and user3
@@ -286,71 +289,75 @@ class TestRateLimiter:
 class TestWebSocketEvents:
     """Test WebSocket event emission"""
 
-    @patch('app.games.multiplayer.events.connection_events.socketio')
-    def test_emit_invitation_received(self, mock_socketio):
+    @patch('app.socketio')
+    def test_emit_invitation_received(self, mock_socketio, app):
         """GOO-60: Test invitation_received event emission"""
-        from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+        with app.app_context():
+            from app.games.multiplayer.events.connection_events import MultiplayerNamespace
 
-        namespace = MultiplayerNamespace()
-        invitation_data = {
-            'invitation_id': 'inv_123',
-            'room_id': 'room_456'
-        }
+            namespace = MultiplayerNamespace()
+            invitation_data = {
+                'invitation_id': 'inv_123',
+                'room_id': 'room_456'
+            }
 
-        namespace.emit_invitation_received('user_789', invitation_data)
+            namespace.emit_invitation_received('user_789', invitation_data)
 
-        # Verify socketio.emit was called with correct parameters
-        mock_socketio.emit.assert_called_once()
-        call_args = mock_socketio.emit.call_args
-        assert call_args[0][0] == 'invitation_received'
-        assert call_args[1]['room'] == 'user_user_789'
+            # Verify socketio.emit was called with correct parameters
+            mock_socketio.emit.assert_called_once()
+            call_args = mock_socketio.emit.call_args
+            assert call_args[0][0] == 'invitation_received'
+            assert call_args[1]['room'] == 'user_user_789'
 
-    @patch('app.games.multiplayer.events.connection_events.socketio')
-    def test_emit_invitation_accepted(self, mock_socketio):
+    @patch('app.socketio')
+    def test_emit_invitation_accepted(self, mock_socketio, app):
         """GOO-60: Test invitation_accepted event emission"""
-        from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+        with app.app_context():
+            from app.games.multiplayer.events.connection_events import MultiplayerNamespace
 
-        namespace = MultiplayerNamespace()
-        invitation_data = {
-            'invitation_id': 'inv_123',
-            'accepted_by': 'user_recipient'
-        }
+            namespace = MultiplayerNamespace()
+            invitation_data = {
+                'invitation_id': 'inv_123',
+                'accepted_by': 'user_recipient'
+            }
 
-        namespace.emit_invitation_accepted('user_sender', invitation_data)
+            namespace.emit_invitation_accepted('user_sender', invitation_data)
 
-        mock_socketio.emit.assert_called_once()
-        call_args = mock_socketio.emit.call_args
-        assert call_args[0][0] == 'invitation_accepted'
+            mock_socketio.emit.assert_called_once()
+            call_args = mock_socketio.emit.call_args
+            assert call_args[0][0] == 'invitation_accepted'
 
-    @patch('app.games.multiplayer.events.connection_events.socketio')
-    def test_emit_invitation_declined(self, mock_socketio):
+    @patch('app.socketio')
+    def test_emit_invitation_declined(self, mock_socketio, app):
         """GOO-60: Test invitation_declined event emission"""
-        from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+        with app.app_context():
+            from app.games.multiplayer.events.connection_events import MultiplayerNamespace
 
-        namespace = MultiplayerNamespace()
-        invitation_data = {
-            'invitation_id': 'inv_123',
-            'declined_by': 'user_recipient'
-        }
+            namespace = MultiplayerNamespace()
+            invitation_data = {
+                'invitation_id': 'inv_123',
+                'declined_by': 'user_recipient'
+            }
 
-        namespace.emit_invitation_declined('user_sender', invitation_data)
+            namespace.emit_invitation_declined('user_sender', invitation_data)
 
-        mock_socketio.emit.assert_called_once()
-        call_args = mock_socketio.emit.call_args
-        assert call_args[0][0] == 'invitation_declined'
+            mock_socketio.emit.assert_called_once()
+            call_args = mock_socketio.emit.call_args
+            assert call_args[0][0] == 'invitation_declined'
 
-    @patch('app.games.multiplayer.events.connection_events.socketio')
-    def test_emit_invitation_expired(self, mock_socketio):
+    @patch('app.socketio')
+    def test_emit_invitation_expired(self, mock_socketio, app):
         """GOO-60: Test invitation_expired event emission"""
-        from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+        with app.app_context():
+            from app.games.multiplayer.events.connection_events import MultiplayerNamespace
 
-        namespace = MultiplayerNamespace()
+            namespace = MultiplayerNamespace()
 
-        namespace.emit_invitation_expired('user_recipient', 'inv_123')
+            namespace.emit_invitation_expired('user_recipient', 'inv_123')
 
-        mock_socketio.emit.assert_called_once()
-        call_args = mock_socketio.emit.call_args
-        assert call_args[0][0] == 'invitation_expired'
+            mock_socketio.emit.assert_called_once()
+            call_args = mock_socketio.emit.call_args
+            assert call_args[0][0] == 'invitation_expired'
 
 
 class TestCleanupTasks:

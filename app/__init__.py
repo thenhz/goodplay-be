@@ -40,6 +40,9 @@ def create_app(config_name=None):
     
     from app.core.controllers.auth_controller import auth_bp
     from app.core.controllers.user_controller import user_bp
+    from app.core.controllers.device_controller import device_bp
+    from app.core.controllers.notification_controller import notification_bp
+    from app.core.controllers.notification_preferences_controller import preferences_bp as notification_preferences_bp
     from app.preferences.controllers.preferences_controller import preferences_blueprint
     from app.social import register_social_module
     from app.games import create_games_blueprint, create_modes_blueprint, create_challenges_blueprint, create_teams_blueprint, init_games_module
@@ -50,6 +53,11 @@ def create_app(config_name=None):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(preferences_blueprint)
+
+    # Register notification system blueprints
+    app.register_blueprint(device_bp)
+    app.register_blueprint(notification_bp)
+    app.register_blueprint(notification_preferences_bp)
 
     # Register social module
     register_social_module(app)
@@ -91,6 +99,9 @@ def create_app(config_name=None):
     # Register multiplayer module (WebSocket + REST API)
     from app.games.multiplayer import register_multiplayer_module
     register_multiplayer_module(app, socketio)
+
+    # Initialize scheduler and register scheduled tasks
+    init_scheduler(app)
 
     @app.route('/api/health', methods=['GET'])
     def health_check():
@@ -182,6 +193,19 @@ def init_db(app):
             metrics_repo.create_indexes()
             audit_repo.create_indexes()
 
+            # Initialize notification system indexes
+            from app.core.repositories.device_token_repository import DeviceTokenRepository
+            from app.core.repositories.notification_repository import NotificationRepository
+            from app.core.repositories.notification_preferences_repository import NotificationPreferencesRepository
+
+            device_token_repo = DeviceTokenRepository()
+            notification_repo = NotificationRepository()
+            notification_prefs_repo = NotificationPreferencesRepository()
+
+            device_token_repo.create_indexes()
+            notification_repo.create_indexes()
+            notification_prefs_repo.create_indexes()
+
             app.logger.info('Database initialized successfully')
     except Exception as e:
         app.logger.warning(f'Database initialization failed: {str(e)}')
@@ -203,6 +227,80 @@ def init_logging(app):
         app.logger.addHandler(file_handler)
         app.logger.setLevel(getattr(logging, app.config['LOG_LEVEL']))
         app.logger.info('Application startup')
+
+def init_scheduler(app):
+    """Initialize APScheduler and register background tasks"""
+    try:
+        from app.core.services.scheduler_service import scheduler_service
+        from app.games.multiplayer.tasks.invitation_warning_tasks import (
+            send_expiry_warnings,
+            cleanup_expired_invitations,
+            cleanup_old_invitations,
+            cleanup_old_notifications,
+            cleanup_expired_device_tokens
+        )
+
+        # Helper function to wrap tasks with app context
+        def wrap_with_app_context(task_func):
+            def wrapper():
+                with app.app_context():
+                    return task_func()
+            return wrapper
+
+        with app.app_context():
+            # Initialize scheduler
+            scheduler_service.initialize()
+
+            # Register scheduled tasks with app context wrapper
+            # Run expiry warnings every 2 minutes
+            scheduler_service.add_interval_job(
+                func=wrap_with_app_context(send_expiry_warnings),
+                job_id='send_expiry_warnings',
+                minutes=2
+            )
+
+            # Run expired invitations cleanup every 5 minutes
+            scheduler_service.add_interval_job(
+                func=wrap_with_app_context(cleanup_expired_invitations),
+                job_id='cleanup_expired_invitations',
+                minutes=5
+            )
+
+            # Run old invitations cleanup daily at 3 AM
+            scheduler_service.add_cron_job(
+                func=wrap_with_app_context(cleanup_old_invitations),
+                job_id='cleanup_old_invitations',
+                hour=3,
+                minute=0
+            )
+
+            # Run old notifications cleanup daily at 3 AM
+            scheduler_service.add_cron_job(
+                func=wrap_with_app_context(cleanup_old_notifications),
+                job_id='cleanup_old_notifications',
+                hour=3,
+                minute=15
+            )
+
+            # Run expired device tokens cleanup daily at 3 AM
+            scheduler_service.add_cron_job(
+                func=wrap_with_app_context(cleanup_expired_device_tokens),
+                job_id='cleanup_expired_device_tokens',
+                hour=3,
+                minute=30
+            )
+
+            # Start scheduler
+            scheduler_service.start()
+
+            app.logger.info('Scheduler initialized with 5 tasks')
+
+            # Register shutdown handler
+            import atexit
+            atexit.register(lambda: scheduler_service.shutdown())
+
+    except Exception as e:
+        app.logger.error(f'Scheduler initialization failed: {str(e)}', exc_info=True)
 
 def get_db():
     return mongo_db

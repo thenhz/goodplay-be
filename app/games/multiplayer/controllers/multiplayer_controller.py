@@ -575,6 +575,7 @@ def accept_invitation(current_user, invitation_id):
     Accept invitation.
 
     GOO-60: Emits WebSocket event to sender upon acceptance.
+    Client MUST call join_room via WebSocket after receiving room_id.
     """
     try:
         success, message, room_id = invitation_service.accept_invitation(
@@ -600,12 +601,26 @@ def accept_invitation(current_user, invitation_id):
             except Exception as ws_error:
                 current_app.logger.warning(f"WebSocket emit failed: {str(ws_error)}")
 
-            return success_response(message, {'room_id': room_id})
+            # Log warning about client responsibility
+            current_app.logger.warning(
+                f"⚠️  [ACCEPT_FLOW] Client {current_user} MUST call join_room({room_id}) "
+                f"via WebSocket within 30 seconds, or sender will not see player_joined event. "
+                f"Frontend should handle this automatically."
+            )
+
+            return success_response(message, {
+                'room_id': room_id,
+                'next_step': 'CALL_JOIN_ROOM_VIA_WEBSOCKET',  # Hint for frontend
+                'timeout_seconds': 30  # Expected timeout
+            })
         else:
             return error_response(message, status_code=400)
 
     except Exception as e:
-        current_app.logger.error(f"Error accepting invitation: {str(e)}", exc_info=True)
+        current_app.logger.error(
+            f"❌ [ACCEPT_FLOW] Error accepting invitation: {str(e)}",
+            exc_info=True
+        )
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
 

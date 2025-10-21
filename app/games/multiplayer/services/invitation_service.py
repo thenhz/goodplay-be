@@ -8,6 +8,7 @@ from app.games.multiplayer.repositories.room_repository import RoomRepository
 from app.social.repositories.relationship_repository import RelationshipRepository
 from app.social.models.user_relationship import UserRelationship
 from app.core.utils.helpers import extract_user_id
+from app.core.services.notification_service import NotificationService
 
 
 class InvitationService:
@@ -17,6 +18,7 @@ class InvitationService:
         self.invitation_repository = InvitationRepository()
         self.room_repository = RoomRepository()
         self.relationship_repository = RelationshipRepository()
+        self.notification_service = NotificationService()
 
     def send_invitation(
         self,
@@ -92,6 +94,22 @@ class InvitationService:
                 current_app.logger.info(
                     f"Invitation sent from {sender_id} to {recipient_id} for room {room_id}"
                 )
+
+                # Send notification to recipient
+                self.notification_service.send_invitation_received(
+                    recipient_user_id=recipient_id,
+                    sender_name=sender_id,  # TODO: Get sender's display name
+                    game_name=invitation.game_name or invitation.game_id,
+                    room_code=invitation.room_code or room.room_code,
+                    invitation_data={
+                        'invitation_id': invitation.invitation_id,
+                        'room_id': room_id,
+                        'room_code': invitation.room_code,
+                        'game_id': invitation.game_id,
+                        'sender_user_id': sender_id
+                    }
+                )
+
                 return True, "INVITATION_SENT_SUCCESS", invitation
             else:
                 return False, "INVITATION_CREATION_FAILED", None
@@ -212,6 +230,21 @@ class InvitationService:
                         'recipient_id': recipient_id,
                         'invitation_id': invitation.invitation_id
                     })
+
+                    # Send notification to recipient
+                    self.notification_service.send_invitation_received(
+                        recipient_user_id=recipient_id,
+                        sender_name=sender_id,  # TODO: Get sender's display name
+                        game_name=invitation.game_name or invitation.game_id,
+                        room_code=invitation.room_code or room.room_code,
+                        invitation_data={
+                            'invitation_id': invitation.invitation_id,
+                            'room_id': room_id,
+                            'room_code': invitation.room_code,
+                            'game_id': invitation.game_id,
+                            'sender_user_id': sender_id
+                        }
+                    )
                 else:
                     failed_invitations.append({
                         'recipient_id': recipient_id,
@@ -302,7 +335,27 @@ class InvitationService:
             )
 
             current_app.logger.info(
-                f"Invitation {invitation_id} accepted by {user_id}"
+                f"✅ [ACCEPT_FLOW] Step 1/2: Invitation {invitation_id} accepted by {user_id} "
+                f"for room {invitation.room_id}"
+            )
+
+            # Send notification to sender
+            self.notification_service.send_invitation_accepted(
+                sender_user_id=invitation.sender_user_id,
+                acceptor_name=user_id,  # TODO: Get acceptor's display name
+                room_code=invitation.room_code or invitation.room_id,
+                invitation_data={
+                    'invitation_id': invitation_id,
+                    'room_id': invitation.room_id,
+                    'room_code': invitation.room_code,
+                    'accepted_by': user_id
+                }
+            )
+
+            current_app.logger.info(
+                f"✅ [ACCEPT_FLOW] Step 2/2: Notification sent to sender {invitation.sender_user_id}. "
+                f"Returning room_id={invitation.room_id} to client. "
+                f"⏳ WAITING for client to call join_room via WebSocket..."
             )
 
             return True, "INVITATION_ACCEPTED_SUCCESS", invitation.room_id
@@ -352,6 +405,19 @@ class InvitationService:
 
             current_app.logger.info(
                 f"Invitation {invitation_id} declined by {user_id}"
+            )
+
+            # Send notification to sender
+            self.notification_service.send_invitation_declined(
+                sender_user_id=invitation.sender_user_id,
+                decliner_name=user_id,  # TODO: Get decliner's display name
+                room_code=invitation.room_code or invitation.room_id,
+                invitation_data={
+                    'invitation_id': invitation_id,
+                    'room_id': invitation.room_id,
+                    'room_code': invitation.room_code,
+                    'declined_by': user_id
+                }
             )
 
             return True, "INVITATION_DECLINED_SUCCESS"

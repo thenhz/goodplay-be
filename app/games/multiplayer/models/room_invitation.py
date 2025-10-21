@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional, Any
-from app.core.utils.json_encoder import serialize_model_dates
+from app.core.utils.json_encoder import serialize_model_dates, parse_datetime
 from app.core.utils.helpers import extract_user_id
 
 
@@ -42,7 +42,9 @@ class RoomInvitation:
         metadata: Optional[Dict[str, Any]] = None,
         room_code: Optional[str] = None,
         game_id: Optional[str] = None,
-        game_name: Optional[str] = None
+        game_name: Optional[str] = None,
+        warning_sent: bool = False,
+        warning_sent_at: Optional[datetime] = None
     ):
         self.invitation_id = invitation_id
         self.room_id = room_id
@@ -60,6 +62,10 @@ class RoomInvitation:
         self.room_code = room_code or (metadata.get('room_code') if metadata else None)
         self.game_id = game_id or (metadata.get('game_id') if metadata else None)
         self.game_name = game_name or (metadata.get('game_name') if metadata else None)
+
+        # Expiry warning tracking (for notification system)
+        self.warning_sent = warning_sent
+        self.warning_sent_at = warning_sent_at
 
     def is_expired(self) -> bool:
         """
@@ -136,25 +142,29 @@ class RoomInvitation:
             'expires_at': self.expires_at,
             'accepted_at': self.accepted_at,
             'declined_at': self.declined_at,
-            'metadata': self.metadata
+            'metadata': self.metadata,
+            'warning_sent': self.warning_sent,
+            'warning_sent_at': self.warning_sent_at
         }
         return serialize_model_dates(invitation_dict)
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'RoomInvitation':
-        """Create RoomInvitation from dictionary"""
+        """Create RoomInvitation from dictionary, parsing datetime strings"""
         return RoomInvitation(
             invitation_id=data['invitation_id'],
             room_id=data['room_id'],
             sender_user_id=data['sender_user_id'],
             recipient_user_id=data['recipient_user_id'],
             status=data.get('status', RoomInvitation.STATUS_PENDING),
-            created_at=data.get('created_at'),
-            expires_at=data.get('expires_at'),
-            accepted_at=data.get('accepted_at'),
-            declined_at=data.get('declined_at'),
+            created_at=parse_datetime(data.get('created_at')),
+            expires_at=parse_datetime(data.get('expires_at')),
+            accepted_at=parse_datetime(data.get('accepted_at')),
+            declined_at=parse_datetime(data.get('declined_at')),
             metadata=data.get('metadata', {}),
             room_code=data.get('room_code'),
             game_id=data.get('game_id'),
-            game_name=data.get('game_name')
+            game_name=data.get('game_name'),
+            warning_sent=data.get('warning_sent', False),
+            warning_sent_at=parse_datetime(data.get('warning_sent_at'))
         )

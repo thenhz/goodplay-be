@@ -20,5 +20,6 @@ if __name__ == '__main__':
         port=port,
         debug=debug,
         use_reloader=True,
-        log_output=debug
+        log_output=debug,
+        allow_unsafe_werkzeug=True  # For development only
     )

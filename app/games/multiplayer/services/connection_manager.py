@@ -44,7 +44,7 @@ class ConnectionManager:
         device_info: Optional[Dict[str, str]] = None
     ) -> bool:
         """
-        Create a new multiplayer session.
+        Create a new multiplayer session (idempotent).
 
         Args:
             session_id: WebSocket session ID
@@ -55,6 +55,15 @@ class ConnectionManager:
             True if session created successfully
         """
         try:
+            # Check if session already exists (idempotent)
+            existing = self.session_repository.find_by_session_id(session_id)
+            if existing:
+                current_app.logger.debug(
+                    f"Session {session_id} already exists for user {user_id}, skipping creation (idempotent)"
+                )
+                return True  # Idempotent: treat as success
+
+            # Create new session
             session = MultiplayerSession(
                 session_id=session_id,
                 user_id=user_id,
@@ -67,17 +76,20 @@ class ConnectionManager:
 
             if success:
                 current_app.logger.info(
-                    f"Created multiplayer session: user={user_id}, sid={session_id}"
+                    f"✅ Created multiplayer session: user={user_id}, sid={session_id}"
                 )
             else:
                 current_app.logger.error(
-                    f"Failed to create session: user={user_id}, sid={session_id}"
+                    f"❌ Failed to create session: user={user_id}, sid={session_id}"
                 )
 
             return success
 
         except Exception as e:
-            current_app.logger.error(f"Error creating session: {str(e)}", exc_info=True)
+            current_app.logger.error(
+                f"❌ Error creating session: {str(e)}",
+                exc_info=True
+            )
             return False
 
     def get_session(self, session_id: str) -> Optional[MultiplayerSession]:
