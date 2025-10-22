@@ -143,237 +143,244 @@ db.game_sessions.create_index([('user_id', 1), ('created_at', -1)])
 
 ## 🎮 Game Development Guide
 
-### Game Integration Architecture
+### Overview
 
-Games in GoodPlay are integrated through a standardized API that handles:
-- Session management
-- Credit calculation
-- Progress tracking
-- Achievement integration
+GoodPlay uses a **plugin system** for game development. Each game is implemented as a self-contained plugin that follows a standardized interface.
 
-### Creating a New Game
+For complete documentation on developing games, see:
+- **📘 [Game Development Guide](docs/GAME_DEVELOPMENT_GUIDE.md)** - Complete backend development guide
+- **📗 [Frontend Integration Guide](docs/FRONTEND_GAME_INTEGRATION_GUIDE.md)** - Frontend integration patterns
+- **📕 [Tic Tac Toe Implementation](app/games/plugins/tic_tac_toe/IMPLEMENTATION_NOTES.md)** - Reference implementation
 
-#### 1. Game Model Definition
+### Quick Start
 
-```python
-# app/games/models/game.py
-class Game:
-    def __init__(self, name, description, category, version, credit_rate,
-                 game_config=None, requirements=None, **kwargs):
-        self.name = name
-        self.description = description
-        self.category = category  # 'puzzle', 'action', 'strategy', etc.
-        self.version = version
-        self.credit_rate = credit_rate  # Credits per minute
-        self.game_config = game_config or {}
-        self.requirements = requirements or {}
-        self.is_active = kwargs.get('is_active', True)
-        # ... other fields
+#### 1. Create Plugin Structure
+
+```bash
+cd app/games/plugins
+mkdir your_game
+cd your_game
+touch __init__.py plugin.json main.py
 ```
 
-#### 2. Game Service Implementation
+#### 2. Define Plugin Metadata (plugin.json)
 
-```python
-# app/games/services/your_game_service.py
-class YourGameService:
-    def validate_game_move(self, session_id: str, move_data: dict) -> Tuple[bool, str, Optional[Dict]]:
-        """Validate a game move and update session state"""
-        try:
-            # Game-specific validation logic
-            # Update session progress
-            # Calculate earned credits
-            return True, "GAME_MOVE_VALID", {
-                'new_state': updated_state,
-                'credits_earned': credits,
-                'achievements_unlocked': achievements
-            }
-        except Exception as e:
-            current_app.logger.error(f"Game move validation failed: {str(e)}")
-            return False, "GAME_MOVE_INVALID", None
-```
-
-#### 3. Game Controller Routes
-
-```python
-# app/games/controllers/your_game_controller.py
-@your_game_bp.route('/move', methods=['POST'])
-@auth_required
-def make_move(current_user):
-    """Handle game move submission"""
-    data = request.get_json()
-    success, message, result = your_game_service.validate_game_move(
-        data['session_id'], data['move_data']
-    )
-
-    if success:
-        return success_response(message, result)
-    else:
-        return error_response(message)
-```
-
-### Game Configuration Schema
-
-```python
-# Example game configuration
-GAME_CONFIG = {
-    'name': 'Word Puzzle Challenge',
-    'category': 'puzzle',
-    'difficulty_levels': ['easy', 'medium', 'hard'],
-    'max_session_duration': 1800,  # 30 minutes
-    'credit_rate': 2,  # 2 credits per minute
-    'achievements': [
-        {'id': 'first_win', 'name': 'First Victory', 'credits_bonus': 50},
-        {'id': 'streak_5', 'name': '5 Win Streak', 'credits_bonus': 100}
-    ],
-    'ui_config': {
-        'theme': 'colorful',
-        'animations': True,
-        'sound_effects': True
-    }
+```json
+{
+  "id": "your_game",
+  "name": "Your Game",
+  "version": "1.0.0",
+  "description": "Game description",
+  "author": "Your Name",
+  "category": "puzzle",
+  "main_module": "main",
+  "dependencies": {
+    "python_packages": [],
+    "plugins": []
+  },
+  "metadata": {
+    "min_players": 1,
+    "max_players": 4,
+    "estimated_duration_minutes": 10,
+    "difficulty_level": "medium",
+    "requires_internet": false,
+    "credit_rate": 1.0
+  }
 }
 ```
 
-### Game Session Lifecycle
-
-#### Basic Session Management
-1. **Session Start**: `POST /api/games/{game_id}/sessions`
-2. **Move Validation**: `POST /api/games/sessions/{session_id}/moves`
-3. **Progress Update**: `PUT /api/games/sessions/{session_id}/progress`
-4. **Session End**: `PUT /api/games/sessions/{session_id}/complete`
-
-#### Enhanced Session Management (GOO-9)
-1. **Session Pause**: `PUT /api/games/sessions/{session_id}/pause`
-2. **Session Resume**: `PUT /api/games/sessions/{session_id}/resume`
-3. **Cross-Device Sync**: `POST /api/games/sessions/{session_id}/sync`
-4. **Device Optimization**: `GET /api/games/sessions/{session_id}/device`
-5. **Conflict Resolution**: `POST /api/games/sessions/{session_id}/conflicts/resolve`
-6. **Active Sessions**: `GET /api/games/sessions/active`
-7. **Conflict Detection**: `GET /api/games/sessions/conflicts`
-
-### Enhanced Session Management Features (GOO-9)
-
-#### Precise Time Tracking
-The enhanced session management provides millisecond-accuracy time tracking:
+#### 3. Implement Game Logic (main.py)
 
 ```python
-# Session model with enhanced time tracking
-session = GameSession(
-    user_id=user_id,
-    game_id=game_id,
-    play_duration=0,  # Milliseconds of actual play time
-    paused_at=None,
-    resumed_at=None,
-    device_info={
-        "device_id": "mobile-123",
-        "device_type": "mobile",
-        "platform": "iOS",
-        "app_version": "1.2.0"
-    }
-)
+from app.games.core.game_plugin import GamePlugin, GameRules, GameSession, SessionResult
+import uuid
+from typing import Dict, Any, Optional
+from datetime import datetime
 
-# Pause/resume with precise time tracking
-session.pause_session()  # Calculates and stores play duration
-session.resume_session()  # Resumes time tracking
+
+class YourGame(GamePlugin):
+    """Your game plugin"""
+
+    def __init__(self):
+        super().__init__()
+        self.name = "Your Game"
+        self.version = "1.0.0"
+        self.description = "Game description"
+        self.category = "puzzle"
+        self.author = "Your Name"
+        self.credit_rate = 1.0
+        self.active_sessions = {}
+
+    def initialize(self) -> bool:
+        """Initialize plugin"""
+        self.is_initialized = True
+        return True
+
+    def start_session(self, user_id: str, session_config: Optional[Dict[str, Any]] = None) -> GameSession:
+        """Start new game session"""
+        session_id = str(uuid.uuid4())
+
+        # Initialize game state
+        game_state = {
+            "score": 0,
+            "level": 1,
+            "game_over": False
+        }
+        self.active_sessions[session_id] = game_state
+
+        return GameSession(
+            session_id=session_id,
+            user_id=user_id,
+            game_id="your_game",
+            status="active",
+            current_state=game_state,
+            started_at=datetime.utcnow()
+        )
+
+    def end_session(self, session_id: str, reason: str = "completed") -> SessionResult:
+        """End game session"""
+        game_state = self.active_sessions[session_id]
+
+        return SessionResult(
+            session_id=session_id,
+            final_score=game_state["score"],
+            credits_earned=self._calculate_credits(game_state),
+            completion_time_seconds=180,
+            achievements_unlocked=[],
+            statistics=game_state
+        )
+
+    def get_rules(self) -> GameRules:
+        """Get game rules"""
+        return GameRules(
+            min_players=1,
+            max_players=1,
+            estimated_duration_minutes=10,
+            difficulty_level="medium",
+            requires_internet=False,
+            description="Your game description",
+            instructions="How to play..."
+        )
+
+    def validate_move(self, session_id: str, move: Dict[str, Any]) -> bool:
+        """Validate and process move"""
+        if session_id not in self.active_sessions:
+            return False
+
+        game_state = self.active_sessions[session_id]
+
+        # Your game logic here
+        # ...
+
+        return True
+
+    def get_session_state(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get current state"""
+        return self.active_sessions.get(session_id)
+
+    def update_session_state(self, session_id: str, new_state: Dict[str, Any]) -> bool:
+        """Update state"""
+        if session_id in self.active_sessions:
+            self.active_sessions[session_id].update(new_state)
+            return True
+        return False
+
+    def _calculate_credits(self, game_state: Dict) -> int:
+        """Calculate credits earned"""
+        return int(game_state["score"] / 100)
+
+
+# Export plugin class
+GamePluginClass = YourGame
 ```
 
-#### Cross-Device Synchronization
-Sessions can be synchronized across multiple devices:
+### Plugin Auto-Discovery
+
+Plugins are automatically discovered and loaded on server startup. No manual registration required!
 
 ```python
-# Sync session state from device
-sync_data = {
-    "device_state": {
-        "current_state": {"level": 2, "score": 200},
-        "play_duration_ms": 45000,
-        "sync_version": 1,
-        "new_moves": [{"action": "click", "position": {"x": 100, "y": 200}}],
-        "new_achievements": ["LEVEL_2_REACHED"]
-    },
-    "device_info": {
-        "device_id": "mobile-device-123",
-        "device_type": "mobile",
-        "platform": "iOS"
-    }
+# Plugins in app/games/plugins/ are auto-loaded
+from app.games.core.plugin_manager import plugin_manager
+
+# View loaded plugins
+plugins = plugin_manager.list_available_plugins()
+```
+
+### Game Modes
+
+Plugins can support multiple game modes:
+
+1. **Single Player (vs AI)**: Player competes against computer
+2. **Local Multiplayer**: Players on same device
+3. **Online Multiplayer**: Players on different devices (uses WebSocket)
+
+See the **[Game Development Guide](docs/GAME_DEVELOPMENT_GUIDE.md)** for detailed implementation patterns for each mode.
+
+### Integration with Platform Features
+
+#### Achievements
+```python
+# Return achievement IDs in SessionResult
+achievements_unlocked = ["FIRST_WIN", "HIGH_SCORE", "PERFECT_GAME"]
+```
+
+#### Credits
+```python
+# Calculate based on play time and performance
+credits = int(play_minutes * self.credit_rate * performance_multiplier)
+```
+
+#### Leaderboards
+```python
+# Statistics automatically submitted to leaderboards
+statistics = {
+    "final_score": score,
+    "level_reached": level,
+    "accuracy": accuracy
 }
-
-# POST /api/games/sessions/{session_id}/sync
-success, message, result = state_synchronizer.sync_session_state(
-    session_id, sync_data["device_state"], sync_data["device_info"]
-)
 ```
 
-#### Conflict Resolution Strategies
-When sync conflicts occur, multiple resolution strategies are available:
-
-- **server_wins**: Server state takes precedence (default)
-- **device_wins**: Device state overwrites server state
-- **merge**: Intelligent merging of states (highest score, longest duration, union of achievements)
+### Testing Your Plugin
 
 ```python
-# Resolve conflicts with merge strategy
-resolution_data = {
-    "device_state": conflicting_state,
-    "resolution_strategy": "merge"
-}
+# Manual test
+from app.games.plugins.your_game.main import YourGame
 
-# POST /api/games/sessions/{session_id}/conflicts/resolve
+game = YourGame()
+game.initialize()
+
+session = game.start_session("user123")
+print("Session started:", session.session_id)
+
+game.validate_move(session.session_id, {"action": "test"})
+state = game.get_session_state(session.session_id)
+print("Current state:", state)
+
+result = game.end_session(session.session_id)
+print("Final score:", result.final_score)
 ```
 
-#### Device-Specific Optimizations
-Sessions can be optimized for different device types:
+### Resources
 
-```python
-# Device-specific optimizations
-device_optimizations = {
-    "mobile": {
-        "reduce_state_size": True,
-        "compress_moves": True,
-        "sync_interval": 30  # seconds
-    },
-    "web": {
-        "include_debug_info": True,
-        "sync_interval": 60
-    }
-}
-```
+- **Complete Guide**: See [docs/GAME_DEVELOPMENT_GUIDE.md](docs/GAME_DEVELOPMENT_GUIDE.md) for:
+  - Detailed API reference
+  - Implementation patterns
+  - Best practices
+  - Security considerations
+  - Performance optimization
+  - Advanced examples
 
-### Credit Calculation System
+- **Frontend Integration**: See [docs/FRONTEND_GAME_INTEGRATION_GUIDE.md](docs/FRONTEND_GAME_INTEGRATION_GUIDE.md) for:
+  - API endpoints usage
+  - WebSocket integration
+  - State management
+  - Code examples (React, Vue, Vanilla JS)
 
-#### Legacy Credit Calculation
-```python
-def calculate_session_credits(session_duration_seconds: int, game_credit_rate: int,
-                            performance_multiplier: float = 1.0) -> int:
-    """
-    Calculate credits earned for a game session
-
-    Args:
-        session_duration_seconds: Length of gaming session
-        game_credit_rate: Credits per minute for this game
-        performance_multiplier: Bonus/penalty based on performance (0.5-2.0)
-
-    Returns:
-        int: Total credits earned
-    """
-    base_credits = (session_duration_seconds / 60) * game_credit_rate
-    return int(base_credits * performance_multiplier)
-```
-
-#### Precise Credit Calculation (GOO-9)
-```python
-def calculate_credits_earned_precise(play_duration_ms: int, credit_rate: float) -> int:
-    """
-    Calculate credits based on precise play duration (excludes paused time)
-
-    Args:
-        play_duration_ms: Actual play time in milliseconds
-        credit_rate: Credits per minute for this game
-
-    Returns:
-        int: Total credits earned based on actual play time
-    """
-    play_duration_minutes = play_duration_ms / (1000 * 60)
-    return int(play_duration_minutes * credit_rate)
-```
+- **Reference Implementation**: See [app/games/plugins/tic_tac_toe/](app/games/plugins/tic_tac_toe/) for:
+  - Complete working example
+  - AI implementation
+  - Multiple game modes
+  - Implementation notes
 
 ## 🔌 API Development Standards
 

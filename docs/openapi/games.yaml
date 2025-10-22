@@ -17,30 +17,39 @@ paths:
         - Games
       summary: Get games list
       description: Retrieve list of available games with filtering and pagination
-      security:
-        - bearerAuth: []
       parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Filter to show only active games
         - name: category
           in: query
           schema:
             type: string
           description: Filter by game category
-        - name: search
-          in: query
-          schema:
-            type: string
-          description: Search games by name or description
         - name: page
           in: query
           schema:
             type: integer
             default: 1
-        - name: per_page
+          description: Page number (1-indexed)
+        - name: limit
           in: query
           schema:
             type: integer
             default: 20
+            minimum: 1
             maximum: 100
+          description: Number of games per page
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, rating, install_count, name]
+            default: created_at
+          description: Field to sort results by
       responses:
         '200':
           description: Games retrieved successfully
@@ -53,6 +62,27 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/GamesList'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                invalidPage:
+                  value:
+                    success: false
+                    message: "INVALID_PAGE_NUMBER"
+                invalidLimit:
+                  value:
+                    success: false
+                    message: "INVALID_LIMIT_VALUE"
+                invalidSort:
+                  value:
+                    success: false
+                    message: "INVALID_SORT_FIELD"
+        '500':
+          description: Internal server error
 
   /api/games/{game_id}:
     get:
@@ -81,14 +111,57 @@ paths:
                       data:
                         $ref: '#/components/schemas/GameDetails'
 
+  /api/games/search:
+    get:
+      tags:
+        - Games
+      summary: Search games
+      description: Search games by name or description with query string
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query string
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Only search active games
+      responses:
+        '200':
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GamesList'
+        '400':
+          description: Invalid search query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                queryRequired:
+                  value:
+                    success: false
+                    message: "SEARCH_QUERY_REQUIRED"
+        '500':
+          description: Internal server error
+
   /api/games/categories:
     get:
       tags:
         - Games
       summary: Get game categories
       description: Retrieve list of all game categories
-      security:
-        - bearerAuth: []
       responses:
         '200':
           description: Game categories retrieved successfully
@@ -101,6 +174,276 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/GameCategories'
+        '500':
+          description: Internal server error
+
+  /api/games/stats:
+    get:
+      tags:
+        - Games
+      summary: Get games statistics
+      description: Retrieve global statistics about games (total games, popular games, etc.)
+      responses:
+        '200':
+          description: Games statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          total_games:
+                            type: integer
+                          active_games:
+                            type: integer
+                          total_sessions:
+                            type: integer
+                          most_popular_game:
+                            type: object
+                            properties:
+                              game_id:
+                                type: string
+                              name:
+                                type: string
+                              session_count:
+                                type: integer
+        '500':
+          description: Internal server error
+
+  # Game Plugin Management (Admin only)
+  /api/games/install:
+    post:
+      tags:
+        - Games
+        - Admin
+      summary: Install game plugin
+      description: Install a new game plugin (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - plugin_file
+              properties:
+                plugin_file:
+                  type: string
+                  format: binary
+                  description: Game plugin file to upload
+                plugin_id:
+                  type: string
+                  description: Optional plugin ID
+      responses:
+        '201':
+          description: Plugin installed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          game_id:
+                            type: string
+                          plugin_id:
+                            type: string
+        '400':
+          description: Invalid plugin file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                fileRequired:
+                  value:
+                    success: false
+                    message: "PLUGIN_FILE_REQUIRED"
+                fileEmpty:
+                  value:
+                    success: false
+                    message: "PLUGIN_FILE_EMPTY"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin access required
+        '500':
+          description: Internal server error
+
+  /api/games/{game_id}/uninstall:
+    delete:
+      tags:
+        - Games
+        - Admin
+      summary: Uninstall game plugin
+      description: Uninstall a game plugin (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plugin uninstalled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "GAME_NOT_FOUND"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin access required
+        '500':
+          description: Internal server error
+
+  /api/games/{game_id}/validate:
+    post:
+      tags:
+        - Games
+        - Admin
+      summary: Validate game plugin
+      description: Validate a game plugin configuration and structure (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plugin validated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          is_valid:
+                            type: boolean
+                          validation_errors:
+                            type: array
+                            items:
+                              type: string
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "GAME_NOT_FOUND"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin access required
+        '500':
+          description: Internal server error
+
+  /api/games/{game_id}/rate:
+    post:
+      tags:
+        - Games
+      summary: Rate a game
+      description: Submit a rating for a game (authenticated users only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+              properties:
+                rating:
+                  type: number
+                  format: float
+                  minimum: 1.0
+                  maximum: 5.0
+                  description: Rating value between 1.0 and 5.0
+                  example: 4.5
+      responses:
+        '200':
+          description: Game rated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          game_id:
+                            type: string
+                          new_average_rating:
+                            type: number
+                          rating_count:
+                            type: integer
+        '400':
+          description: Invalid rating
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                ratingRequired:
+                  value:
+                    success: false
+                    message: "RATING_REQUIRED"
+                invalidRating:
+                  value:
+                    success: false
+                    message: "INVALID_RATING_VALUE"
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "GAME_NOT_FOUND"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
 
   # Game Sessions
   /api/games/sessions:
@@ -108,7 +451,7 @@ paths:
       tags:
         - Game Sessions
       summary: Start game session
-      description: Start a new game session
+      description: Start a new game session with full game details
       security:
         - bearerAuth: []
       requestBody:
@@ -122,8 +465,37 @@ paths:
               properties:
                 game_id:
                   type: string
+                  description: Plugin ID of the game to start
+                  example: "tic_tac_toe"
                 session_config:
                   type: object
+                  additionalProperties: true
+                  description: Optional game-specific configuration
+                device_id:
+                  type: string
+                  description: Device identifier (can be in device_info or root level)
+                device_type:
+                  type: string
+                  enum: [mobile, tablet, desktop, web]
+                  description: Type of device
+                app_version:
+                  type: string
+                  description: Application version
+                platform:
+                  type: string
+                  description: Platform name (iOS, Android, Web, etc.)
+                os_version:
+                  type: string
+                  description: Operating system version
+                device_model:
+                  type: string
+                  description: Device model name
+                device_manufacturer:
+                  type: string
+                  description: Device manufacturer
+                device_info:
+                  type: object
+                  description: Alternative way to provide device information as nested object
                   additionalProperties: true
       responses:
         '201':
@@ -135,8 +507,72 @@ paths:
                   - $ref: '#/components/schemas/ApiResponse'
                   - type: object
                     properties:
+                      message:
+                        type: string
+                        enum: [GAME_SESSION_STARTED_SUCCESS]
                       data:
-                        $ref: '#/components/schemas/GameSession'
+                        type: object
+                        required:
+                          - session
+                          - game
+                        properties:
+                          session:
+                            $ref: '#/components/schemas/GameSession'
+                          game:
+                            $ref: '#/components/schemas/GameDetails'
+              example:
+                success: true
+                message: "GAME_SESSION_STARTED_SUCCESS"
+                data:
+                  session:
+                    id: "68f89782c6046b4e6527c693"
+                    session_id: "7bd30624-6834-4729-ad75-e66e9c6377ba"
+                    user_id: "68e02e67e7c00626ed6a2f19"
+                    game_id: "tic_tac_toe"
+                    status: "active"
+                    current_state: {}
+                    score: null
+                    started_at: "2025-10-22T08:36:17.634555+00:00"
+                    play_duration_ms: 0
+                  game:
+                    id: "68f76f2424030789b6b138d0"
+                    name: "TIC_TAC_TOE"
+                    plugin_id: "tic_tac_toe"
+                    category: "strategy"
+                    is_active: true
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                gameIdRequired:
+                  value:
+                    success: false
+                    message: "GAME_ID_REQUIRED"
+                gameNotFound:
+                  value:
+                    success: false
+                    message: "GAME_NOT_FOUND"
+                gameNotActive:
+                  value:
+                    success: false
+                    message: "GAME_NOT_ACTIVE"
+                activeSessionExists:
+                  value:
+                    success: false
+                    message: "ACTIVE_SESSION_EXISTS"
+                    data:
+                      existing_session: {}
+                pluginNotFound:
+                  value:
+                    success: false
+                    message: "GAME_PLUGIN_NOT_FOUND"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
 
     get:
       tags:
@@ -201,7 +637,7 @@ paths:
       tags:
         - Game Sessions
       summary: Get session details
-      description: Retrieve detailed information about a game session
+      description: Retrieve detailed information about a game session including game details
       security:
         - bearerAuth: []
       parameters:
@@ -221,7 +657,39 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/GameSession'
+                        type: object
+                        required:
+                          - session
+                          - game
+                        properties:
+                          session:
+                            $ref: '#/components/schemas/GameSession'
+                          game:
+                            anyOf:
+                              - $ref: '#/components/schemas/GameDetails'
+                              - type: "null"
+        '403':
+          description: User does not own this session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "SESSION_ACCESS_DENIED"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "SESSION_NOT_FOUND"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
 
     delete:
       tags:
@@ -466,6 +934,94 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/DeviceSession'
+        '400':
+          description: Bad request
+        '403':
+          description: User does not own this session
+        '404':
+          description: Session not found
+        '500':
+          description: Internal server error
+
+  /api/games/sessions/{session_id}/conflicts/resolve:
+    post:
+      tags:
+        - Session Sync
+      summary: Resolve sync conflict
+      description: Manually resolve synchronization conflicts for a session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - device_state
+              properties:
+                device_state:
+                  type: object
+                  additionalProperties: true
+                  description: Device's current state
+                resolution_strategy:
+                  type: string
+                  enum: [server_wins, device_wins, merge]
+                  default: server_wins
+                  description: Strategy to use for conflict resolution
+      responses:
+        '200':
+          description: Conflict resolved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SessionSyncResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                dataRequired:
+                  value:
+                    success: false
+                    message: "CONFLICT_RESOLUTION_DATA_REQUIRED"
+                invalidStrategy:
+                  value:
+                    success: false
+                    message: "INVALID_RESOLUTION_STRATEGY"
+        '403':
+          description: User does not own this session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "SESSION_ACCESS_DENIED"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                message: "SESSION_NOT_FOUND"
+        '500':
+          description: Internal server error
 
   /api/games/sessions/active:
     get:
@@ -2275,6 +2831,12 @@ components:
             - ACTIVE_SESSIONS_RETRIEVAL_FAILED
             - USER_SESSIONS_RETRIEVAL_FAILED
             - USER_SESSION_STATS_RETRIEVAL_FAILED
+            # Session success messages
+            - GAME_SESSION_STARTED_SUCCESS
+            - GAME_SESSION_ENDED_SUCCESS
+            - SESSION_PAUSED_SUCCESS
+            - SESSION_RESUMED_SUCCESS
+            - SESSION_STATE_UPDATED_SUCCESS
             # Session sync operations
             - SESSION_SYNC_FAILED
             - SESSION_PROVISION_FAILED
@@ -2284,6 +2846,15 @@ components:
             - SYNC_CONFLICT_CHECK_FAILED
             - CONFLICT_RESOLUTION_DATA_REQUIRED
             - INVALID_RESOLUTION_STRATEGY
+            # Session sync success messages
+            - SESSION_SYNC_SUCCESS
+            - SESSION_PROVIDED_SUCCESS
+            - SYNC_CONFLICT_SERVER_WINS
+            - SYNC_CONFLICT_CLIENT_WINS
+            - SYNC_CONFLICT_MERGED
+            - SYNC_CONFLICT_RESOLVED
+            - SYNC_CONFLICTS_DETECTED
+            - NO_SYNC_CONFLICTS
             # Move validation
             - MOVE_DATA_REQUIRED
             - MOVE_VALIDATION_FAILED
@@ -3136,7 +3707,7 @@ components:
 
 # Response Message Constants (GOO-60 Multiplayer Invitations)
 # These constants MUST be used in API responses for proper frontend localization
-responseConstants:
+x-responseConstants:
   multiplayer:
     # Room Management
     ROOM_CREATED_SUCCESS: "Room created successfully"
@@ -3217,7 +3788,7 @@ responseConstants:
 
 # WebSocket Events (GOO-60 Multiplayer Invitations)
 # These events are emitted via Socket.IO on the /multiplayer namespace
-websocketEvents:
+x-websocketEvents:
   invitation_received:
     description: |
       Emitted to recipient when they receive a new invitation.

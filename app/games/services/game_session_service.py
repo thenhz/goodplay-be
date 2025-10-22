@@ -308,7 +308,7 @@ class GameSessionService:
                 return False, "SESSION_NOT_ACTIVE", None
 
             # Get plugin and validate move
-            game = self.game_repository.get_game_by_id(session.game_id)
+            game = self.game_repository.get_game_by_plugin_id(session.game_id)
             if not game:
                 return False, "GAME_NOT_FOUND", None
 
