@@ -16,12 +16,26 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/games?active_only=true&page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games"
+              ],
               "query": [
-                {"key": "active_only", "value": "true"},
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "20"}
+                {
+                  "key": "active_only",
+                  "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -49,8 +63,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/games/{{game_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "{{game_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{game_id}}"
+              ]
             }
           }
         },
@@ -61,8 +81,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/games/categories",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "categories"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "categories"
+              ]
             }
           }
         },
@@ -73,12 +99,27 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/games/search?query=puzzle&category=strategy&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "search"
+              ],
               "query": [
-                {"key": "query", "value": "puzzle"},
-                {"key": "category", "value": "strategy"},
-                {"key": "limit", "value": "10"}
+                {
+                  "key": "query",
+                  "value": "puzzle"
+                },
+                {
+                  "key": "category",
+                  "value": "strategy"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -103,8 +144,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/games/install",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "install"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "install"
+              ]
             }
           }
         },
@@ -128,8 +175,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/games/{{game_id}}/rate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "{{game_id}}", "rate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{game_id}}",
+                "rate"
+              ]
             }
           }
         }
@@ -170,12 +224,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"game_config\": {\n        \"difficulty\": \"medium\",\n        \"time_limit\": 1800\n    },\n    \"device_info\": {\n        \"platform\": \"web\",\n        \"device_type\": \"desktop\",\n        \"app_version\": \"1.0.0\"\n    }\n}"
+              "raw": "{\n  \"game_config\": {\n    \"difficulty\": \"medium\",\n    \"time_limit\": 1800\n  },\n  \"device_info\": {\n    \"platform\": \"web\",\n    \"device_type\": \"desktop\",\n    \"app_version\": \"1.0.0\"\n  },\n  \"game_id\": \"{{game_id}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/games/{{game_id}}/sessions",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "{{game_id}}", "sessions"]
+              "raw": "{{baseUrl}}/api/games/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions"
+              ]
             }
           }
         },
@@ -191,8 +251,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}"
+              ]
             }
           }
         },
@@ -208,11 +275,23 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions?status=active&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions"
+              ],
               "query": [
-                {"key": "status", "value": "active"},
-                {"key": "limit", "value": "10"}
+                {
+                  "key": "status",
+                  "value": "active"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -229,15 +308,22 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/active",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "active"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "active"
+              ]
             }
           }
         },
         {
           "name": "Pause Session",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
               {
                 "key": "Authorization",
@@ -246,15 +332,23 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/pause",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "pause"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "pause"
+              ]
             }
           }
         },
         {
           "name": "Resume Session",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
               {
                 "key": "Authorization",
@@ -263,15 +357,23 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/resume",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "resume"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "resume"
+              ]
             }
           }
         },
         {
           "name": "End Session",
           "request": {
-            "method": "PUT",
+            "method": "DELETE",
             "header": [
               {
                 "key": "Content-Type",
@@ -287,9 +389,16 @@
               "raw": "{\n    \"final_score\": 1250,\n    \"completion_percentage\": 85.5,\n    \"game_data\": {\n        \"level_reached\": 12,\n        \"time_played_ms\": 1440000\n    }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/end",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "end"]
+              "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}"
+              ]
             }
           }
         },
@@ -313,10 +422,70 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/state",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "state"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "state"
+              ]
             }
           }
+        },
+        {
+          "name": "Validate Move",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/moves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "moves"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"move\": {\n    \"type\": \"example_move\",\n    \"data\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/sessions/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "stats"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
         }
       ]
     },
@@ -343,8 +512,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/sync",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "sync"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "sync"
+              ]
             }
           }
         },
@@ -360,10 +537,21 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/device?device_type=mobile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "device"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "device"
+              ],
               "query": [
-                {"key": "device_type", "value": "mobile"}
+                {
+                  "key": "device_type",
+                  "value": "mobile"
+                }
               ]
             }
           }
@@ -380,8 +568,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/conflicts",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "conflicts"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "conflicts"
+              ]
             }
           }
         },
@@ -405,8 +600,17 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/games/sessions/{{session_id}}/conflicts/resolve",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "games", "sessions", "{{session_id}}", "conflicts", "resolve"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "sessions",
+                "{{session_id}}",
+                "conflicts",
+                "resolve"
+              ]
             }
           }
         }
@@ -422,8 +626,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/modes/current",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "modes", "current"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modes",
+                "current"
+              ]
             }
           }
         },
@@ -439,8 +649,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/modes/active",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "modes", "active"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modes",
+                "active"
+              ]
             }
           }
         },
@@ -451,10 +667,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/modes/schedule?mode_name=challenge_mode",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "modes", "schedule"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modes",
+                "schedule"
+              ],
               "query": [
-                {"key": "mode_name", "value": "challenge_mode"}
+                {
+                  "key": "mode_name",
+                  "value": "challenge_mode"
+                }
               ]
             }
           }
@@ -479,8 +704,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/modes/challenge_mode/activate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "modes", "challenge_mode", "activate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modes",
+                "challenge_mode",
+                "activate"
+              ]
             }
           }
         },
@@ -496,8 +728,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/modes/challenge_mode/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "modes", "challenge_mode", "deactivate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modes",
+                "challenge_mode",
+                "deactivate"
+              ]
             }
           }
         },
@@ -521,8 +760,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/modes/schedule",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "modes", "schedule"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modes",
+                "schedule"
+              ]
             }
           }
         }
@@ -567,8 +812,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/challenges/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", ""]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                ""
+              ]
             }
           }
         },
@@ -592,8 +843,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/challenges/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", ""]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                ""
+              ]
             }
           }
         },
@@ -604,11 +861,23 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/public?game_id={{game_id}}&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "public"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "public"
+              ],
               "query": [
-                {"key": "game_id", "value": "{{game_id}}"},
-                {"key": "limit", "value": "20"}
+                {
+                  "key": "game_id",
+                  "value": "{{game_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -625,8 +894,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/{{challenge_id}}/join",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "{{challenge_id}}", "join"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "{{challenge_id}}",
+                "join"
+              ]
             }
           }
         },
@@ -642,8 +918,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/{{challenge_id}}/accept",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "{{challenge_id}}", "accept"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "{{challenge_id}}",
+                "accept"
+              ]
             }
           }
         },
@@ -659,8 +942,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/{{challenge_id}}/decline",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "{{challenge_id}}", "decline"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "{{challenge_id}}",
+                "decline"
+              ]
             }
           }
         },
@@ -676,8 +966,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/{{challenge_id}}/start",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "{{challenge_id}}", "start"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "{{challenge_id}}",
+                "start"
+              ]
             }
           }
         },
@@ -701,8 +998,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/challenges/{{challenge_id}}/complete",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "{{challenge_id}}", "complete"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "{{challenge_id}}",
+                "complete"
+              ]
             }
           }
         },
@@ -718,11 +1022,23 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/my?status=active&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "my"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "my"
+              ],
               "query": [
-                {"key": "status", "value": "active"},
-                {"key": "limit", "value": "10"}
+                {
+                  "key": "status",
+                  "value": "active"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -752,8 +1068,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/challenges/matchmaking/find-opponent",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "matchmaking", "find-opponent"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "matchmaking",
+                "find-opponent"
+              ]
             }
           }
         },
@@ -777,8 +1100,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/challenges/matchmaking/quick-match",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "matchmaking", "quick-match"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "matchmaking",
+                "quick-match"
+              ]
             }
           }
         },
@@ -794,11 +1124,24 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/matchmaking/recommendations?game_id={{game_id}}&limit=5",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "matchmaking", "recommendations"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "matchmaking",
+                "recommendations"
+              ],
               "query": [
-                {"key": "game_id", "value": "{{game_id}}"},
-                {"key": "limit", "value": "5"}
+                {
+                  "key": "game_id",
+                  "value": "{{game_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           }
@@ -815,8 +1158,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/challenges/matchmaking/statistics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "challenges", "matchmaking", "statistics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "challenges",
+                "matchmaking",
+                "statistics"
+              ]
             }
           }
         }
@@ -832,10 +1182,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/teams/?active_only=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", ""],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                ""
+              ],
               "query": [
-                {"key": "active_only", "value": "true"}
+                {
+                  "key": "active_only",
+                  "value": "true"
+                }
               ]
             }
           }
@@ -868,8 +1227,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/teams/my-team",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "my-team"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "my-team"
+              ]
             }
           }
         },
@@ -893,8 +1258,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/teams/join",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "join"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "join"
+              ]
             }
           }
         },
@@ -910,8 +1281,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/teams/leave",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "leave"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "leave"
+              ]
             }
           }
         },
@@ -922,8 +1299,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/teams/{{team_id}}/members",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "{{team_id}}", "members"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "{{team_id}}",
+                "members"
+              ]
             }
           }
         },
@@ -934,10 +1318,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/teams/leaderboard?limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "leaderboard"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "leaderboard"
+              ],
               "query": [
-                {"key": "limit", "value": "10"}
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -962,8 +1355,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/teams/record-contribution",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "record-contribution"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "record-contribution"
+              ]
             }
           }
         },
@@ -987,8 +1386,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/teams/record-challenge",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "record-challenge"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "record-challenge"
+              ]
             }
           }
         },
@@ -999,8 +1404,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/teams/tournament/current",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "teams", "tournament", "current"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                "tournament",
+                "current"
+              ]
             }
           }
         }
@@ -1045,8 +1457,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/multiplayer/rooms/{{room_id}}/invitations",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "multiplayer", "rooms", "{{room_id}}", "invitations"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "multiplayer",
+                "rooms",
+                "{{room_id}}",
+                "invitations"
+              ]
             },
             "description": "Send invitation to a single user for a multiplayer room.\n\nPossible error responses:\n- DATA_REQUIRED\n- RECIPIENT_USER_ID_OR_IDS_REQUIRED\n- ROOM_NOT_FOUND\n- NOT_IN_ROOM\n- ROOM_NOT_ACCEPTING_PLAYERS\n- USER_BLOCKED\n- ROOM_FULL\n- ALREADY_IN_ROOM\n- INVITATION_ALREADY_SENT\n- SEND_INVITATION_ERROR"
           }
@@ -1071,8 +1491,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/multiplayer/rooms/{{room_id}}/invitations",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "multiplayer", "rooms", "{{room_id}}", "invitations"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "multiplayer",
+                "rooms",
+                "{{room_id}}",
+                "invitations"
+              ]
             },
             "description": "Send invitations to multiple users (max 10) for a multiplayer room.\n\nRate limited to 10 calls per minute per user.\n\nPossible error responses:\n- RECIPIENT_LIST_EMPTY\n- TOO_MANY_RECIPIENTS\n- NO_INVITATIONS_SENT\n- BATCH_INVITATION_ERROR\n- RATE_LIMIT_EXCEEDED (429)"
           }
@@ -1106,8 +1534,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/multiplayer/invitations?include_expired=false",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "multiplayer", "invitations"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "multiplayer",
+                "invitations"
+              ],
               "query": [
                 {
                   "key": "include_expired",
@@ -1147,8 +1581,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/multiplayer/invitations/{{invitation_id}}/accept",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "multiplayer", "invitations", "{{invitation_id}}", "accept"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "multiplayer",
+                "invitations",
+                "{{invitation_id}}",
+                "accept"
+              ]
             },
             "description": "Accept a room invitation. Returns room_id to join.\n\nEmits WebSocket event 'invitation_accepted' to sender.\n\nPossible error responses:\n- INVITATION_NOT_FOUND\n- NOT_INVITATION_RECIPIENT\n- INVITATION_EXPIRED\n- INVITATION_ALREADY_PROCESSED\n- ROOM_NO_LONGER_EXISTS\n- ROOM_NOT_ACCEPTING_PLAYERS\n- ROOM_FULL\n- ALREADY_IN_ROOM\n- ACCEPT_INVITATION_ERROR"
           }
@@ -1165,8 +1607,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/multiplayer/invitations/{{invitation_id}}/decline",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "multiplayer", "invitations", "{{invitation_id}}", "decline"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "multiplayer",
+                "invitations",
+                "{{invitation_id}}",
+                "decline"
+              ]
             },
             "description": "Decline a room invitation.\n\nEmits WebSocket event 'invitation_declined' to sender.\n\nPossible error responses:\n- INVITATION_NOT_FOUND\n- NOT_INVITATION_RECIPIENT\n- INVITATION_ALREADY_PROCESSED\n- DECLINE_INVITATION_ERROR"
           }
@@ -1183,8 +1633,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/multiplayer/invitations/{{invitation_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "multiplayer", "invitations", "{{invitation_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "multiplayer",
+                "invitations",
+                "{{invitation_id}}"
+              ]
             },
             "description": "Cancel a pending invitation (sender only).\n\nPossible error responses:\n- INVITATION_NOT_FOUND\n- NOT_INVITATION_SENDER\n- INVITATION_ALREADY_PROCESSED\n- CANCEL_INVITATION_ERROR"
           }
@@ -1197,14 +1654,18 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [""]
+        "exec": [
+          ""
+        ]
       }
     },
     {
       "listen": "test",
       "script": {
         "type": "text/javascript",
-        "exec": [""]
+        "exec": [
+          ""
+        ]
       }
     }
   ],

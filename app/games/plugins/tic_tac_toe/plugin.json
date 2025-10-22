@@ -1,0 +1,21 @@
+{
+  "id": "tic_tac_toe",
+  "name": "Tic Tac Toe",
+  "version": "1.0.0",
+  "description": "Classic Tic Tac Toe game with support for AI opponent, local multiplayer, and online multiplayer",
+  "author": "GoodPlay Team",
+  "category": "strategy",
+  "main_module": "main",
+  "dependencies": {
+    "python_packages": [],
+    "plugins": []
+  },
+  "metadata": {
+    "min_players": 1,
+    "max_players": 2,
+    "estimated_duration_minutes": 3,
+    "difficulty_level": "easy",
+    "requires_internet": false,
+    "credit_rate": 0.3
+  }
+}

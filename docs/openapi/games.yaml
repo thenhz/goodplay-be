@@ -173,6 +173,29 @@ paths:
                       data:
                         $ref: '#/components/schemas/SessionsList'
 
+  /api/games/sessions/stats:
+    get:
+      tags:
+        - Game Sessions
+      summary: Get user session statistics
+      description: Retrieve statistical information about user's game sessions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserSessionStatistics'
+        '401':
+          description: Authentication required
+
   /api/games/sessions/{session_id}:
     get:
       tags:
@@ -236,6 +259,103 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/GameSession'
+
+  /api/games/sessions/{session_id}/state:
+    put:
+      tags:
+        - Game Sessions
+      summary: Update session state
+      description: Update the game state of an active session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+              properties:
+                state:
+                  type: object
+                  additionalProperties: true
+                  description: Game-specific state data
+      responses:
+        '200':
+          description: Session state updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GameSession'
+        '400':
+          description: Invalid state data or session not active
+        '403':
+          description: User does not own this session
+        '404':
+          description: Session not found
+
+  /api/games/sessions/{session_id}/moves:
+    post:
+      tags:
+        - Game Sessions
+      summary: Validate and record move
+      description: Validate a game move and record it in the session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - move
+              properties:
+                move:
+                  type: object
+                  additionalProperties: true
+                  description: Game-specific move data
+      responses:
+        '200':
+          description: Move validated and recorded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                          session:
+                            $ref: '#/components/schemas/GameSession'
+        '400':
+          description: Invalid move data
+        '403':
+          description: User does not own this session
+        '404':
+          description: Session not found
 
   /api/games/sessions/{session_id}/pause:
     post:

@@ -29,7 +29,7 @@ class GameSessionService:
         """
         try:
             # Validate game exists and is active
-            game = self.game_repository.get_game_by_id(game_id)
+            game = self.game_repository.get_game_by_plugin_id(game_id)
             if not game:
                 return False, "GAME_NOT_FOUND", None
 

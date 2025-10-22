@@ -72,7 +72,14 @@ class DeviceToken:
             return True
 
         expiry_threshold = datetime.now(timezone.utc) - timedelta(days=self.TOKEN_EXPIRY_DAYS)
-        return self.last_used_at > expiry_threshold
+
+        # Ensure last_used_at is timezone-aware (MongoDB may return naive datetimes)
+        last_used = self.last_used_at
+        if last_used.tzinfo is None:
+            # Assume UTC if timezone info is missing
+            last_used = last_used.replace(tzinfo=timezone.utc)
+
+        return last_used > expiry_threshold
 
     def update_last_used(self):
         """Update last_used_at to current timestamp"""

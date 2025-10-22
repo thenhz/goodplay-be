@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.core.utils.decorators import auth_required, admin_required
 from app.core.utils.responses import success_response, error_response
+from app.core.utils.helpers import extract_user_id
 
 from ..services.game_service import GameService
 from ..services.game_session_service import GameSessionService
@@ -202,26 +203,45 @@ def rate_game(current_user, game_id):
 
 # Game Session Endpoints
 
-@games_bp.route('/<game_id>/sessions', methods=['POST'])
+@games_bp.route('/sessions', methods=['POST'])
 @auth_required
-def start_game_session(current_user, game_id):
+def start_game_session(current_user):
     """Start a new game session with enhanced device tracking"""
     try:
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         data = request.get_json() or {}
+
+        # Get game_id from request body (per OpenAPI spec)
+        game_id = data.get('game_id')
+        if not game_id:
+            return error_response("GAME_ID_REQUIRED")
+
         session_config = data.get('session_config', {})
 
-        # Extract device information
+        # Extract device information from body or headers
         device_info = data.get('device_info', {})
         if not device_info:
-            # Try to extract from headers
+            # Try to extract from body (client sends fields at root level)
             device_info = {
-                'device_id': request.headers.get('X-Device-ID'),
-                'device_type': request.headers.get('X-Device-Type', 'unknown'),
-                'app_version': request.headers.get('X-App-Version'),
-                'platform': request.headers.get('X-Platform'),
-                'user_agent': request.headers.get('User-Agent')
+                'device_id': data.get('device_id'),
+                'device_type': data.get('device_type'),
+                'app_version': data.get('app_version'),
+                'platform': data.get('platform'),
+                'os_version': data.get('os_version'),
+                'device_model': data.get('device_model'),
+                'device_manufacturer': data.get('device_manufacturer')
             }
+
+            # Fallback to headers if not in body
+            if not device_info.get('device_id'):
+                device_info.update({
+                    'device_id': request.headers.get('X-Device-ID'),
+                    'device_type': request.headers.get('X-Device-Type', 'unknown'),
+                    'app_version': request.headers.get('X-App-Version'),
+                    'platform': request.headers.get('X-Platform'),
+                    'user_agent': request.headers.get('User-Agent')
+                })
+
             # Remove None values
             device_info = {k: v for k, v in device_info.items() if v is not None}
 
@@ -249,7 +269,7 @@ def get_game_session(current_user, session_id):
 
         if success:
             # Check if user owns this session
-            user_id = str(current_user['_id'])
+            user_id = extract_user_id(current_user)
             if data['session']['user_id'] != user_id:
                 return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -260,15 +280,17 @@ def get_game_session(current_user, session_id):
     except Exception as e:
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
-@games_bp.route('/sessions/<session_id>/end', methods=['PUT'])
+@games_bp.route('/sessions/<session_id>', methods=['DELETE'])
 @auth_required
 def end_game_session(current_user, session_id):
     """End a game session"""
     try:
         data = request.get_json() or {}
-        reason = data.get('reason', 'completed')
+        # Support both 'reason' and 'end_reason' for backwards compatibility
+        reason = data.get('end_reason') or data.get('reason', 'completed')
+        final_score = data.get('final_score')
 
-        if reason not in ['completed', 'abandoned']:
+        if reason not in ['completed', 'abandoned', 'timeout']:
             return error_response("INVALID_END_REASON")
 
         # First check if user owns this session
@@ -276,10 +298,11 @@ def end_game_session(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
+        # TODO: Pass final_score to session service when it supports it
         success, message, result = session_service.end_game_session(session_id, reason)
 
         if success:
@@ -316,7 +339,7 @@ def update_session_state(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -344,7 +367,7 @@ def validate_move(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -358,7 +381,7 @@ def validate_move(current_user, session_id):
     except Exception as e:
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
-@games_bp.route('/sessions/<session_id>/pause', methods=['PUT'])
+@games_bp.route('/sessions/<session_id>/pause', methods=['POST'])
 @auth_required
 def pause_session(current_user, session_id):
     """Pause a game session"""
@@ -368,7 +391,7 @@ def pause_session(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -382,7 +405,7 @@ def pause_session(current_user, session_id):
     except Exception as e:
         return error_response("INTERNAL_SERVER_ERROR", status_code=500)
 
-@games_bp.route('/sessions/<session_id>/resume', methods=['PUT'])
+@games_bp.route('/sessions/<session_id>/resume', methods=['POST'])
 @auth_required
 def resume_session(current_user, session_id):
     """Resume a paused game session"""
@@ -392,7 +415,7 @@ def resume_session(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -413,7 +436,7 @@ def resume_session(current_user, session_id):
 def get_user_sessions(current_user):
     """Get sessions for the current user"""
     try:
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         status = request.args.get('status')
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 20))
@@ -441,7 +464,7 @@ def get_user_sessions(current_user):
 def get_user_session_stats(current_user):
     """Get session statistics for the current user"""
     try:
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
 
         success, message, data = session_service.get_user_session_stats(user_id)
 
@@ -469,7 +492,7 @@ def sync_session_state(current_user, session_id):
         device_info = data.get('device_info', {})
 
         # Add user info to device tracking
-        device_info['user_id'] = str(current_user['_id'])
+        device_info['user_id'] = extract_user_id(current_user)
         device_info['sync_timestamp'] = data.get('timestamp')
 
         # First check if user owns this session
@@ -477,7 +500,7 @@ def sync_session_state(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -507,7 +530,7 @@ def get_session_for_device(current_user, session_id):
             'device_type': request.args.get('device_type') or request.headers.get('X-Device-Type'),
             'app_version': request.headers.get('X-App-Version'),
             'platform': request.headers.get('X-Platform'),
-            'user_id': str(current_user['_id'])
+            'user_id': extract_user_id(current_user)
         }
 
         # Remove None values
@@ -518,7 +541,7 @@ def get_session_for_device(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -552,7 +575,7 @@ def resolve_sync_conflict(current_user, session_id):
         if not success:
             return error_response(message, status_code=404 if message == "SESSION_NOT_FOUND" else 400)
 
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
         if session_data['session']['user_id'] != user_id:
             return error_response("SESSION_ACCESS_DENIED", status_code=403)
 
@@ -573,7 +596,7 @@ def resolve_sync_conflict(current_user, session_id):
 def check_session_conflicts(current_user):
     """Check for sessions with potential synchronization conflicts"""
     try:
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
 
         success, message, data = state_synchronizer.check_session_conflicts(user_id)
 
@@ -590,7 +613,7 @@ def check_session_conflicts(current_user):
 def get_active_sessions(current_user):
     """Get all active and paused sessions for the current user"""
     try:
-        user_id = str(current_user['_id'])
+        user_id = extract_user_id(current_user)
 
         # Get both active and paused sessions
         success_active, message_active, data_active = session_service.get_user_sessions(
