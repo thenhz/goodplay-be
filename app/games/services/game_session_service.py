@@ -37,11 +37,20 @@ class GameSessionService:
                 return False, "GAME_NOT_ACTIVE", None
 
             # Check if user has active session for this game
+            # If exists, auto-abandon it to allow new session
             existing_session = self.session_repository.get_active_user_session(user_id, game_id)
+            abandoned_session = None
+
             if existing_session:
-                return False, "ACTIVE_SESSION_EXISTS", {
-                    "existing_session": existing_session.to_api_dict()
-                }
+                # Auto-close the previous session as "abandoned"
+                current_app.logger.info(f"Auto-abandoning existing session {existing_session.session_id} for user {user_id} on game {game_id}")
+                success, _, end_result = self.end_game_session(existing_session.session_id, reason="abandoned")
+                if success and end_result:
+                    abandoned_session = end_result.get('session')
+                else:
+                    # Log warning but continue - we still want to create the new session
+                    current_app.logger.warning(f"Failed to auto-abandon session {existing_session.session_id}, but continuing with new session creation")
+                    abandoned_session = existing_session.to_api_dict()
 
             # Get plugin and start session
             plugin = plugin_registry.get_plugin(game.plugin_id) if game.plugin_id else None
@@ -78,8 +87,14 @@ class GameSessionService:
                 "game": game.to_api_dict()
             }
 
-            current_app.logger.info(f"Started session {session.session_id} for user {user_id}")
-            return True, "GAME_SESSION_STARTED_SUCCESS", result
+            # Include abandoned session info if one was auto-closed
+            if abandoned_session:
+                result["abandoned_session"] = abandoned_session
+                current_app.logger.info(f"Started new session {session.session_id} for user {user_id}, previous session was auto-abandoned")
+                return True, "GAME_SESSION_STARTED_PREVIOUS_ABANDONED", result
+            else:
+                current_app.logger.info(f"Started session {session.session_id} for user {user_id}")
+                return True, "GAME_SESSION_STARTED_SUCCESS", result
 
         except Exception as e:
             current_app.logger.error(f"Failed to start game session: {str(e)}")
@@ -106,7 +121,7 @@ class GameSessionService:
                 return False, "SESSION_ALREADY_ENDED", None
 
             # Get game and plugin
-            game = self.game_repository.get_game_by_id(session.game_id)
+            game = self.game_repository.get_game_by_plugin_id(session.game_id)
             if not game:
                 return False, "GAME_NOT_FOUND", None
 
@@ -170,8 +185,23 @@ class GameSessionService:
             # Get game info
             game = self.game_repository.get_game_by_id(session.game_id)
 
+            # Sync state from plugin to ensure we return the most up-to-date state
+            if game and session.is_active():
+                plugin = plugin_registry.get_plugin(game.plugin_id) if game.plugin_id else None
+                if plugin:
+                    try:
+                        # Get fresh state from plugin
+                        fresh_state = plugin.get_session_state(session_id)
+                        if fresh_state:
+                            # Update session state in database
+                            self.session_repository.update_session_state(session_id, fresh_state)
+                            # Re-fetch session with updated state
+                            session = self.session_repository.get_session_by_session_id(session_id)
+                    except Exception as e:
+                        current_app.logger.warning(f"Failed to sync state from plugin before returning session: {str(e)}")
+
             result = {
-                "session": session.to_api_dict(),
+                "session": session.to_api_dict() if session else None,
                 "game": game.to_api_dict() if game else None
             }
 
@@ -261,19 +291,29 @@ class GameSessionService:
                 return False, "GAME_NOT_FOUND", None
 
             plugin = plugin_registry.get_plugin(game.plugin_id) if game.plugin_id else None
+            validated_state = new_state
+
             if plugin:
                 try:
-                    # Let plugin update its internal state
+                    # Let plugin update and validate its internal state
                     if not plugin.update_session_state(session_id, new_state):
                         return False, "PLUGIN_STATE_UPDATE_REJECTED", None
+
+                    # Get the validated state back from plugin
+                    # Plugin may have modified/validated the state
+                    validated_state = plugin.get_session_state(session_id)
+                    if not validated_state:
+                        # Fallback to new_state if plugin doesn't return state
+                        validated_state = new_state
                 except Exception as e:
                     current_app.logger.warning(f"Plugin state update failed: {str(e)}")
+                    return False, "PLUGIN_STATE_UPDATE_FAILED", None
 
-            # Update in database
-            if not self.session_repository.update_session_state(session_id, new_state):
+            # Update database with validated state from plugin
+            if not self.session_repository.update_session_state(session_id, validated_state):
                 return False, "SESSION_STATE_UPDATE_FAILED", None
 
-            # Get updated session
+            # Get updated session with validated state
             updated_session = self.session_repository.get_session_by_session_id(session_id)
 
             result = {
@@ -297,6 +337,7 @@ class GameSessionService:
 
         Returns:
             Tuple[bool, str, Optional[Dict[str, Any]]]: (success, message, data)
+                data contains: move_valid, move_number, session (complete with current_state)
         """
         try:
             # Get session
@@ -329,10 +370,22 @@ class GameSessionService:
             if not self.session_repository.add_session_move(session_id, move):
                 return False, "MOVE_RECORDING_FAILED", None
 
+            # Get updated state from plugin
+            try:
+                updated_state = plugin.get_session_state(session_id)
+                if updated_state:
+                    # Update session state in database
+                    self.session_repository.update_session_state(session_id, updated_state)
+            except Exception as e:
+                current_app.logger.warning(f"Failed to get/update session state from plugin: {str(e)}")
+
+            # Get updated session with current_state
+            updated_session = self.session_repository.get_session_by_session_id(session_id)
+
             result = {
-                "session_id": session_id,
                 "move_valid": True,
-                "move_number": len(session.moves) + 1
+                "move_number": len(session.moves) + 1,
+                "session": updated_session.to_api_dict() if updated_session else None
             }
 
             current_app.logger.info(f"Validated move for session {session_id}")
@@ -363,8 +416,29 @@ class GameSessionService:
             if not self.session_repository.pause_session(session_id):
                 return False, "SESSION_PAUSE_FAILED", None
 
+            # Get game and plugin to sync state
+            game = self.game_repository.get_game_by_plugin_id(session.game_id)
+            if game:
+                plugin = plugin_registry.get_plugin(game.plugin_id) if game.plugin_id else None
+                if plugin:
+                    try:
+                        # Get updated state from plugin
+                        updated_state = plugin.get_session_state(session_id)
+                        if updated_state:
+                            # Update session state in database
+                            self.session_repository.update_session_state(session_id, updated_state)
+                    except Exception as e:
+                        current_app.logger.warning(f"Failed to sync state from plugin after pause: {str(e)}")
+
+            # Get updated session with current_state
+            updated_session = self.session_repository.get_session_by_session_id(session_id)
+
+            result = {
+                "session": updated_session.to_api_dict() if updated_session else None
+            }
+
             current_app.logger.info(f"Paused session {session_id}")
-            return True, "SESSION_PAUSED_SUCCESS", None
+            return True, "SESSION_PAUSED_SUCCESS", result
 
         except Exception as e:
             current_app.logger.error(f"Failed to pause session {session_id}: {str(e)}")
@@ -391,8 +465,29 @@ class GameSessionService:
             if not self.session_repository.resume_session(session_id):
                 return False, "SESSION_RESUME_FAILED", None
 
+            # Get game and plugin to sync state
+            game = self.game_repository.get_game_by_plugin_id(session.game_id)
+            if game:
+                plugin = plugin_registry.get_plugin(game.plugin_id) if game.plugin_id else None
+                if plugin:
+                    try:
+                        # Get updated state from plugin
+                        updated_state = plugin.get_session_state(session_id)
+                        if updated_state:
+                            # Update session state in database
+                            self.session_repository.update_session_state(session_id, updated_state)
+                    except Exception as e:
+                        current_app.logger.warning(f"Failed to sync state from plugin after resume: {str(e)}")
+
+            # Get updated session with current_state
+            updated_session = self.session_repository.get_session_by_session_id(session_id)
+
+            result = {
+                "session": updated_session.to_api_dict() if updated_session else None
+            }
+
             current_app.logger.info(f"Resumed session {session_id}")
-            return True, "SESSION_RESUMED_SUCCESS", None
+            return True, "SESSION_RESUMED_SUCCESS", result
 
         except Exception as e:
             current_app.logger.error(f"Failed to resume session {session_id}: {str(e)}")

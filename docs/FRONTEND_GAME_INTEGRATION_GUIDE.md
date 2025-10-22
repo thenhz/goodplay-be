@@ -41,9 +41,261 @@ GoodPlay is a gaming platform where users play games to earn virtual credits tha
 
 | Mode | Description | Players | Connection Type |
 |------|-------------|---------|-----------------|
+| **Solo** | Play alone (puzzles, challenges) | 1 | REST API only |
 | **vs AI** | Play against computer | 1 | REST API only |
 | **Local** | Play on same device | 2+ | REST API only |
 | **Online** | Play across devices | 2+ | REST API + WebSocket |
+
+---
+
+### Quick Reference: API Calls Per Game Mode
+
+**🚨 CRITICAL**: All endpoints (move, pause, resume, GET) return **complete `session` object with `current_state`** - no separate GET needed!
+
+#### Solo Mode (Single Player - Puzzles/Challenges)
+
+| Action | Endpoint | When | Returns |
+|--------|----------|------|---------|
+| **Start** | `POST /api/games/sessions` | User starts game | `session` with initial `current_state` |
+| **Make Move** | `POST /sessions/{id}/moves` | After each action | `session` with updated `current_state` |
+| **Pause** | `POST /sessions/{id}/pause` | User pauses (optional) | `session` with `current_state` + `paused_at` |
+| **Resume** | `POST /sessions/{id}/resume` | User resumes paused game | `session` with `current_state` + `resumed_at` |
+| **Get State** | `GET /sessions/{id}` | App restart / error recovery | `session` with `current_state` (synced from plugin) |
+| **Get Active** | `GET /sessions/active` | Check for existing sessions | Array of active/paused sessions |
+| **End** | `DELETE /sessions/{id}` | User quits or completes (optional*) | Success message |
+
+**Request Config**:
+```json
+{
+  "game_id": "puzzle_game",
+  "session_config": {
+    "game_mode": "local",  // Solo uses "local" mode with 1 player
+    "difficulty": "medium"
+  }
+}
+```
+
+#### vs AI Mode (Play Against Computer)
+
+| Action | Endpoint | When | Returns |
+|--------|----------|------|---------|
+| **Start** | `POST /api/games/sessions` | User starts game | `session` with initial `current_state` |
+| **Make Move** | `POST /sessions/{id}/moves` | After player move | `session` with `current_state` **including AI's move** |
+| **Pause** | `POST /sessions/{id}/pause` | User pauses (optional) | `session` with `current_state` + `paused_at` |
+| **Resume** | `POST /sessions/{id}/resume` | User resumes paused game | `session` with `current_state` + `resumed_at` |
+| **Get State** | `GET /sessions/{id}` | App restart / error recovery | `session` with `current_state` (synced from plugin) |
+| **Get Active** | `GET /sessions/active` | Check for existing sessions | Array of active/paused sessions |
+| **End** | `DELETE /sessions/{id}` | User quits or completes (optional*) | Success message |
+
+**Request Config**:
+```json
+{
+  "game_id": "tic_tac_toe",
+  "session_config": {
+    "game_mode": "vs_ai",
+    "ai_difficulty": "hard",
+    "player_symbol": "X"
+  }
+}
+```
+
+**🎯 Key Difference**: AI responds automatically! The move response includes **both** your move and AI's counter-move in `current_state`.
+
+#### Local Multiplayer Mode (Same Device)
+
+| Action | Endpoint | When | Returns |
+|--------|----------|------|---------|
+| **Start** | `POST /api/games/sessions` | User starts game | `session` with initial `current_state` |
+| **Make Move** | `POST /sessions/{id}/moves` | After each player's turn | `session` with updated `current_state` (next player's turn) |
+| **Pause** | `POST /sessions/{id}/pause` | Players pause (optional) | `session` with `current_state` + `paused_at` |
+| **Resume** | `POST /sessions/{id}/resume` | Players resume | `session` with `current_state` + `resumed_at` |
+| **Get State** | `GET /sessions/{id}` | App restart / error recovery | `session` with `current_state` (synced from plugin) |
+| **Get Active** | `GET /sessions/active` | Check for existing sessions | Array of active/paused sessions |
+| **End** | `DELETE /sessions/{id}` | Players quit or complete (optional*) | Success message |
+
+**Request Config**:
+```json
+{
+  "game_id": "tic_tac_toe",
+  "session_config": {
+    "game_mode": "local",
+    "num_players": 2
+  }
+}
+```
+
+**🎯 Key Difference**: Frontend manages turn order. Each move response shows whose turn is next in `current_state`.
+
+#### Online Multiplayer Mode (Different Devices)
+
+| Action | Endpoint/Event | When | Returns |
+|--------|---------------|------|---------|
+| **Create Room** | `POST /api/multiplayer/rooms` | Host creates game | Room ID + join code |
+| **Join Room** | `POST /api/multiplayer/rooms/{id}/join` | Players join | Room info + player list |
+| **Connect WebSocket** | `io.connect('/multiplayer')` | After joining room | Connection established |
+| **Join Room (WS)** | `emit('join_room', {room_id})` | After WS connect | Room state broadcast |
+| **Start Game** | `emit('start_game')` | Host starts (all ready) | `game_started` event |
+| **Make Move** | `emit('make_move', {move})` | Player's turn | `move_made` event (all players) |
+| **Pause** | `POST /sessions/{id}/pause` | Host pauses (optional) | `session` with `current_state` + broadcast |
+| **Resume** | `POST /sessions/{id}/resume` | Host resumes | `session` with `current_state` + broadcast |
+| **Get State** | `GET /sessions/{id}` | Reconnection / error | `session` with `current_state` (synced) |
+| **Leave Room** | `emit('leave_room')` | Player disconnects | `player_left` event |
+| **End** | `DELETE /sessions/{id}` | Host ends or completes | Room closed (optional*) |
+
+**Request Config** (Create Room):
+```json
+{
+  "game_id": "tic_tac_toe",
+  "max_players": 2,
+  "is_public": false
+}
+```
+
+**🎯 Key Differences**:
+- Uses **WebSocket for real-time moves** (not REST)
+- All players receive updates via `move_made` event
+- Room management (create/join/leave) required
+- Session state synced across all connected players
+
+---
+
+### Session Lifecycle Patterns
+
+#### 1. Normal Game Flow (All Modes)
+
+```
+START → PLAYING → GAME_OVER → DELETE (optional)
+   ↓       ↓
+   └─ GET active sessions (on app restart)
+           ↓
+       RESUME → Continue playing
+```
+
+#### 2. Pause/Resume Flow
+
+```
+PLAYING → PAUSE (user leaves app)
+            ↓
+        (app closed)
+            ↓
+        (app reopened)
+            ↓
+    GET /sessions/active
+            ↓
+    RESUME → Continue playing
+```
+
+#### 3. Session Resume After App Restart
+
+```
+1. App starts
+   ↓
+2. GET /api/games/sessions/active
+   ↓
+3. Check if sessions exist
+   ↓
+   ├─ YES → Show "Resume Game?" dialog
+   │         ├─ User clicks Resume
+   │         │  ↓
+   │         │  GET /sessions/{id} (get current state)
+   │         │  ↓
+   │         │  If status = "paused" → POST /sessions/{id}/resume
+   │         │  ↓
+   │         │  Load game with session.current_state
+   │         │
+   │         └─ User clicks New Game
+   │            ↓
+   │            DELETE /sessions/{id} (cleanup old)
+   │            ↓
+   │            POST /sessions (start new)
+   │
+   └─ NO → Show "New Game" button
+            ↓
+            POST /sessions (start new)
+```
+
+#### 4. Closing/Deleting Sessions
+
+**When to DELETE**:
+- ✅ User explicitly quits game
+- ✅ User starts new game (cleanup old session)
+- ✅ Game completed AND user navigates away
+- ❌ **NOT needed** for every completed game (auto-deleted after 24 hours)
+
+**DELETE is OPTIONAL** because:
+- Backend auto-deletes completed sessions after 24 hours
+- Only needed if you want immediate cleanup
+- Good practice for user-initiated quits
+
+**Example DELETE usage**:
+```typescript
+// User clicks "Quit Game" button
+async function quitGame(sessionId: string) {
+  try {
+    await fetch(`/api/games/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    // Clear local storage
+    localStorage.removeItem('last_session_id');
+
+    // Navigate to home
+    router.push('/home');
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    // Still navigate home even if DELETE fails
+    router.push('/home');
+  }
+}
+```
+
+---
+
+### Response Structure (All Modes)
+
+**🚨 IMPORTANT**: Starting from this implementation, ALL session operations return the complete session object with `current_state`:
+
+```typescript
+interface SessionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    move_valid?: boolean;        // Only in move responses
+    move_number?: number;         // Only in move responses
+    session: {
+      session_id: string;
+      game_id: string;
+      user_id: string;
+      status: "active" | "paused" | "completed";
+      current_state: {
+        // Game-specific state (board, score, etc.)
+        // This is ALWAYS synced from the plugin before returning
+        // Example for Tic Tac Toe:
+        board: (string | null)[][];
+        current_player: "X" | "O";
+        game_over: boolean;
+        winner: string | null;
+        // ... other game-specific fields
+      };
+      moves_count: number;
+      score: number;
+      created_at: string;
+      updated_at: string;
+      paused_at?: string;          // Only if paused
+      resumed_at?: string;         // Only if just resumed
+      completed_at?: string;       // Only if completed
+    }
+  }
+}
+```
+
+**Key Points**:
+- ✅ `current_state` is **always included** in all responses
+- ✅ State is **synced from plugin** before returning (always fresh!)
+- ✅ **NO separate GET needed** after operations
+- ✅ For vs AI mode: AI move is **already included** in move response
+- ✅ Online multiplayer: WebSocket events contain **same structure**
 
 ---
 
@@ -296,61 +548,91 @@ Example: [1,1] = center square
 ```json
 {
   "success": true,
-  "message": "MOVE_VALID_SUCCESS",
+  "message": "MOVE_VALIDATED_SUCCESS",
   "data": {
-    "session_id": "abc123",
-    "current_state": {
-      "board": [
-        ["O", null, null],
-        [null, "X", null],
-        [null, null, null]
-      ],
-      "current_player": "X",
-      "game_over": false,
-      "move_count": 2,
-      "moves_history": [
-        {"player": "X", "position": [1, 1], "move_number": 1},
-        {"player": "O", "position": [0, 0], "move_number": 2}
-      ]
+    "move_valid": true,
+    "move_number": 2,
+    "session": {
+      "session_id": "abc123",
+      "game_id": "tic_tac_toe",
+      "user_id": "user123",
+      "status": "active",
+      "current_state": {
+        "board": [
+          ["O", null, null],
+          [null, "X", null],
+          [null, null, null]
+        ],
+        "current_player": "X",
+        "game_mode": "vs_ai",
+        "player_symbol": "X",
+        "game_over": false,
+        "winner": null,
+        "is_draw": false,
+        "move_count": 2,
+        "moves_history": [
+          {"player": "X", "position": [1, 1], "move_number": 1},
+          {"player": "O", "position": [0, 0], "move_number": 2}
+        ]
+      },
+      "moves_count": 2,
+      "score": 0,
+      "created_at": "2025-10-22T10:30:00.000000+00:00",
+      "updated_at": "2025-10-22T10:31:15.000000+00:00"
     }
   }
 }
 ```
 
-**Key Point**:
-- ⚠️ **AI move is already included** in the response!
-- Board shows both your move AND the AI's response
-- `move_count` increases by 2 (your move + AI move)
+**🚨 IMPORTANT - Response Contains Complete Session**:
+- ✅ **Response includes COMPLETE `session` object** with `current_state`
+- ✅ **NO need for separate GET request** - all data is here!
+- ✅ **AI move is already included** in the response (for vs AI mode)
+- ✅ **State is synced from plugin** - always fresh and up-to-date
+- ✅ Board shows both your move AND the AI's response
+- ✅ `move_count` increases by 2 (your move + AI move) in vs AI mode
 
 **Response (200 OK)** - Game Ended:
 ```json
 {
   "success": true,
-  "message": "GAME_ENDED",
+  "message": "MOVE_VALIDATED_SUCCESS",
   "data": {
-    "session_id": "abc123",
-    "current_state": {
-      "board": [
-        ["X", "X", "X"],
-        ["O", "O", null],
-        [null, null, null]
-      ],
-      "current_player": "X",
-      "game_over": true,
-      "winner": "X",
-      "is_draw": false,
-      "winning_line": [[0, 0], [0, 1], [0, 2]]
-    },
-    "final_score": 1700,
-    "credits_earned": 10,
-    "achievements_unlocked": [
-      "GAME_COMPLETED",
-      "TIC_TAC_TOE_WINNER",
-      "SPEED_DEMON"
-    ]
+    "move_valid": true,
+    "move_number": 5,
+    "session": {
+      "session_id": "abc123",
+      "game_id": "tic_tac_toe",
+      "user_id": "user123",
+      "status": "active",
+      "current_state": {
+        "board": [
+          ["X", "X", "X"],
+          ["O", "O", null],
+          [null, null, null]
+        ],
+        "current_player": "X",
+        "game_mode": "vs_ai",
+        "player_symbol": "X",
+        "game_over": true,
+        "winner": "X",
+        "is_draw": false,
+        "winning_line": [[0, 0], [0, 1], [0, 2]],
+        "move_count": 5
+      },
+      "moves_count": 5,
+      "score": 1700,
+      "created_at": "2025-10-22T10:30:00.000000+00:00",
+      "updated_at": "2025-10-22T10:33:45.000000+00:00"
+    }
   }
 }
 ```
+
+**Note**: When `game_over: true`, you can:
+1. Display winner/draw message
+2. Show final score
+3. **Optionally** end session with DELETE (or leave it - auto-deleted after 24h)
 
 **Error Response (400 Bad Request)** - Invalid Move:
 ```json
@@ -369,14 +651,106 @@ Example: [1,1] = center square
 
 ---
 
-### Step 3: Get Final State (Optional)
+### Step 3: Pause/Resume Session (Optional)
+
+#### Pause Game
+
+**Endpoint**: `POST /api/games/sessions/{session_id}/pause`
+
+**When to use**:
+- User puts app in background
+- User needs a break
+- Before switching to another activity
+
+**Request**: No body needed
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "SESSION_PAUSED_SUCCESS",
+  "data": {
+    "session": {
+      "session_id": "abc123",
+      "game_id": "tic_tac_toe",
+      "user_id": "user123",
+      "status": "paused",
+      "current_state": {
+        "board": [["X", "O", null], [null, "X", null], [null, null, "O"]],
+        "current_player": "X",
+        "game_mode": "vs_ai",
+        "player_symbol": "X",
+        "game_over": false,
+        "winner": null,
+        "is_draw": false,
+        "move_count": 4
+      },
+      "paused_at": "2025-10-22T10:35:00.000000+00:00",
+      "created_at": "2025-10-22T10:30:00.000000+00:00"
+    }
+  }
+}
+```
+
+**Important**:
+- ✅ Returns COMPLETE session with `current_state`
+- ✅ `status` changes to "paused"
+- ✅ `paused_at` timestamp recorded
+- ⏱️ Play duration tracking pauses (for credit calculation)
+
+#### Resume Game
+
+**Endpoint**: `POST /api/games/sessions/{session_id}/resume`
+
+**Request**: No body needed
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "SESSION_RESUMED_SUCCESS",
+  "data": {
+    "session": {
+      "session_id": "abc123",
+      "game_id": "tic_tac_toe",
+      "user_id": "user123",
+      "status": "active",
+      "current_state": {
+        "board": [["X", "O", null], [null, "X", null], [null, null, "O"]],
+        "current_player": "X",
+        "game_mode": "vs_ai",
+        "player_symbol": "X",
+        "game_over": false,
+        "winner": null,
+        "is_draw": false,
+        "move_count": 4
+      },
+      "paused_at": "2025-10-22T10:35:00.000000+00:00",
+      "resumed_at": "2025-10-22T10:40:00.000000+00:00",
+      "created_at": "2025-10-22T10:30:00.000000+00:00"
+    }
+  }
+}
+```
+
+**Important**:
+- ✅ Returns COMPLETE session with `current_state`
+- ✅ `status` changes back to "active"
+- ✅ `resumed_at` timestamp recorded
+- ✅ Game state preserved exactly as when paused
+
+---
+
+### Step 4: Get Session (When Needed)
 
 **Endpoint**: `GET /api/games/sessions/{session_id}`
 
-**When to use**:
-- To retrieve game results after completion
-- To check session status
-- To recover from connection issues
+**⚠️ WHEN TO USE** (you rarely need this!):
+- ❌ **NOT needed after moves** - move response includes full session!
+- ❌ **NOT needed after pause/resume** - those responses include full session!
+- ✅ **Resuming after app restart** - get current state
+- ✅ **Recovering from connection error** - resync state
+- ✅ **Checking if session still exists** - validation
 
 **Response**:
 ```json
@@ -384,23 +758,173 @@ Example: [1,1] = center square
   "success": true,
   "message": "SESSION_RETRIEVED_SUCCESS",
   "data": {
-    "session_id": "abc123",
-    "game_id": "tic_tac_toe",
-    "user_id": "user123",
-    "status": "completed",
-    "current_state": { ... },
-    "final_score": 1700,
-    "credits_earned": 10,
-    "started_at": "2025-10-21T10:30:00Z",
-    "ended_at": "2025-10-21T10:33:00Z",
-    "play_duration_ms": 180000
+    "session": {
+      "session_id": "abc123",
+      "game_id": "tic_tac_toe",
+      "user_id": "user123",
+      "status": "active",
+      "current_state": {
+        "board": [["X", null, null], [null, null, null], [null, null, null]],
+        "current_player": "O",
+        "game_mode": "vs_ai",
+        "player_symbol": "X",
+        "game_over": false,
+        "winner": null,
+        "is_draw": false,
+        "move_count": 1
+      },
+      "moves_count": 1,
+      "score": 0,
+      "started_at": "2025-10-22T10:30:00.000000+00:00",
+      "created_at": "2025-10-22T10:30:00.000000+00:00",
+      "updated_at": "2025-10-22T10:30:15.000000+00:00"
+    },
+    "game": {
+      "game_id": "tic_tac_toe",
+      "name": "Tic Tac Toe",
+      "description": "Classic 3x3 Tic Tac Toe"
+    }
   }
+}
+```
+
+**Important**:
+- ✅ State is **synced from plugin** before returning - always fresh!
+- ✅ Includes complete session + game metadata
+- ✅ Works for any session status (active, paused, completed)
+
+---
+
+### Step 5: Resuming Existing Sessions
+
+**Scenario**: User closed app with active game, now wants to continue.
+
+#### Option A: Get All Active Sessions
+
+**Endpoint**: `GET /api/games/sessions/active`
+
+**Use this to**:
+- Show "Continue Game?" prompt on app launch
+- List all games user can resume
+- Check if user has any active games
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "ACTIVE_SESSIONS_RETRIEVED",
+  "data": {
+    "sessions": [
+      {
+        "session_id": "abc123",
+        "game_id": "tic_tac_toe",
+        "status": "paused",
+        "current_state": { ... },
+        "paused_at": "2025-10-22T10:35:00.000000+00:00",
+        "created_at": "2025-10-22T10:30:00.000000+00:00"
+      },
+      {
+        "session_id": "xyz789",
+        "game_id": "chess",
+        "status": "active",
+        "current_state": { ... },
+        "created_at": "2025-10-21T15:20:00.000000+00:00"
+      }
+    ]
+  }
+}
+```
+
+#### Option B: Get Specific Session
+
+If you saved `session_id` in local storage:
+
+```typescript
+const sessionId = localStorage.getItem('last_session_id');
+
+if (sessionId) {
+  try {
+    const response = await fetch(`/api/games/sessions/${sessionId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      // Resume from saved session
+      const session = data.data.session;
+
+      if (session.status === 'paused') {
+        // Show "Resume Game?" button
+        showResumePrompt(session);
+      } else if (session.status === 'active') {
+        // Continue playing
+        loadGame(session);
+      }
+    }
+  } catch (error) {
+    // Session not found or expired, start new game
+  }
+}
+```
+
+#### Resume Flow Example
+
+```typescript
+class GameResume {
+  async checkForActiveGames() {
+    const response = await fetch('/api/games/sessions/active', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const data = await response.json();
+
+    if (data.data.sessions.length > 0) {
+      // Show resume dialog
+      return data.data.sessions;
+    }
+
+    return [];
+  }
+
+  async resumeSession(sessionId: string) {
+    // 1. Get current session state
+    const getResponse = await fetch(`/api/games/sessions/${sessionId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const sessionData = await getResponse.json();
+    const session = sessionData.data.session;
+
+    // 2. If paused, resume it
+    if (session.status === 'paused') {
+      const resumeResponse = await fetch(`/api/games/sessions/${sessionId}/resume`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const resumeData = await resumeResponse.json();
+      return resumeData.data.session; // Has current_state
+    }
+
+    // 3. If active, just use it
+    return session;
+  }
+}
+
+// Usage
+const resumer = new GameResume();
+const activeSessions = await resumer.checkForActiveGames();
+
+if (activeSessions.length > 0) {
+  // Show UI: "Continue your Tic Tac Toe game?"
+  const session = await resumer.resumeSession(activeSessions[0].session_id);
+  loadGameBoard(session.current_state);
 }
 ```
 
 ---
 
-### Step 4: End Session (Cleanup)
+### Step 6: End Session (Cleanup)
 
 **Endpoint**: `DELETE /api/games/sessions/{session_id}`
 
@@ -500,7 +1024,7 @@ class TicTacToeVsAI {
       throw new Error(data.message);
     }
 
-    return data.data.current_state;
+    return data.data.session.current_state;
   }
 
   // Step 3: Get final results
@@ -763,7 +1287,7 @@ class TicTacToeLocal {
       throw new Error(data.message);
     }
 
-    return data.data.current_state;
+    return data.data.session.current_state;
   }
 
   async endGame() {
@@ -1696,7 +2220,7 @@ export function useGameSession(options: UseGameSessionOptions) {
         throw new Error(data.message);
       }
 
-      setState(data.data.current_state);
+      setState(data.data.session.current_state);
 
     } catch (err) {
       setError(err.message);
@@ -1855,7 +2379,7 @@ export function useGameSession(gameId: string, mode: string, config: any = {}) {
       });
 
       const data = await response.json();
-      state.value = data.data.current_state;
+      state.value = data.data.session.current_state;
 
     } catch (err) {
       error.value = err.message;
@@ -1995,7 +2519,7 @@ class GameSession {
       throw new Error(data.message);
     }
 
-    this.state = data.data.current_state;
+    this.state = data.data.session.current_state;
     return this.state;
   }
 

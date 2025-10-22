@@ -903,6 +903,178 @@ def get_session_state(self, session_id: str) -> Optional[Dict[str, Any]]:
 
 ---
 
+### 🚨 CRITICAL: State Synchronization Pattern
+
+**Your `get_session_state()` method is the SOURCE OF TRUTH for game state.**
+
+The platform automatically calls this method after EVERY game operation to sync the database with your plugin's internal state. This ensures:
+- ✅ Database always reflects current game state
+- ✅ API responses contain complete, up-to-date state
+- ✅ Clients never need separate GET requests after operations
+- ✅ Cross-device sync works correctly
+
+#### When `get_session_state()` Is Called
+
+The platform calls your `get_session_state()` method automatically after:
+
+1. **`validate_move()`** - After recording a player move
+   ```
+   Player makes move → validate_move() → get_session_state() → DB update → Return complete session
+   ```
+
+2. **`pause_session()`** - After pausing a session
+   ```
+   Player pauses → pause in DB → get_session_state() → DB state update → Return session with current_state
+   ```
+
+3. **`resume_session()`** - After resuming a session
+   ```
+   Player resumes → resume in DB → get_session_state() → DB state update → Return session with current_state
+   ```
+
+4. **`GET /sessions/{id}`** - When client requests session details
+   ```
+   Client requests session → get_session_state() → DB sync → Return fresh state
+   ```
+
+5. **`update_session_state()`** - After validating external state update
+   ```
+   State update → update_session_state() → get_session_state() → DB update with validated state
+   ```
+
+#### Implementation Requirements
+
+**✅ ALWAYS return fresh state**:
+```python
+def get_session_state(self, session_id: str) -> Optional[Dict[str, Any]]:
+    """Get current session state - MUST return fresh, complete state"""
+    if session_id not in self.active_sessions:
+        return None
+
+    game_state = self.active_sessions[session_id]
+
+    # ✅ CORRECT: Calculate fresh state every time
+    return {
+        "board": game_state["board"],                      # Current board
+        "current_player": game_state["current_player"],    # Current turn
+        "game_over": self._check_game_over(game_state),    # Re-check game status
+        "winner": self._determine_winner(game_state),      # Re-calculate winner
+        "available_moves": self._get_valid_moves(game_state),  # Fresh move list
+        "move_count": len(game_state["moves"])
+    }
+```
+
+**❌ WRONG: Stale or incomplete state**:
+```python
+def get_session_state(self, session_id: str) -> Optional[Dict[str, Any]]:
+    # ❌ WRONG: Returning cached state
+    return self.cached_states.get(session_id)
+
+    # ❌ WRONG: Missing critical fields
+    return {
+        "board": game_state["board"]
+        # Missing: current_player, game_over, winner, etc.
+    }
+
+    # ❌ WRONG: Returning None when session exists
+    if some_condition:
+        return None  # Will cause DB sync to fail!
+```
+
+#### Common Mistakes to Avoid
+
+**❌ Mistake 1: Returning cached/stale state**
+```python
+# BAD - State might be outdated
+return self.state_cache[session_id]
+```
+**✅ Solution**: Always compute state from current game_state
+
+**❌ Mistake 2: Returning incomplete state**
+```python
+# BAD - Missing game-specific fields
+return {"score": 100}
+```
+**✅ Solution**: Include ALL fields frontend needs (board, current_player, game_over, winner, etc.)
+
+**❌ Mistake 3: Returning None for existing sessions**
+```python
+# BAD - Will break state sync
+if not self._some_flag:
+    return None
+```
+**✅ Solution**: Only return None if session truly doesn't exist
+
+**❌ Mistake 4: Expensive computations on every call**
+```python
+# BAD - Expensive AI analysis on every state request
+def get_session_state(self, session_id: str):
+    state = self.active_sessions[session_id]
+    # This runs after EVERY operation!
+    ai_analysis = self._run_expensive_ai_analysis(state)  # 2 seconds!
+    return {"board": state["board"], "ai_hint": ai_analysis}
+```
+**✅ Solution**: Cache expensive computations, only recompute when game state actually changes
+
+#### Performance Considerations
+
+Since `get_session_state()` is called after every operation:
+
+1. **Keep it fast** (< 10ms recommended)
+   - Use cached computations where possible
+   - Avoid expensive AI analysis
+   - Don't make external API calls
+
+2. **Return minimal but complete data**
+   - Include everything frontend needs
+   - Exclude internal/debug data
+   - Hide sensitive information
+
+3. **Optimize for common case**
+   ```python
+   def get_session_state(self, session_id: str):
+       state = self.active_sessions[session_id]
+
+       # Reuse cached expensive computations
+       if state.get("_analysis_cache_version") == state["move_count"]:
+           ai_hint = state["_cached_ai_hint"]
+       else:
+           ai_hint = self._compute_ai_hint(state)
+           state["_cached_ai_hint"] = ai_hint
+           state["_analysis_cache_version"] = state["move_count"]
+
+       return {
+           "board": state["board"],
+           "game_over": state["game_over"],
+           "ai_hint": ai_hint  # Cached when possible
+       }
+   ```
+
+#### Testing Your Implementation
+
+Verify `get_session_state()` works correctly:
+
+```python
+# Test 1: Returns fresh state after move
+session = plugin.start_session(user_id, config)
+plugin.validate_move(session.session_id, {"position": [0, 0]})
+state = plugin.get_session_state(session.session_id)
+assert "board" in state
+assert "current_player" in state
+assert "game_over" in state
+
+# Test 2: State reflects latest changes
+plugin.validate_move(session.session_id, {"position": [1, 1]})
+new_state = plugin.get_session_state(session.session_id)
+assert new_state != state  # State should have changed
+
+# Test 3: Returns None only for non-existent sessions
+assert plugin.get_session_state("fake_session_id") is None
+assert plugin.get_session_state(session.session_id) is not None
+```
+
+---
+
 #### 7. `update_session_state()` - Write Game State
 
 **Purpose**: Update session state (used for sync/resume).

@@ -499,7 +499,7 @@ paths:
                   additionalProperties: true
       responses:
         '201':
-          description: Game session started successfully
+          description: Game session started successfully (may have auto-abandoned previous session)
           content:
             application/json:
               schema:
@@ -509,7 +509,10 @@ paths:
                     properties:
                       message:
                         type: string
-                        enum: [GAME_SESSION_STARTED_SUCCESS]
+                        enum: [GAME_SESSION_STARTED_SUCCESS, GAME_SESSION_STARTED_PREVIOUS_ABANDONED]
+                        description: |
+                          - GAME_SESSION_STARTED_SUCCESS: New session started
+                          - GAME_SESSION_STARTED_PREVIOUS_ABANDONED: New session started, previous active session was auto-abandoned
                       data:
                         type: object
                         required:
@@ -518,8 +521,14 @@ paths:
                         properties:
                           session:
                             $ref: '#/components/schemas/GameSession'
+                            description: The newly created game session
                           game:
                             $ref: '#/components/schemas/GameDetails'
+                            description: Game information
+                          abandoned_session:
+                            $ref: '#/components/schemas/GameSession'
+                            nullable: true
+                            description: The previous session that was auto-abandoned (only present if GAME_SESSION_STARTED_PREVIOUS_ABANDONED)
               example:
                 success: true
                 message: "GAME_SESSION_STARTED_SUCCESS"
@@ -559,12 +568,6 @@ paths:
                   value:
                     success: false
                     message: "GAME_NOT_ACTIVE"
-                activeSessionExists:
-                  value:
-                    success: false
-                    message: "ACTIVE_SESSION_EXISTS"
-                    data:
-                      existing_session: {}
                 pluginNotFound:
                   value:
                     success: false
@@ -814,23 +817,132 @@ paths:
                       data:
                         type: object
                         properties:
-                          valid:
+                          move_valid:
                             type: boolean
+                            description: Whether the move was valid
+                            example: true
+                          move_number:
+                            type: integer
+                            description: The move number in the game sequence
+                            example: 5
                           session:
                             $ref: '#/components/schemas/GameSession'
+              examples:
+                ticTacToeMove:
+                  summary: Tic Tac Toe move example
+                  value:
+                    success: true
+                    message: "MOVE_VALIDATED_SUCCESS"
+                    data:
+                      move_valid: true
+                      move_number: 5
+                      session:
+                        id: "507f1f77bcf86cd799439011"
+                        session_id: "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
+                        user_id: "507f1f77bcf86cd799439012"
+                        game_id: "tic_tac_toe"
+                        status: "active"
+                        current_state:
+                          board: [["X", "O", "X"], ["O", "X", null], [null, null, "O"]]
+                          current_player: "X"
+                          game_mode: "vs_ai"
+                          player_symbol: "X"
+                          moves_history:
+                            - player: "X"
+                              position: [0, 0]
+                              move_number: 1
+                            - player: "O"
+                              position: [1, 0]
+                              move_number: 2
+                          game_over: false
+                          winner: null
+                          is_draw: false
+                          winning_line: null
+                          move_count: 5
+                        score: null
+                        credits_earned: null
+                        started_at: "2025-10-22T10:30:00.000Z"
+                        ended_at: null
+                        moves_count: 5
+                        achievements_unlocked: []
+                        statistics: {}
+                        duration_seconds: 120
+                        play_duration_ms: 120000
+                        play_duration_seconds: 120
+                winningMove:
+                  summary: Winning move example (Tic Tac Toe)
+                  value:
+                    success: true
+                    message: "MOVE_VALIDATED_SUCCESS"
+                    data:
+                      move_valid: true
+                      move_number: 5
+                      session:
+                        id: "507f1f77bcf86cd799439011"
+                        session_id: "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
+                        user_id: "507f1f77bcf86cd799439012"
+                        game_id: "tic_tac_toe"
+                        status: "active"
+                        current_state:
+                          board: [["X", "O", "X"], ["O", "X", "O"], ["X", null, null]]
+                          current_player: "X"
+                          game_mode: "vs_ai"
+                          player_symbol: "X"
+                          game_over: true
+                          winner: "X"
+                          is_draw: false
+                          winning_line: [[0, 0], [1, 1], [2, 0]]
+                          move_count: 5
+                        score: null
+                        credits_earned: null
+                        started_at: "2025-10-22T10:30:00.000Z"
+                        moves_count: 5
         '400':
           description: Invalid move data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                moveDataRequired:
+                  value:
+                    success: false
+                    message: "MOVE_DATA_REQUIRED"
+                invalidMove:
+                  value:
+                    success: false
+                    message: "INVALID_MOVE"
         '403':
           description: User does not own this session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                accessDenied:
+                  value:
+                    success: false
+                    message: "SESSION_ACCESS_DENIED"
         '404':
           description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                sessionNotFound:
+                  value:
+                    success: false
+                    message: "SESSION_NOT_FOUND"
 
   /api/games/sessions/{session_id}/pause:
     post:
       tags:
         - Game Sessions
       summary: Pause game session
-      description: Pause an active game session
+      description: |
+        Pause an active game session. Returns the complete session object with current_state
+        synced from the plugin.
       security:
         - bearerAuth: []
       parameters:
@@ -845,14 +957,74 @@ paths:
           content:
             application/json:
               schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          session:
+                            $ref: '#/components/schemas/GameSession'
+              examples:
+                ticTacToePaused:
+                  value:
+                    success: true
+                    message: "SESSION_PAUSED_SUCCESS"
+                    data:
+                      session:
+                        session_id: "507f1f77bcf86cd799439011"
+                        game_id: "tic_tac_toe"
+                        user_id: "507f191e810c19729de860ea"
+                        status: "paused"
+                        current_state:
+                          board: [["X", "O", null], [null, "X", null], [null, null, "O"]]
+                          current_player: "X"
+                          game_mode: "vs_ai"
+                          player_symbol: "X"
+                          game_over: false
+                          winner: null
+                          is_draw: false
+                          winning_line: null
+                          move_count: 4
+                        moves_count: 4
+                        score: 0
+                        credits_earned: 0
+                        started_at: "2025-10-22T10:30:00.000000+00:00"
+                        paused_at: "2025-10-22T10:35:00.000000+00:00"
+                        created_at: "2025-10-22T10:30:00.000000+00:00"
+                        updated_at: "2025-10-22T10:35:00.000000+00:00"
+        '400':
+          description: Session not in active state
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ApiResponse'
+              examples:
+                notActive:
+                  value:
+                    success: false
+                    message: "SESSION_NOT_ACTIVE"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                notFound:
+                  value:
+                    success: false
+                    message: "SESSION_NOT_FOUND"
 
   /api/games/sessions/{session_id}/resume:
     post:
       tags:
         - Game Sessions
       summary: Resume game session
-      description: Resume a paused game session
+      description: |
+        Resume a paused game session. Returns the complete session object with current_state
+        synced from the plugin.
       security:
         - bearerAuth: []
       parameters:
@@ -867,7 +1039,66 @@ paths:
           content:
             application/json:
               schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          session:
+                            $ref: '#/components/schemas/GameSession'
+              examples:
+                ticTacToeResumed:
+                  value:
+                    success: true
+                    message: "SESSION_RESUMED_SUCCESS"
+                    data:
+                      session:
+                        session_id: "507f1f77bcf86cd799439011"
+                        game_id: "tic_tac_toe"
+                        user_id: "507f191e810c19729de860ea"
+                        status: "active"
+                        current_state:
+                          board: [["X", "O", null], [null, "X", null], [null, null, "O"]]
+                          current_player: "X"
+                          game_mode: "vs_ai"
+                          player_symbol: "X"
+                          game_over: false
+                          winner: null
+                          is_draw: false
+                          winning_line: null
+                          move_count: 4
+                        moves_count: 4
+                        score: 0
+                        credits_earned: 0
+                        started_at: "2025-10-22T10:30:00.000000+00:00"
+                        paused_at: "2025-10-22T10:35:00.000000+00:00"
+                        resumed_at: "2025-10-22T10:40:00.000000+00:00"
+                        created_at: "2025-10-22T10:30:00.000000+00:00"
+                        updated_at: "2025-10-22T10:40:00.000000+00:00"
+        '400':
+          description: Session not in paused state
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ApiResponse'
+              examples:
+                notPaused:
+                  value:
+                    success: false
+                    message: "SESSION_NOT_PAUSED"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                notFound:
+                  value:
+                    success: false
+                    message: "SESSION_NOT_FOUND"
 
   # Enhanced Session Management (GOO-9)
   /api/games/sessions/{session_id}/sync:
@@ -3136,61 +3367,220 @@ components:
 
     ActiveSessionsList:
       type: object
+      description: Response containing active and paused sessions
       properties:
-        sessions:
+        active_sessions:
           type: array
+          description: List of currently active sessions
           items:
             $ref: '#/components/schemas/GameSession'
-        cross_device_sessions:
+        paused_sessions:
           type: array
+          description: List of currently paused sessions
           items:
-            type: object
-            properties:
-              session_id:
-                type: string
-              devices:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DeviceInfo'
-              last_sync:
-                type: string
-                format: date-time
+            $ref: '#/components/schemas/GameSession'
+        all_sessions:
+          type: array
+          description: Combined list of all active and paused sessions, sorted by last activity
+          items:
+            $ref: '#/components/schemas/GameSession'
+        total_count:
+          type: integer
+          description: Total number of active and paused sessions
+          example: 5
 
     SyncConflictsResponse:
       type: object
+      description: Response containing sync conflicts information
       properties:
-        has_conflicts:
-          type: boolean
+        conflicts_count:
+          type: integer
+          description: Number of sessions with sync conflicts
+          example: 2
         conflicts:
           type: array
+          description: List of sessions with potential sync conflicts
           items:
             $ref: '#/components/schemas/ConflictInfo'
-        total_conflicts:
+        total_active_sessions:
           type: integer
+          description: Total number of active/paused sessions
+          example: 5
 
     ConflictInfo:
       type: object
+      description: Information about a session with potential sync conflict
       properties:
         session_id:
           type: string
-        conflict_type:
+          description: The session ID
+          example: "7bd30624-6834-4729-ad75-e66e9c6377ba"
+        game_id:
           type: string
-          enum: [state_mismatch, version_conflict, device_conflict]
-        description:
+          description: The game plugin ID
+          example: "tic_tac_toe"
+        last_sync_minutes_ago:
+          type: integer
+          description: Minutes since last sync
+          example: 10
+        device_info:
+          type: object
+          description: Device information for the session
+          additionalProperties: true
+        status:
           type: string
-        server_state:
+          description: Session status
+          enum: [active, paused]
+          example: "active"
+
+    SessionEndResponse:
+      type: object
+      description: Response when ending a game session
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        session_result:
           type: object
+          nullable: true
+          description: Results from the game plugin (may be null)
+          properties:
+            final_score:
+              type: integer
+            achievements_unlocked:
+              type: array
+              items:
+                type: string
           additionalProperties: true
-        client_state:
+
+    MoveValidationResponse:
+      type: object
+      description: Response after validating a move
+      required:
+        - move_valid
+        - move_number
+        - session
+      properties:
+        move_valid:
+          type: boolean
+          description: Whether the move was valid
+          example: true
+        move_number:
+          type: integer
+          description: The sequential number of this move
+          example: 5
+        session:
+          $ref: '#/components/schemas/GameSession'
+          description: Updated session with current state
+
+    SessionSyncResponse:
+      type: object
+      description: Response after successful session state synchronization
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        sync_version:
+          type: integer
+          description: Current sync version
+          example: 5
+
+    SessionSyncConflictResponse:
+      type: object
+      description: Response when sync conflict detected (HTTP 409)
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        conflict_resolution:
+          type: string
+          enum: [server_wins]
+          description: Conflict resolution strategy applied
+          example: "server_wins"
+        server_sync_version:
+          type: integer
+          description: Server's sync version
+          example: 5
+        device_sync_version:
+          type: integer
+          description: Device's sync version
+          example: 3
+
+    DeviceSessionResponse:
+      type: object
+      description: Response with session optimized for device
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        sync_version:
+          type: integer
+          description: Current sync version
+          example: 5
+        device_specific_data:
           type: object
+          description: Device-specific optimizations
           additionalProperties: true
-        conflicting_devices:
+
+    ConflictResolutionResponse:
+      type: object
+      description: Response after resolving sync conflict
+      properties:
+        session:
+          $ref: '#/components/schemas/GameSession'
+        resolution:
+          type: string
+          enum: [server_wins, device_wins, merge]
+          description: Resolution strategy used
+          example: "server_wins"
+        conflict_data:
+          type: object
+          nullable: true
+          description: Original device state (only present for server_wins)
+          additionalProperties: true
+
+    PaginationInfo:
+      type: object
+      description: Pagination metadata
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        per_page:
+          type: integer
+          description: Items per page
+          example: 20
+        total_items:
+          type: integer
+          description: Total number of items
+          example: 100
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 5
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    UserSessionsResponse:
+      type: object
+      description: Response containing user's game sessions with pagination
+      properties:
+        sessions:
           type: array
+          description: List of sessions (each session includes embedded game data)
           items:
-            $ref: '#/components/schemas/DeviceInfo'
-        timestamp:
-          type: string
-          format: date-time
+            allOf:
+              - $ref: '#/components/schemas/GameSession'
+              - type: object
+                properties:
+                  game:
+                    $ref: '#/components/schemas/GameDetails'
+                    description: Game information embedded in each session
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
     Achievement:
       type: object
