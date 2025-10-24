@@ -178,11 +178,33 @@ def start_game(current_user, room_id):
             "room": { ... room data ... },
             "message": "GAME_STARTED_SUCCESS"
         }
+
+    WebSocket Event (emitted to all players in room):
+        Event: 'game_started'
+        Payload: {
+            "room": { ... room data ... },
+            "message": "GAME_STARTED",
+            "timestamp": "<iso_timestamp>"
+        }
     """
     try:
         success, message, room = room_manager.start_game(room_id, current_user)
 
         if success:
+            # Emit WebSocket event to all players in room
+            try:
+                from app.games.multiplayer.events.connection_events import MultiplayerNamespace
+                multiplayer_ns = MultiplayerNamespace()
+                multiplayer_ns.emit_game_started(room_id, room.to_dict())
+
+                current_app.logger.info(
+                    f"✅ [START_GAME] Emitted game_started event to all players in room {room_id}"
+                )
+            except Exception as ws_error:
+                current_app.logger.warning(
+                    f"⚠️  [START_GAME] WebSocket emit failed for room {room_id}: {str(ws_error)}"
+                )
+
             return success_response(message, {'room': room.to_dict()})
         else:
             return error_response(message, status_code=400)

@@ -518,3 +518,23 @@ class MultiplayerNamespace(BaseNamespace):
         }, room=f"user_{user_id}", namespace=self.namespace)
 
         current_app.logger.debug(f"Sent friend_joined_room to user {user_id}")
+
+    def emit_game_started(self, room_id: str, room_data: dict):
+        """
+        Emit game_started event to all players in room.
+
+        Notifies all participants when the host starts the game.
+
+        Args:
+            room_id: Room ID
+            room_data: Updated room data including new status
+        """
+        from app import socketio
+
+        socketio.emit('game_started', {
+            'room': room_data,
+            'message': 'GAME_STARTED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"room_{room_id}", namespace=self.namespace)
+
+        current_app.logger.info(f"Emitted game_started to all players in room {room_id}")
