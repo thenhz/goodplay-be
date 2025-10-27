@@ -2,5 +2,6 @@ from .multiplayer_session import MultiplayerSession
 from .game_room import GameRoom
 from .player_state import PlayerState
 from .room_invitation import RoomInvitation
+from .game_action import GameAction
 
-__all__ = ['MultiplayerSession', 'GameRoom', 'PlayerState', 'RoomInvitation']
+__all__ = ['MultiplayerSession', 'GameRoom', 'PlayerState', 'RoomInvitation', 'GameAction']

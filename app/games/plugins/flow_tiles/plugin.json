@@ -1,0 +1,21 @@
+{
+  "id": "flow_tiles",
+  "name": "Flow Tiles",
+  "version": "1.0.0",
+  "description": "Create beautiful flowing patterns - Zen puzzle game",
+  "author": "GoodPlay Team",
+  "category": "relaxation",
+  "main_module": "main",
+  "dependencies": {
+    "python_packages": [],
+    "plugins": []
+  },
+  "metadata": {
+    "min_players": 1,
+    "max_players": 8,
+    "estimated_duration_minutes": 15,
+    "difficulty_level": "easy",
+    "requires_internet": false,
+    "credit_rate": 1.0
+  }
+}

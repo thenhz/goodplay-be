@@ -538,3 +538,79 @@ class MultiplayerNamespace(BaseNamespace):
         }, room=f"room_{room_id}", namespace=self.namespace)
 
         current_app.logger.info(f"Emitted game_started to all players in room {room_id}")
+
+    def emit_game_action(self, room_id: str, action_data: dict):
+        """
+        Emit game_action event to all players in room.
+
+        Args:
+            room_id: Room ID
+            action_data: Action data to broadcast
+        """
+        from app import socketio
+
+        socketio.emit('game_action', {
+            'action': action_data,
+            'message': 'ACTION_RECEIVED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"room_{room_id}", namespace=self.namespace)
+
+        current_app.logger.debug(f"Emitted game_action to room {room_id}")
+
+    def emit_game_invalid_action(self, user_id: str, action_id: str, reason: str):
+        """
+        Emit game_invalid_action event to specific player.
+
+        Args:
+            user_id: User ID to notify
+            action_id: Invalid action ID
+            reason: Reason for invalidity
+        """
+        from app import socketio
+
+        socketio.emit('game_invalid_action', {
+            'action_id': action_id,
+            'reason': reason,
+            'message': 'INVALID_ACTION',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"user_{user_id}", namespace=self.namespace)
+
+        current_app.logger.warning(f"Notified user {user_id} of invalid action: {reason}")
+
+    def emit_game_ended(self, room_id: str, result_data: dict):
+        """
+        Emit game_ended event to all players in room.
+
+        Args:
+            room_id: Room ID
+            result_data: Game result data
+        """
+        from app import socketio
+
+        socketio.emit('game_ended', {
+            'result': result_data,
+            'message': 'GAME_ENDED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"room_{room_id}", namespace=self.namespace)
+
+        current_app.logger.info(f"Emitted game_ended to all players in room {room_id}")
+
+    def emit_game_state_sync(self, room_id: str, game_state: dict, sync_version: int):
+        """
+        Emit game_state_sync event to all players in room.
+
+        Args:
+            room_id: Room ID
+            game_state: Authoritative game state
+            sync_version: Sync version number
+        """
+        from app import socketio
+
+        socketio.emit('game_state_sync', {
+            'game_state': game_state,
+            'sync_version': sync_version,
+            'message': 'STATE_SYNCHRONIZED',
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }, room=f"room_{room_id}", namespace=self.namespace)
+
+        current_app.logger.info(f"Emitted state_sync to room {room_id} (v{sync_version})")

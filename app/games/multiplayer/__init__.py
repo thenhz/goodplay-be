@@ -13,9 +13,13 @@ def register_multiplayer_module(app, socketio: SocketIO):
     # Register REST API blueprints
     from .controllers.multiplayer_controller import blueprint as multiplayer_bp
     from .controllers.auth_controller import blueprint as multiplayer_auth_bp
+    from .controllers.game_actions_controller import blueprint as game_actions_bp
+    from .controllers.websocket_auth_controller import blueprint as websocket_auth_bp
 
     app.register_blueprint(multiplayer_bp, url_prefix='/api/multiplayer')
     app.register_blueprint(multiplayer_auth_bp, url_prefix='/api/multiplayer/auth')
+    app.register_blueprint(game_actions_bp, url_prefix='/api/multiplayer')
+    app.register_blueprint(websocket_auth_bp, url_prefix='/api/multiplayer/auth')
 
     # Register WebSocket namespace
     from .events.connection_events import MultiplayerNamespace
@@ -31,6 +35,7 @@ def register_multiplayer_module(app, socketio: SocketIO):
 
     # Initialize repository indexes
     from .repositories import MultiplayerSessionRepository, RoomRepository, PlayerStateRepository
+    from .repositories.game_action_repository import GameActionRepository
     import os
 
     if os.getenv('SKIP_DB_INIT') != '1':
@@ -38,10 +43,12 @@ def register_multiplayer_module(app, socketio: SocketIO):
             session_repo = MultiplayerSessionRepository()
             room_repo = RoomRepository()
             state_repo = PlayerStateRepository()
+            action_repo = GameActionRepository()
 
             session_repo.create_indexes()
             room_repo.create_indexes()
             state_repo.create_indexes()
+            action_repo.create_indexes()
 
             app.logger.info('Multiplayer module indexes created')
 
