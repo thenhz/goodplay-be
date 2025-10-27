@@ -3,7 +3,7 @@
 Database Seed Script
 
 Populates the database with initial test data:
-- Tic Tac Toe game (using constants for UI translation)
+- Games (Tic Tac Toe, Flow Tiles) using constants for UI translation
 - Test users for multiplayer testing
 - Sample ONLUS organization for donation testing
 
@@ -45,44 +45,60 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
-def seed_game(db, verbose=False):
-    """Seed Tic Tac Toe game using constants"""
+def seed_games(db, verbose=False):
+    """Seed all games using constants"""
     print("\n" + "=" * 60)
-    print("SEEDING GAME")
+    print("SEEDING GAMES")
     print("=" * 60)
 
     # Import constants
-    from app.games.constants import TIC_TAC_TOE_SEED_DATA
+    from app.games.constants import TIC_TAC_TOE_SEED_DATA, FLOW_TILES_SEED_DATA
 
-    try:
-        # Create game document with current timestamps
-        game_doc = {
-            **TIC_TAC_TOE_SEED_DATA,
-            'created_at': datetime.now(timezone.utc),
-            'updated_at': datetime.now(timezone.utc),
-            'install_count': 0,
-            'rating': 0.0,
-            'total_ratings': 0
-        }
+    games_to_seed = [
+        TIC_TAC_TOE_SEED_DATA,
+        FLOW_TILES_SEED_DATA
+    ]
 
-        # Try to insert
-        result = db.games.insert_one(game_doc)
-        print(f"✅ Tic Tac Toe game created (ID: {result.inserted_id})")
+    created_count = 0
+    for game_data in games_to_seed:
+        try:
+            # Create game document with current timestamps
+            game_doc = {
+                **game_data,
+                'created_at': datetime.now(timezone.utc),
+                'updated_at': datetime.now(timezone.utc),
+                'install_count': 0,
+                'rating': 0.0,
+                'total_ratings': 0
+            }
 
-        if verbose:
-            print(f"   Name constant: {game_doc['name']}")
-            print(f"   Plugin ID: {game_doc['plugin_id']}")
-            print(f"   Category: {game_doc['category']}")
-            print(f"   Players: {game_doc['min_players']}-{game_doc['max_players']}")
+            # Try to insert
+            result = db.games.insert_one(game_doc)
+            game_name = game_data.get('name', 'Unknown')
+            print(f"✅ {game_name} game created (ID: {result.inserted_id})")
 
+            if verbose:
+                print(f"   Name constant: {game_doc['name']}")
+                print(f"   Plugin ID: {game_doc['plugin_id']}")
+                print(f"   Category: {game_doc['category']}")
+                print(f"   Players: {game_doc['min_players']}-{game_doc['max_players']}")
+                if 'thumbnail_url' in game_doc:
+                    print(f"   Thumbnail: {game_doc['thumbnail_url']}")
+
+            created_count += 1
+
+        except DuplicateKeyError:
+            game_name = game_data.get('name', 'Unknown')
+            print(f"⚠️  {game_name} game already exists (duplicate plugin_id or name)")
+        except Exception as e:
+            game_name = game_data.get('name', 'Unknown')
+            print(f"❌ Failed to create {game_name} game: {str(e)}")
+
+    if created_count > 0:
+        print(f"\n✅ Created {created_count} game(s)")
         return True
 
-    except DuplicateKeyError:
-        print("⚠️  Tic Tac Toe game already exists (duplicate plugin_id or name)")
-        return False
-    except Exception as e:
-        print(f"❌ Failed to create game: {str(e)}")
-        return False
+    return False
 
 
 def seed_test_users(db, verbose=False):
@@ -300,7 +316,7 @@ def main():
 
     # Run seeding operations
     results = []
-    results.append(seed_game(db, verbose=args.verbose))
+    results.append(seed_games(db, verbose=args.verbose))
     results.append(seed_test_users(db, verbose=args.verbose))
     results.append(seed_onlus(db, verbose=args.verbose))
 

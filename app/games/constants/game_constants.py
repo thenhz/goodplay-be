@@ -16,6 +16,7 @@ GAME_TIC_TAC_TOE_NAME = "TIC_TAC_TOE"
 GAME_MEMORY_NAME = "MEMORY_GAME"
 GAME_PUZZLE_NAME = "PUZZLE_GAME"
 GAME_QUIZ_NAME = "QUIZ_GAME"
+GAME_FLOW_TILES_NAME = "FLOW_TILES"
 
 # ============================================================
 # GAME DESCRIPTIONS - Used in Game.description field
@@ -25,6 +26,7 @@ GAME_TIC_TAC_TOE_DESC = "TIC_TAC_TOE_DESCRIPTION"
 GAME_MEMORY_DESC = "MEMORY_GAME_DESCRIPTION"
 GAME_PUZZLE_DESC = "PUZZLE_GAME_DESCRIPTION"
 GAME_QUIZ_DESC = "QUIZ_GAME_DESCRIPTION"
+GAME_FLOW_TILES_DESC = "FLOW_TILES_DESCRIPTION"
 
 # ============================================================
 # GAME INSTRUCTIONS - Used in Game.instructions field
@@ -34,6 +36,7 @@ GAME_TIC_TAC_TOE_INSTRUCTIONS = "TIC_TAC_TOE_INSTRUCTIONS"
 GAME_MEMORY_INSTRUCTIONS = "MEMORY_GAME_INSTRUCTIONS"
 GAME_PUZZLE_INSTRUCTIONS = "PUZZLE_GAME_INSTRUCTIONS"
 GAME_QUIZ_INSTRUCTIONS = "QUIZ_GAME_INSTRUCTIONS"
+GAME_FLOW_TILES_INSTRUCTIONS = "FLOW_TILES_INSTRUCTIONS"
 
 # ============================================================
 # CATEGORIES - Fixed values, not translated
@@ -44,6 +47,7 @@ CATEGORY_PUZZLE = "puzzle"
 CATEGORY_ARCADE = "arcade"
 CATEGORY_CASUAL = "casual"
 CATEGORY_EDUCATIONAL = "educational"
+CATEGORY_RELAXATION = "relaxation"
 
 # ============================================================
 # DIFFICULTY LEVELS - Fixed values, not translated
@@ -74,6 +78,24 @@ TIC_TAC_TOE_SEED_DATA = {
     "author": "GoodPlay Team"
 }
 
+FLOW_TILES_SEED_DATA = {
+    "name": GAME_FLOW_TILES_NAME,
+    "description": GAME_FLOW_TILES_DESC,
+    "category": CATEGORY_RELAXATION,
+    "version": "1.0.0",
+    "plugin_id": "flow_tiles",
+    "min_players": 1,
+    "max_players": 8,
+    "is_active": True,
+    "credit_rate": 1.0,
+    "difficulty_level": DIFFICULTY_EASY,
+    "estimated_duration_minutes": 15,
+    "requires_internet": False,
+    "instructions": GAME_FLOW_TILES_INSTRUCTIONS,
+    "thumbnail_url": "assets/icons/flow_tiles.png",
+    "author": "GoodPlay Team"
+}
+
 # ============================================================
 # UI TRANSLATION MAPPING (for reference/documentation)
 # ============================================================
@@ -96,4 +118,8 @@ PUZZLE_GAME_INSTRUCTIONS = "Sposta i pezzi per completare l'immagine."
 QUIZ_GAME = "Quiz"
 QUIZ_GAME_DESCRIPTION = "Rispondi alle domande per guadagnare punti"
 QUIZ_GAME_INSTRUCTIONS = "Scegli la risposta corretta tra le opzioni disponibili."
+
+FLOW_TILES = "Flow Tiles"
+FLOW_TILES_DESCRIPTION = "Crea bellissimi pattern fluidi - Zen puzzle game"
+FLOW_TILES_INSTRUCTIONS = "Connetti le tessere colorate creando percorsi fluidi. Rilassati e lasciati guidare dall'intuizione."
 """

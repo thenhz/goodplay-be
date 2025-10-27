@@ -20,6 +20,7 @@ class Game:
     difficulty_level: str = "medium"  # easy, medium, hard
     requires_internet: bool = False
     instructions: str = ""
+    thumbnail_url: Optional[str] = None
     install_count: int = 0
     rating: float = 0.0
     total_ratings: int = 0
@@ -44,6 +45,7 @@ class Game:
             "difficulty_level": self.difficulty_level,
             "requires_internet": self.requires_internet,
             "instructions": self.instructions,
+            "thumbnail_url": self.thumbnail_url,
             "install_count": self.install_count,
             "rating": self.rating,
             "total_ratings": self.total_ratings,
@@ -74,6 +76,7 @@ class Game:
             difficulty_level=data.get("difficulty_level", "medium"),
             requires_internet=data.get("requires_internet", False),
             instructions=data.get("instructions", ""),
+            thumbnail_url=data.get("thumbnail_url"),
             install_count=data.get("install_count", 0),
             rating=data.get("rating", 0.0),
             total_ratings=data.get("total_ratings", 0),
@@ -104,6 +107,7 @@ class Game:
             "difficulty_level": self.difficulty_level,
             "requires_internet": self.requires_internet,
             "instructions": self.instructions,
+            "thumbnail_url": self.thumbnail_url,
             "install_count": self.install_count,
             "rating": self.rating,
             "total_ratings": self.total_ratings,

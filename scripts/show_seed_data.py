@@ -53,6 +53,8 @@ def show_games(db):
         print(f"   Difficulty: {game.get('difficulty_level', 'N/A')}")
         print(f"   Duration: ~{game.get('estimated_duration_minutes', 0)} minutes")
         print(f"   Credit Rate: €{game.get('credit_rate', 0)}/minute")
+        if 'thumbnail_url' in game:
+            print(f"   Thumbnail: {game.get('thumbnail_url')}")
         print(f"   Active: {game.get('is_active', False)}")
         print(f"   Installs: {game.get('install_count', 0)}")
         print(f"   Rating: {game.get('rating', 0):.1f} ({game.get('total_ratings', 0)} ratings)")

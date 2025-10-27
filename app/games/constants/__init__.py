@@ -10,18 +10,21 @@ from .game_constants import (
     GAME_MEMORY_NAME,
     GAME_PUZZLE_NAME,
     GAME_QUIZ_NAME,
+    GAME_FLOW_TILES_NAME,
 
     # Game Descriptions
     GAME_TIC_TAC_TOE_DESC,
     GAME_MEMORY_DESC,
     GAME_PUZZLE_DESC,
     GAME_QUIZ_DESC,
+    GAME_FLOW_TILES_DESC,
 
     # Game Instructions
     GAME_TIC_TAC_TOE_INSTRUCTIONS,
     GAME_MEMORY_INSTRUCTIONS,
     GAME_PUZZLE_INSTRUCTIONS,
     GAME_QUIZ_INSTRUCTIONS,
+    GAME_FLOW_TILES_INSTRUCTIONS,
 
     # Categories
     CATEGORY_STRATEGY,
@@ -29,6 +32,7 @@ from .game_constants import (
     CATEGORY_ARCADE,
     CATEGORY_CASUAL,
     CATEGORY_EDUCATIONAL,
+    CATEGORY_RELAXATION,
 
     # Difficulty Levels
     DIFFICULTY_EASY,
@@ -37,6 +41,7 @@ from .game_constants import (
 
     # Seed Data
     TIC_TAC_TOE_SEED_DATA,
+    FLOW_TILES_SEED_DATA,
 )
 
 __all__ = [
@@ -45,18 +50,21 @@ __all__ = [
     'GAME_MEMORY_NAME',
     'GAME_PUZZLE_NAME',
     'GAME_QUIZ_NAME',
+    'GAME_FLOW_TILES_NAME',
 
     # Game Descriptions
     'GAME_TIC_TAC_TOE_DESC',
     'GAME_MEMORY_DESC',
     'GAME_PUZZLE_DESC',
     'GAME_QUIZ_DESC',
+    'GAME_FLOW_TILES_DESC',
 
     # Game Instructions
     'GAME_TIC_TAC_TOE_INSTRUCTIONS',
     'GAME_MEMORY_INSTRUCTIONS',
     'GAME_PUZZLE_INSTRUCTIONS',
     'GAME_QUIZ_INSTRUCTIONS',
+    'GAME_FLOW_TILES_INSTRUCTIONS',
 
     # Categories
     'CATEGORY_STRATEGY',
@@ -64,6 +72,7 @@ __all__ = [
     'CATEGORY_ARCADE',
     'CATEGORY_CASUAL',
     'CATEGORY_EDUCATIONAL',
+    'CATEGORY_RELAXATION',
 
     # Difficulty Levels
     'DIFFICULTY_EASY',
@@ -72,4 +81,5 @@ __all__ = [
 
     # Seed Data
     'TIC_TAC_TOE_SEED_DATA',
+    'FLOW_TILES_SEED_DATA',
 ]
